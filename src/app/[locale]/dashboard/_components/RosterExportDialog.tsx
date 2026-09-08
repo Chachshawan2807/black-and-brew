@@ -20,7 +20,7 @@ type Props = {
 };
 
 const DIALOG_CLASS =
-  'fixed left-1/2 top-1/2 z-[100] m-0 w-[min(420px,92vw)] max-h-[min(80svh,640px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-0 text-foreground shadow-lg open:flex open:flex-col backdrop:bg-black/40';
+  'bb-modal-panel fixed left-1/2 top-1/2 z-[100] m-0 w-[min(420px,92vw)] max-h-[min(80svh,640px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-0 text-foreground shadow-lg open:flex open:flex-col backdrop:bg-black/40 motion-reduce:open:animate-none';
 
 export function RosterExportDialog({
   open,

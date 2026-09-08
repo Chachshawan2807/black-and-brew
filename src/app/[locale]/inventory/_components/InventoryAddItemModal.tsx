@@ -139,7 +139,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
       exit={overlay.exit}
       transition={overlay.transition}
       className={cn(
-        'fixed inset-0 flex items-center justify-center p-4 transition-[padding,height] duration-200',
+        'fixed inset-0 flex items-center justify-center p-4 transition-[padding,height] [transition-duration:var(--bb-duration-fast)]',
         INVENTORY_MODAL_OVERLAY,
         INVENTORY_MODAL_Z_CLASS,
       )}
@@ -151,7 +151,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
         animate={panel.animate}
         exit={panel.exit}
         transition={panel.transition}
-        className={cn(INVENTORY_MODAL_PANEL, 'rounded-2xl w-full max-w-xl max-h-[90vh] transition-[max-height] duration-200')}
+        className={cn(INVENTORY_MODAL_PANEL, 'rounded-2xl w-full max-w-xl max-h-[90vh] transition-[max-height] [transition-duration:var(--bb-duration-fast)]')}
         style={modalContentStyle}
         onClick={(e) => e.stopPropagation()}
         role="dialog"

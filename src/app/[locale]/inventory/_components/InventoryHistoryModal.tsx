@@ -219,7 +219,7 @@ export function InventoryHistoryModal({
       transition={overlay.transition}
 
       className={cn(
-        'fixed inset-0 flex items-end md:items-center justify-center p-0 md:p-4 transition-[padding,height] duration-200',
+        'fixed inset-0 flex items-end md:items-center justify-center p-0 md:p-4 transition-[padding,height] [transition-duration:var(--bb-duration-fast)]',
         INVENTORY_MODAL_OVERLAY,
         INVENTORY_MODAL_Z_CLASS,
       )}
@@ -240,7 +240,7 @@ export function InventoryHistoryModal({
 
         transition={sheet.transition}
 
-        className={cn(INVENTORY_MODAL_PANEL, INVENTORY_MODAL_PANEL_SHEET, 'md:w-fit md:max-w-[calc(100vw-2rem)] transition-[max-height] duration-200')}
+        className={cn(INVENTORY_MODAL_PANEL, INVENTORY_MODAL_PANEL_SHEET, 'md:w-fit md:max-w-[calc(100vw-2rem)] transition-[max-height] [transition-duration:var(--bb-duration-fast)]')}
 
         style={modalContentStyle}
 

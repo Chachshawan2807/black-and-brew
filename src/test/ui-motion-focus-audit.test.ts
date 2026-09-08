@@ -28,6 +28,8 @@ describe('ui motion + focus-visible contract', () => {
     const css = readFile('app/[locale]/globals.css');
 
     expect(css).toContain('.bb-transition');
+    expect(css).toContain('.bb-transition-fast');
+    expect(css).toContain('bb-slide-in-from-top-1');
     expect(css).toMatch(/transition-property:/);
     expect(css).not.toMatch(/\.bb-transition\s*\{[^}]*transition:\s*all/s);
     expect(css).toContain('.bb-input');

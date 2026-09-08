@@ -146,7 +146,7 @@ export default function WithdrawRequiredItemsModal({
         exit={overlay.exit}
         transition={overlay.transition}
         className={cn(
-          'fixed inset-0 flex items-end md:items-center justify-center p-0 md:p-4 transition-[padding,height] duration-200',
+          'fixed inset-0 flex items-end md:items-center justify-center p-0 md:p-4 transition-[padding,height] [transition-duration:var(--bb-duration-fast)]',
           INVENTORY_MODAL_OVERLAY,
           INVENTORY_MODAL_Z_CLASS,
         )}
@@ -158,7 +158,7 @@ export default function WithdrawRequiredItemsModal({
           animate={sheet.animate}
           exit={sheet.exit}
           transition={sheet.transition}
-          className={cn(INVENTORY_MODAL_PANEL, INVENTORY_MODAL_PANEL_SHEET, 'md:max-w-sm transition-[max-height] duration-200')}
+          className={cn(INVENTORY_MODAL_PANEL, INVENTORY_MODAL_PANEL_SHEET, 'md:max-w-sm transition-[max-height] [transition-duration:var(--bb-duration-fast)]')}
           style={modalContentStyle}
           onClick={(e) => e.stopPropagation()}
           role="dialog"

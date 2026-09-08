@@ -83,7 +83,7 @@ function ColorPickerPanel({
   onChange: (bg: string, border: string) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-muted/15 p-3 animate-in fade-in slide-in-from-top-1 duration-200">
+    <div className="rounded-2xl border border-border bg-muted/15 p-3 animate-in fade-in slide-in-from-top-1">
       <p className={cn(SCHEDULE_FORM_LABEL, 'mb-2.5')}>เลือกสีพาสเทล</p>
       <div className="grid grid-cols-4 gap-2.5">
         {PASTEL_COLOR_PRESETS.map((preset) => {
@@ -311,7 +311,7 @@ export default function ShiftSettingsModal({
           </div>
 
           {isCreating ? (
-            <div className="flex animate-in fade-in slide-in-from-top-1 gap-2 duration-200">
+            <div className="flex animate-in fade-in slide-in-from-top-1 gap-2">
               <input
                 type="text"
                 name="shift-custom-name"

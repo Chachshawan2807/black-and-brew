@@ -34,7 +34,7 @@ function StatusBadge({
     <span
       className={cn(
         PASTEL_SURFACE,
-        'inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-black/10 px-2.5 py-1 text-xs font-normal bb-transition duration-200',
+        'inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-black/10 px-2.5 py-1 text-xs font-normal bb-transition',
         colorClass,
       )}
     >

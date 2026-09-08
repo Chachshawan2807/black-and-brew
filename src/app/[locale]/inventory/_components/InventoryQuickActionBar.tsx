@@ -174,7 +174,7 @@ function QuickActionTypeToggle({
           aria-label="รับเข้า"
           aria-pressed={quickType === 'IN'}
           className={cn(
-            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bb-transition duration-150',
+            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bb-transition-fast',
             quickType === 'IN' ? INVENTORY_QUICK_ACTION_COLORS.in : INVENTORY_QUICK_ACTION_COLORS.inactive,
             quickType === 'IN' && 'bb-shadow-sm',
           )}
@@ -190,7 +190,7 @@ function QuickActionTypeToggle({
           aria-label="นำออก"
           aria-pressed={quickType === 'OUT'}
           className={cn(
-            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bb-transition duration-150',
+            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bb-transition-fast',
             quickType === 'OUT' ? INVENTORY_QUICK_ACTION_COLORS.out : INVENTORY_QUICK_ACTION_COLORS.inactive,
             quickType === 'OUT' && 'bb-shadow-sm',
           )}
@@ -206,7 +206,7 @@ function QuickActionTypeToggle({
           aria-label="ปรับจำนวน"
           aria-pressed={quickType === 'ADJUST'}
           className={cn(
-            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bb-transition duration-150',
+            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bb-transition-fast',
             quickType === 'ADJUST' ? INVENTORY_QUICK_ACTION_COLORS.adjust : INVENTORY_QUICK_ACTION_COLORS.inactive,
             quickType === 'ADJUST' && 'bb-shadow-sm',
           )}
@@ -457,7 +457,7 @@ function BulkQueuePanel({
         className={cn(
           'w-full min-h-0 rounded-2xl border border-border bg-muted/15 overflow-hidden flex flex-col',
           INVENTORY_MOTION_SAFE,
-          'animate-in fade-in duration-200',
+          'animate-in fade-in',
           !fabMobileBulkShell && 'slide-in-from-top-1',
         )}
     >
@@ -916,7 +916,7 @@ export function InventoryQuickActionBar({
   const suggestionsListClassName = cn(
     'bg-card border border-border rounded-xl bb-shadow-md overflow-hidden',
     INVENTORY_MOTION_SAFE,
-    'animate-in fade-in duration-200',
+    'animate-in fade-in',
     !portalSuggestions && 'slide-in-from-top-2',
   );
 
@@ -1081,7 +1081,7 @@ export function InventoryQuickActionBar({
             {!bulkMode && selectedQuickItem && (
               <div
                 className={cn(
-                  'flex h-10 shrink-0 items-center gap-1 px-2 rounded-xl text-[12px] border bb-transition duration-200 whitespace-nowrap max-w-[40%] sm:max-w-none',
+                  'flex h-10 shrink-0 items-center gap-1 px-2 rounded-xl text-[12px] border bb-transition whitespace-nowrap max-w-[40%] sm:max-w-none',
                   INVENTORY_MOTION_SAFE,
                   'animate-in fade-in zoom-in-95',
                   quickBadgeStyles.bg,

@@ -20,8 +20,8 @@
   --font-mono: var(--font-sans);
 
   /* Collapsible animations */
-  --animate-collapsible-down: collapsible-down 0.2s ease-out;
-  --animate-collapsible-up: collapsible-up 0.2s ease-out;
+  --animate-collapsible-down: collapsible-down var(--bb-duration-fast) var(--bb-modal-ease) both;
+  --animate-collapsible-up: collapsible-up var(--bb-duration-micro) var(--bb-ease-in) both;
 
   /* Premium UI motion tokens */
   --bb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -41,6 +41,7 @@
   --animate-slide-in-bottom: bb-slide-in-from-bottom var(--bb-duration-normal) var(--bb-modal-ease) both;
   --animate-slide-in-bottom-2: bb-slide-in-from-bottom-2 var(--bb-duration-fast) var(--bb-modal-ease) both;
   --animate-slide-in-top-2: bb-slide-in-from-top-2 var(--bb-duration-fast) var(--bb-modal-ease) both;
+  --animate-slide-in-top-1: bb-slide-in-from-top-1 var(--bb-duration-fast) var(--bb-modal-ease) both;
   --animate-slide-in-right: bb-slide-in-from-right-full var(--bb-duration-normal) var(--bb-modal-ease) both;
   --animate-slide-out-bottom: bb-slide-out-to-bottom var(--bb-duration-normal) var(--bb-ease-in) both;
   --animate-slide-out-bottom-2: bb-slide-out-to-bottom-2 var(--bb-duration-micro) var(--bb-ease-in) both;
@@ -135,6 +136,16 @@
 @keyframes bb-shimmer {
   from { background-position: -200% 0; }
   to { background-position: 200% 0; }
+}
+
+@keyframes bb-slide-in-from-top-1 {
+  from { opacity: 0; transform: translate3d(0, 0.25rem, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes bb-slide-out-to-top-1 {
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0; transform: translate3d(0, -0.25rem, 0); }
 }
 
 @keyframes bb-slide-in-from-bottom {
@@ -324,7 +335,7 @@
       0 1px 2px rgb(0 0 0 / 0.04),
       0 4px 10px -2px rgb(0 0 0 / 0.06),
       0 12px 28px -6px rgb(0 0 0 / 0.08);
-    transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
+    transition: box-shadow var(--bb-duration-normal) var(--bb-ease-out), transform var(--bb-duration-normal) var(--bb-ease-out);
 
     &:hover {
       box-shadow:
@@ -344,7 +355,7 @@
       0 1px 2px rgb(0 0 0 / 0.04),
       0 3px 8px -2px rgb(0 0 0 / 0.05),
       0 10px 24px -6px rgb(0 0 0 / 0.07);
-    transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
+    transition: box-shadow var(--bb-duration-normal) var(--bb-ease-out), transform var(--bb-duration-normal) var(--bb-ease-out);
 
     &:hover {
       box-shadow:
@@ -365,26 +376,26 @@
       0 4px 12px -2px rgb(0 0 0 / 0.06),
       0 14px 32px -8px rgb(0 0 0 / 0.08);
     transition:
-      box-shadow 220ms var(--bb-ease-out),
-      transform 220ms var(--bb-ease-out),
-      border-color 220ms var(--bb-ease-out);
+      box-shadow var(--bb-duration-normal) var(--bb-ease-out),
+      transform var(--bb-duration-normal) var(--bb-ease-out),
+      border-color var(--bb-duration-normal) var(--bb-ease-out);
   }
 
   .bb-surface-interactive {
     cursor: pointer;
     transition:
-      box-shadow 220ms var(--bb-ease-out),
-      transform 220ms var(--bb-ease-out),
-      background-color 220ms var(--bb-ease-out);
+      box-shadow var(--bb-duration-normal) var(--bb-ease-out),
+      transform var(--bb-duration-normal) var(--bb-ease-out),
+      background-color var(--bb-duration-normal) var(--bb-ease-out);
   }
 
   /* List / table row subtle depth on hover */
   .bb-row-interactive {
     position: relative;
     transition:
-      background-color 180ms var(--bb-ease-out),
-      box-shadow 180ms var(--bb-ease-out),
-      transform 180ms var(--bb-ease-out);
+      background-color var(--bb-duration-fast) var(--bb-ease-out),
+      box-shadow var(--bb-duration-fast) var(--bb-ease-out),
+      transform var(--bb-duration-fast) var(--bb-ease-out);
   }
 
   /* Staggered entrance for section children */
@@ -421,7 +432,7 @@
       0 1px 2px rgb(0 0 0 / 0.04),
       0 3px 10px -2px rgb(0 0 0 / 0.05),
       0 12px 28px -8px rgb(0 0 0 / 0.07);
-    transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
+    transition: box-shadow var(--bb-duration-normal) var(--bb-ease-out), transform var(--bb-duration-normal) var(--bb-ease-out);
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -461,11 +472,11 @@
 
   @media (hover: hover) and (pointer: fine) {
     .glass-card {
-      transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
+      transition: box-shadow var(--bb-duration-normal) var(--bb-ease-out), transform var(--bb-duration-normal) var(--bb-ease-out);
     }
 
     .bb-card {
-      transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
+      transition: box-shadow var(--bb-duration-normal) var(--bb-ease-out), transform var(--bb-duration-normal) var(--bb-ease-out);
     }
   }
 
@@ -487,11 +498,11 @@
       inset 0 1px 0 var(--bb-surface-highlight),
       0 1px 2px rgb(0 0 0 / 0.04);
     transition:
-      color 220ms var(--bb-ease-out),
-      background-color 220ms var(--bb-ease-out),
-      border-color 220ms var(--bb-ease-out),
-      box-shadow 220ms var(--bb-ease-out),
-      transform 220ms var(--bb-ease-out);
+      color var(--bb-duration-normal) var(--bb-ease-out),
+      background-color var(--bb-duration-normal) var(--bb-ease-out),
+      border-color var(--bb-duration-normal) var(--bb-ease-out),
+      box-shadow var(--bb-duration-normal) var(--bb-ease-out),
+      transform var(--bb-duration-normal) var(--bb-ease-out);
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -521,7 +532,7 @@
     border-radius: 0.75rem;
     background-color: color-mix(in srgb, var(--muted) 45%, transparent);
     color: var(--foreground);
-    transition: background-color 220ms var(--bb-ease-out), border-color 220ms var(--bb-ease-out);
+    transition: background-color var(--bb-duration-normal) var(--bb-ease-out), border-color var(--bb-duration-normal) var(--bb-ease-out);
   }
 
   .bb-table-wrapper {
@@ -535,13 +546,19 @@
       0 1px 2px rgb(0 0 0 / 0.04),
       0 4px 12px -2px rgb(0 0 0 / 0.06),
       0 14px 32px -8px rgb(0 0 0 / 0.08);
-    transition: box-shadow 220ms var(--bb-ease-out);
+    transition: box-shadow var(--bb-duration-normal) var(--bb-ease-out);
   }
 
   /* Premium motion utilities */
   .bb-transition {
     transition-property: color, background-color, border-color, opacity, box-shadow, transform, filter;
     transition-duration: var(--bb-duration-normal, 240ms);
+    transition-timing-function: var(--bb-ease-out);
+  }
+
+  .bb-transition-fast {
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform, filter;
+    transition-duration: var(--bb-duration-fast, 180ms);
     transition-timing-function: var(--bb-ease-out);
   }
 
@@ -585,9 +602,9 @@
     border-radius: 1.5rem;
     box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.03);
     transition:
-      border-color 220ms var(--bb-ease-out),
-      box-shadow 220ms var(--bb-ease-out),
-      transform 180ms var(--bb-ease-out);
+      border-color var(--bb-duration-normal) var(--bb-ease-out),
+      box-shadow var(--bb-duration-normal) var(--bb-ease-out),
+      transform var(--bb-duration-fast) var(--bb-ease-out);
 
     &:focus-visible,
     &:focus-within:has(:focus-visible) {
@@ -687,8 +704,8 @@
     border-radius: 0.75rem;
     border: 1px solid var(--border);
     transition:
-      border-color 220ms var(--bb-ease-out),
-      box-shadow 220ms var(--bb-ease-out);
+      border-color var(--bb-duration-normal) var(--bb-ease-out),
+      box-shadow var(--bb-duration-normal) var(--bb-ease-out);
 
     &::placeholder {
       color: var(--muted-foreground);
@@ -779,7 +796,7 @@
 
   @media (hover: hover) and (pointer: fine) {
     .bb-shadow-hover-md {
-      transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
+      transition: box-shadow var(--bb-duration-normal) var(--bb-ease-out), transform var(--bb-duration-normal) var(--bb-ease-out);
     }
 
     .bb-shadow-hover-md:hover {
@@ -1076,6 +1093,7 @@
     .zoom-out-95,
     .slide-in-from-bottom,
     .slide-in-from-bottom-2,
+    .slide-in-from-top-1,
     .slide-in-from-top-2,
     .slide-in-from-right-2,
     .slide-in-from-left-2 {
@@ -1084,6 +1102,10 @@
     }
 
     .bb-transition {
+      transition-duration: 0.01ms !important;
+    }
+
+    .bb-transition-fast {
       transition-duration: 0.01ms !important;
     }
 
@@ -1196,6 +1218,13 @@
   .slide-in-from-bottom-2 {
     animation-name: bb-slide-in-from-bottom-2;
     animation-duration: var(--tw-animation-duration, var(--bb-duration-normal, 240ms));
+    animation-timing-function: var(--bb-modal-ease);
+    animation-fill-mode: both;
+  }
+
+  .slide-in-from-top-1 {
+    animation-name: bb-slide-in-from-top-1;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-fast, 180ms));
     animation-timing-function: var(--bb-modal-ease);
     animation-fill-mode: both;
   }

@@ -335,7 +335,7 @@ const SortableEmployeeRow = React.memo(({
       style={style}
       transition={LAYOUT_DRAG_SPRING}
       className={cn(
-        "bb-schedule-grid grid border-b border-border bb-transition duration-300 relative bg-transparent",
+        "bb-schedule-grid grid border-b border-border bb-transition relative bg-transparent",
         isDragging && "opacity-80 scale-[1.02] shadow-xl z-[100] bg-card ring-1 ring-border rounded-2xl cursor-grabbing"
       )}
     >
@@ -451,7 +451,7 @@ const SortableEmployeeRow = React.memo(({
             {shift && (shift.status && shift.metadata?.location) ? (
               <div className="relative z-[1] h-full w-full">
                 <div
-                  className={`bb-schedule-nowrap h-full w-full rounded-lg border px-2 py-1.5 flex justify-center items-center text-center whitespace-nowrap bb-transition duration-200 group-hover/cell:scale-[0.97] group-hover/cell:shadow-md shadow-sm ${type?.className || 'bb-pastel-surface bg-card border-border text-[#000000]'}`}
+                  className={`bb-schedule-nowrap h-full w-full rounded-lg border px-2 py-1.5 flex justify-center items-center text-center whitespace-nowrap bb-transition group-hover/cell:scale-[0.97] group-hover/cell:shadow-md shadow-sm ${type?.className || 'bb-pastel-surface bg-card border-border text-[#000000]'}`}
                   style={type?.style}
                 >
                   <span className="bb-schedule-nowrap text-[14.5px] font-normal leading-none tracking-tight whitespace-nowrap">{type?.label || shift.metadata?.location}</span>
@@ -464,7 +464,7 @@ const SortableEmployeeRow = React.memo(({
                 )}
               </div>
             ) : (
-              <div className="relative z-[1] h-full w-full rounded-lg border border-transparent bb-transition duration-200 group-hover/cell:bg-gray-100/50" />
+              <div className="relative z-[1] h-full w-full rounded-lg border border-transparent bb-transition group-hover/cell:bg-gray-100/50" />
             )}
           </div>
         );
@@ -1851,7 +1851,7 @@ export default function ScheduleClient({
             ref={dropdownRef}
             role="dialog"
             aria-label="เลือกกะ"
-            className="bb-schedule-shift-picker absolute w-[min(12rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-border bg-card shadow-xl animate-in fade-in slide-in-from-top-2 duration-200"
+            className="bb-schedule-shift-picker absolute w-[min(12rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-border bg-card shadow-xl animate-in fade-in slide-in-from-top-2"
             style={{
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`
@@ -1873,7 +1873,7 @@ export default function ScheduleClient({
                   onClick={() => handleSave(type.value)}
                   disabled={isReadOnly}
                   className={cn(
-                    'h-11 w-full cursor-pointer rounded-xl border px-3 text-left text-[13px] font-normal shadow-sm bb-transition duration-200 hover:brightness-95 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 md:h-auto md:py-2',
+                    'h-11 w-full cursor-pointer rounded-xl border px-3 text-left text-[13px] font-normal shadow-sm bb-transition hover:brightness-95 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 md:h-auto md:py-2',
                     type.className,
                   )}
                   style={type.style}
@@ -1887,7 +1887,7 @@ export default function ScheduleClient({
                 <button
                   onClick={handleClear}
                   disabled={isReadOnly}
-                  className="h-11 w-full cursor-pointer rounded-2xl border border-red-500/80 bg-card text-[13px] font-normal text-red-600 bb-transition duration-200 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] md:h-auto md:py-2"
+                  className="h-11 w-full cursor-pointer rounded-2xl border border-red-500/80 bg-card text-[13px] font-normal text-red-600 bb-transition hover:bg-red-50 dark:hover:bg-red-950/20 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] md:h-auto md:py-2"
                 >
                   ล้างกะ
                 </button>

@@ -22,7 +22,7 @@ import { InventoryModalPortal } from './InventoryModalPortal';
 import { BB_BTN_ICON, BB_CHIP_IDLE, BB_CHIP_SELECTED } from '@/lib/ui-outlined-tokens';
 
 const PO_FILTER_CHIP =
-  'shrink-0 px-2.5 py-1.5 sm:px-4 sm:py-2 text-[12px] sm:text-[14px] rounded-xl sm:rounded-2xl border bb-transition duration-200 antialiased cursor-pointer font-normal whitespace-nowrap touch-manipulation';
+  'shrink-0 px-2.5 py-1.5 sm:px-4 sm:py-2 text-[12px] sm:text-[14px] rounded-xl sm:rounded-2xl border bb-transition antialiased cursor-pointer font-normal whitespace-nowrap touch-manipulation';
 
 const PO_FILTER_COUNT = 'text-muted-foreground text-[10px] sm:text-[12px] ml-1 tabular-nums font-normal';
 

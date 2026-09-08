@@ -88,7 +88,7 @@ export function CollapseMenuButton({
               <ChevronDown
                 size={18}
                 strokeWidth={1.75}
-                className="text-foreground transition-transform duration-200"
+                className="text-foreground bb-transition [transition-property:transform]"
               />
             </div>
           </div>

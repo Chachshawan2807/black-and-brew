@@ -7,7 +7,7 @@ import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { cn } from '@/lib/utils';
 
 export const DATE_PICKER_TRIGGER_BASE =
-  'group relative flex items-center justify-center gap-2 h-11 min-h-[44px] px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/40 rounded-2xl border border-border/80 bb-transition duration-200 active:scale-[0.98] uppercase tracking-[0.08em] bb-shadow-sm w-full min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15';
+  'group relative flex items-center justify-center gap-2 h-11 min-h-[44px] px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/40 rounded-2xl border border-border/80 bb-transition active:scale-[0.98] uppercase tracking-[0.08em] bb-shadow-sm w-full min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15';
 
 export const DATE_PICKER_TRIGGER_OPEN = 'ring-2 ring-foreground/10 border-foreground/25 bg-muted/20';
 

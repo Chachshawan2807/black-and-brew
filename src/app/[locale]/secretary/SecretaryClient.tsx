@@ -446,7 +446,7 @@ function FilterChip({
         type="button"
         onClick={onClick}
         className={cn(
-          'inline-flex shrink-0 items-center justify-center min-h-10 rounded-2xl border px-3.5 py-2 text-[13px] font-normal whitespace-nowrap bb-transition duration-200 touch-manipulation',
+          'inline-flex shrink-0 items-center justify-center min-h-10 rounded-2xl border px-3.5 py-2 text-[13px] font-normal whitespace-nowrap bb-transition touch-manipulation',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           active ? BB_CHIP_SELECTED : BB_CHIP_IDLE,
         )}

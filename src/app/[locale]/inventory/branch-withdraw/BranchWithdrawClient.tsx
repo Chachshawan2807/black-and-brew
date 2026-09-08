@@ -98,7 +98,7 @@ const UNIT_INPUT_FIELD_CLASS = cn(
 );
 const MOBILE_INPUT_GRID_CLASS = 'grid grid-cols-3 gap-1.5 md:contents';
 const BRANCH_WITHDRAW_DIALOG_BASE_CLASS =
-  'm-auto max-h-[min(85dvh,100%)] overscroll-contain rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40 open:animate-in open:fade-in-0 open:zoom-in-95 motion-reduce:open:animate-none';
+  'bb-modal-panel m-auto max-h-[min(85dvh,100%)] overscroll-contain rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40 motion-reduce:open:animate-none';
 const BRANCH_WITHDRAW_DIALOG_PREVIEW_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-fit max-w-[92vw]`;
 const BRANCH_WITHDRAW_DIALOG_WIDE_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[min(780px,92vw)]`;
 const BRANCH_WITHDRAW_DIALOG_HISTORY_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[92vw] md:w-[min(560px,92vw)]`;

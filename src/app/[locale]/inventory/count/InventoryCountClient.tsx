@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ChevronLeft, CheckCircle2, ClipboardList, AlertCircle, RefreshCw, Undo2, Clock3, SlidersHorizontal } from '@/lib/icons';
 import { motion, AnimatePresence } from 'framer-motion';
-import { microFadeDown, microPopIn, staggerListItem } from '@/lib/motion-presets';
+import { microFadeDown, microPopIn, staggerDelay, staggerListItem } from '@/lib/motion-presets';
 import Link from 'next/link';
 import {
   fetchCountAccuracyStats,
@@ -213,7 +213,7 @@ const CountInput = memo(function CountInput({
         data-count-row-index={index}
         disabled={disabled}
         className={cn(
-          'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums bb-transition duration-200 bb-pastel-surface bg-white text-black placeholder:text-black/45',
+          'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums bb-transition bb-pastel-surface bg-white text-black placeholder:text-black/45',
           isActive
             ? 'w-28 h-11 border-black/30 ring-2 ring-black/10 bb-shadow-sm'
             : 'w-24 h-10 border-black/25 bb-shadow-sm focus:border-black/35 focus-visible:ring-1 focus-visible:ring-black/15',
@@ -400,7 +400,7 @@ const AdjustStockInput = memo(function AdjustStockInput({
         data-count-row-index={index}
         disabled={disabled}
         className={cn(
-          'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums bb-transition duration-200 bb-pastel-surface bg-white text-black placeholder:text-black/45',
+          'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums bb-transition bb-pastel-surface bg-white text-black placeholder:text-black/45',
           isActive
             ? 'w-28 h-11 border-black/30 ring-2 ring-black/10 bb-shadow-sm'
             : 'w-24 h-10 border-black/25 bb-shadow-sm focus:border-black/35 focus-visible:ring-1 focus-visible:ring-black/15',
@@ -600,11 +600,11 @@ const CountItemRow = memo(function CountItemRow({
         scale: isActive ? 1.015 : 1,
       }}
       transition={{
-        duration: 0.2,
-        delay: animateEntrance && index < STAGGER_ANIMATION_CAP ? index * 0.02 : 0,
+        ...staggerListItem.transition,
+        delay: animateEntrance && index < STAGGER_ANIMATION_CAP ? staggerDelay(index, 0.02) : 0,
       }}
       className={cn(
-        'relative rounded-2xl p-4 flex items-start justify-between gap-3 bb-transition duration-300',
+        'relative rounded-2xl p-4 flex items-start justify-between gap-3 bb-transition',
         rowToneClass,
         isActive
           ? 'bb-shadow-md ring-2 ring-black/8 z-10'
@@ -618,7 +618,7 @@ const CountItemRow = memo(function CountItemRow({
       <div className="flex items-start gap-3 flex-1 min-w-0 pl-1">
         <span
           className={cn(
-            'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 bb-transition duration-200',
+            'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 bb-transition',
             isActive
               ? 'border border-foreground/70 bg-card text-foreground ring-1 ring-foreground/10'
               : 'bg-white/60 text-black/55'
@@ -630,7 +630,7 @@ const CountItemRow = memo(function CountItemRow({
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
-                'font-normal text-[15px] leading-tight transition-colors duration-200',
+                'font-normal text-[15px] leading-tight bb-transition-fast [transition-property:color]',
                 'text-black',
               )}
             >
@@ -757,11 +757,11 @@ const AdjustItemRow = memo(function AdjustItemRow({
         scale: isActive ? 1.015 : 1,
       }}
       transition={{
-        duration: 0.2,
-        delay: animateEntrance && index < STAGGER_ANIMATION_CAP ? index * 0.02 : 0,
+        ...staggerListItem.transition,
+        delay: animateEntrance && index < STAGGER_ANIMATION_CAP ? staggerDelay(index, 0.02) : 0,
       }}
       className={cn(
-        'relative rounded-2xl p-4 flex items-start justify-between gap-3 bb-transition duration-300',
+        'relative rounded-2xl p-4 flex items-start justify-between gap-3 bb-transition',
         rowToneClass,
         isActive
           ? 'bb-shadow-md ring-2 ring-black/8 z-10'
@@ -775,7 +775,7 @@ const AdjustItemRow = memo(function AdjustItemRow({
       <div className="flex items-start gap-3 flex-1 min-w-0 pl-1">
         <span
           className={cn(
-            'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 bb-transition duration-200',
+            'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 bb-transition',
             isActive
               ? 'border border-foreground/70 bg-card text-foreground ring-1 ring-foreground/10'
               : 'bg-white/60 text-black/55',

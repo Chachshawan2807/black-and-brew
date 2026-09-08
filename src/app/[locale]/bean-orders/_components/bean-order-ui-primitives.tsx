@@ -260,7 +260,7 @@ export function BeanOrderEmptyState({
         className={cn(
           'mx-auto mb-3 flex h-12 w-12 items-center justify-center text-muted-foreground/35',
           BEAN_ORDER_MOTION_SAFE,
-          'animate-in fade-in zoom-in-95 duration-300',
+          'animate-in fade-in zoom-in-95',
         )}
         aria-hidden
       >

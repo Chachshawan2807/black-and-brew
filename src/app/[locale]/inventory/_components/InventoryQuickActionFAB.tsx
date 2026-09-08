@@ -376,7 +376,7 @@ export default function InventoryQuickActionFAB() {
                   fabMobileBulkQueueActive
                     ? 'max-md:overflow-hidden'
                     : 'max-md:overflow-y-auto max-md:bb-smooth-scroll',
-                  'max-md:transition-[max-height] max-md:duration-200',
+                  'max-md:transition-[max-height] max-md:[transition-duration:var(--bb-duration-fast)]',
                   'md:fixed md:z-[199] md:w-full md:max-w-2xl md:left-auto md:right-6 md:overflow-y-auto md:bb-smooth-scroll md:isolate',
                   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
                 )}

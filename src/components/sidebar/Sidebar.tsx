@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import Menu from "@/components/sidebar/Menu";
 import { useSidebarToggle, useSidebarHydrated } from "@/hooks/use-sidebar-toggle";
 import { SidebarToggle } from "@/components/sidebar/SidebarToggle";
-import { sidebarSurface, withReducedMotion, MODAL_EASE } from '@/lib/motion-presets';
+import { sidebarSurface, withReducedMotion, MODAL_EASE, MOTION_DURATION } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { BrandLogo } from '@/components/sidebar/BrandLogo';
 
@@ -17,7 +17,7 @@ function SidebarLogo({
   reduced: boolean;
 }) {
   const transition = {
-    duration: reduced ? 0.01 : 0.28,
+    duration: reduced ? 0.01 : MOTION_DURATION.slow,
     ease: MODAL_EASE,
   };
 
@@ -72,7 +72,7 @@ export function Sidebar() {
       animate={surfaceMotion.animate}
       transition={surfaceMotion.transition}
       className={cn(
-        'fixed top-0 left-0 z-[100] h-[100svh] text-foreground transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none bg-transparent border-none md:flex md:border-r md:border-black/5 dark:md:border-white/10',
+        'fixed top-0 left-0 z-[100] h-[100svh] text-foreground transition-[width] [transition-duration:var(--bb-duration-slow)] [transition-timing-function:var(--bb-ease-out)] motion-reduce:transition-none bg-transparent border-none md:flex md:border-r md:border-black/5 dark:md:border-white/10',
         sidebarOpen === false
           ? 'md:w-20'
           : 'md:w-[280px]'
@@ -82,7 +82,7 @@ export function Sidebar() {
       <div className="relative h-full flex flex-col pl-2 pr-3 py-4 overflow-hidden bg-[var(--sidebar-surface)] md:bg-transparent w-full">
         <div
           className={cn(
-            'mb-4 flex items-center transition-[justify-content] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none',
+            'mb-4 flex items-center transition-[justify-content] [transition-duration:var(--bb-duration-slow)] [transition-timing-function:var(--bb-ease-out)] motion-reduce:transition-none',
             sidebarOpen === false ? 'justify-center' : 'justify-between gap-2',
           )}
         >

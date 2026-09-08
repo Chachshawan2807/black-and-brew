@@ -120,7 +120,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
 
       <dialog
         ref={dialogRef}
-        className="m-auto w-[min(100%-2rem,22rem)] max-w-sm rounded-2xl border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-foreground/20 open:animate-in open:fade-in-0"
+        className="bb-modal-panel m-auto w-[min(100%-2rem,22rem)] max-w-sm rounded-2xl border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-foreground/20 motion-reduce:open:animate-none"
         aria-labelledby="pwa-ios-install-title"
       >
         <div className="flex flex-col gap-5 p-5">

@@ -111,10 +111,10 @@ describe('motion-presets consolidation', () => {
       const closeBranch = code.match(/key="close"[\s\S]*?<\/motion\.span>/)?.[0] ?? '';
       const openBranch = code.match(/key="open"[\s\S]*?<\/motion\.span>/)?.[0] ?? '';
 
-      expect(closeBranch).toContain('fabIconClose');
-      expect(closeBranch).not.toContain('fabIconOpen');
-      expect(openBranch).toContain('fabIconOpen');
-      expect(openBranch).not.toContain('fabIconClose');
+      expect(closeBranch).toMatch(/fabIconClose|motionPresets\.fabClose/);
+      expect(closeBranch).not.toMatch(/fabIconOpen|motionPresets\.fabOpen/);
+      expect(openBranch).toMatch(/fabIconOpen|motionPresets\.fabOpen/);
+      expect(openBranch).not.toMatch(/fabIconClose|motionPresets\.fabClose/);
     });
   }
 });

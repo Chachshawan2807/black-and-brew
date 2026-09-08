@@ -279,7 +279,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
       data-inventory-item-id={item.id}
       style={style}
       className={cn(
-        "bb-inventory-row-containment bg-card border border-border rounded-2xl p-3.5 bb-shadow-sm space-y-2.5 flex flex-col bb-transition duration-200",
+        "bb-inventory-row-containment bg-card border border-border rounded-2xl p-3.5 bb-shadow-sm space-y-2.5 flex flex-col bb-transition",
         isDragging && "opacity-80 scale-[1.02] bb-shadow-xl ring-2 ring-foreground/10 cursor-grabbing"
       )}
     >
@@ -496,7 +496,7 @@ const MobileSortableRow = React.memo(({
       data-inventory-item-id={item.id}
       style={style}
       className={cn(
-        "bb-inventory-row-containment w-full min-w-0 bg-card border border-border rounded-2xl p-3.5 bb-shadow-sm space-y-2.5 flex flex-col bb-transition duration-200",
+        "bb-inventory-row-containment w-full min-w-0 bg-card border border-border rounded-2xl p-3.5 bb-shadow-sm space-y-2.5 flex flex-col bb-transition",
         isDragging && "opacity-80 scale-[1.02] bb-shadow-xl ring-2 ring-foreground/10 cursor-grabbing"
       )}
     >
@@ -1780,7 +1780,7 @@ export default function InventoryClient({
 
   return (
     <>
-      <div className="flex-1 w-full max-w-full bg-transparent text-foreground font-normal antialiased bb-transition duration-300 flex flex-col items-center md:items-start p-4 md:p-8 overflow-x-hidden">
+      <div className="flex-1 w-full max-w-full bg-transparent text-foreground font-normal antialiased bb-transition flex flex-col items-center md:items-start p-4 md:p-8 overflow-x-hidden">
         <div className="w-full max-w-7xl mx-auto flex flex-col items-stretch md:items-stretch">
           {shouldShowPageTitle('คลังสินค้า') ? (
             <div className="w-full flex flex-col items-center mb-8 text-center">
@@ -1870,7 +1870,7 @@ export default function InventoryClient({
                 type="button"
                 onClick={() => setIsQuickActionBarOpen(true)}
                 aria-expanded={false}
-                className="group w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground bb-shadow-sm bb-transition duration-200 hover:bg-muted/50 active:scale-[0.99] motion-reduce:active:scale-100 inline-flex items-center justify-center gap-2"
+                className="group w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground bb-shadow-sm bb-transition hover:bg-muted/50 active:scale-[0.99] motion-reduce:active:scale-100 inline-flex items-center justify-center gap-2"
               >
                 <Package className="w-4 h-4 text-muted-foreground bb-transition group-hover:text-foreground" strokeWidth={ICON_STROKE} aria-hidden />
                 เปิด Quick Action

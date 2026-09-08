@@ -28,7 +28,7 @@ export function InventoryGridSearchBar({
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card px-3 py-2.5 bb-shadow-sm bb-transition duration-200 focus-within:border-foreground/20 focus-within:bb-shadow-md">
+    <div className="rounded-2xl border border-border bg-card px-3 py-2.5 bb-shadow-sm bb-transition focus-within:border-foreground/20 focus-within:bb-shadow-md">
       <div className="flex items-center gap-2 min-w-0">
         <div className="relative min-w-0 flex-1">
           <Search
@@ -68,7 +68,7 @@ export function InventoryGridSearchBar({
                 animate={micro.animate}
                 exit={micro.exit}
                 transition={micro.transition}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted bb-transition duration-200 active:scale-95 motion-reduce:active:scale-100"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted bb-transition active:scale-95 motion-reduce:active:scale-100"
               >
                 <X className="w-4 h-4" strokeWidth={ICON_STROKE} />
               </motion.button>

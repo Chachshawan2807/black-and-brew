@@ -110,7 +110,7 @@ export function SegmentTabBar<T extends string>({
             tabIndex={isActive ? 0 : -1}
             onClick={() => onChange(tab.id)}
             className={cn(
-              'inline-flex items-center justify-center gap-1.5 bb-transition duration-200 font-normal whitespace-nowrap touch-manipulation',
+              'inline-flex items-center justify-center gap-1.5 bb-transition font-normal whitespace-nowrap touch-manipulation',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
               isScroll
                 ? cn(
@@ -188,7 +188,7 @@ export function FilterChipBar({
             onClick={() => onToggle(chip.id)}
             title={typeof chip.label === 'string' ? chip.label : undefined}
             className={cn(
-              'inline-flex shrink-0 items-center justify-center gap-1.5 min-h-10 rounded-2xl border px-3.5 py-2 text-[13px] font-normal whitespace-nowrap bb-transition duration-200 touch-manipulation',
+              'inline-flex shrink-0 items-center justify-center gap-1.5 min-h-10 rounded-2xl border px-3.5 py-2 text-[13px] font-normal whitespace-nowrap bb-transition touch-manipulation',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
               chip.id !== allId && 'max-w-[12rem] truncate',
               isActive ? BB_CHIP_SELECTED : BB_CHIP_IDLE,

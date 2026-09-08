@@ -625,7 +625,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-background overflow-hidden flex flex-col items-center px-4 antialiased transition-[padding] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+      className={`fixed inset-0 z-[9999] bg-background overflow-hidden flex flex-col items-center px-4 antialiased bb-transition transition-[padding] ${
         isKeyboardOpen ? 'justify-start pt-[min(16svh,128px)]' : 'justify-center'
       }`}
     >

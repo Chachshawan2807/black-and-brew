@@ -18,14 +18,14 @@ import {
 
 /** Toolbar action pill (44px touch target, token surfaces). */
 export const SCHEDULE_TOOLBAR_BUTTON =
-  'group inline-flex items-center justify-center gap-2 h-11 min-h-[44px] px-3.5 md:px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/40 rounded-2xl border border-border/80 bb-transition duration-200 active:scale-[0.98] uppercase tracking-[0.08em] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap';
+  'group inline-flex items-center justify-center gap-2 h-11 min-h-[44px] px-3.5 md:px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/40 rounded-2xl border border-border/80 bb-transition active:scale-[0.98] uppercase tracking-[0.08em] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap';
 
 /** Icon frame inside toolbar pills; token foreground (not BB_ICON_FRAME black glyph). */
 export const SCHEDULE_TOOLBAR_ICON_WRAP =
   'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-muted/30 text-foreground bb-transition group-hover:bg-muted/45 group-hover:border-border [&_svg]:text-current';
 
 export const SCHEDULE_TOOLBAR_HISTORY_BUTTON =
-  'inline-flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-2xl border border-border/80 bg-card text-foreground shadow-sm bb-transition duration-200 active:scale-[0.98] hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-card';
+  'inline-flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-2xl border border-border/80 bg-card text-foreground shadow-sm bb-transition active:scale-[0.98] hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-card';
 
 export const SCHEDULE_MODAL_OVERLAY = 'bg-black/30 backdrop-blur-[6px]';
 
@@ -250,7 +250,7 @@ export function ScheduleEmptyState({ icon, message, className }: ScheduleEmptySt
         className,
       )}
     >
-      <div className="text-muted-foreground/35 animate-in fade-in zoom-in-95 duration-300" aria-hidden>
+      <div className="text-muted-foreground/35 animate-in fade-in zoom-in-95" aria-hidden>
         {icon}
       </div>
       <p className="text-sm font-normal uppercase tracking-[0.12em] text-muted-foreground/60">
@@ -269,7 +269,7 @@ export function ScheduleSuccessBanner({ message, className }: ScheduleSuccessBan
   return (
     <div
       className={cn(
-        'flex items-center gap-2.5 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-2.5 animate-in fade-in slide-in-from-top-1 duration-300 dark:border-emerald-900/50 dark:bg-emerald-950/30',
+        'flex items-center gap-2.5 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-2.5 animate-in fade-in slide-in-from-top-1 dark:border-emerald-900/50 dark:bg-emerald-950/30',
         className,
       )}
       role="status"

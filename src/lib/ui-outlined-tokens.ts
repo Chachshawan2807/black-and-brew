@@ -11,7 +11,7 @@ export const BB_RADIUS_ICON = 'rounded-xl';
 
 /** Shared interactive motion */
 export const BB_BTN_MOTION =
-  'bb-transition duration-200 active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed';
+  'bb-transition active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed';
 
 /** Default outlined action button */
 export const BB_BTN_OUTLINE =
@@ -45,7 +45,7 @@ export const BB_ICON_FRAME =
 
 /** Modal / panel header icon badge */
 export const BB_ICON_BADGE_BASE =
-  `inline-flex shrink-0 items-center justify-center border ${BB_RADIUS_SOFT} bb-transition duration-200 ${BB_ICON_BADGE_OUTLINE}`;
+  `inline-flex shrink-0 items-center justify-center border ${BB_RADIUS_SOFT} bb-transition ${BB_ICON_BADGE_OUTLINE}`;
 
 /** Pastel fills for icon badges (pair with BB_ICON_BADGE_BASE; border + glyph come from base) */
 export const BB_ICON_BADGE_FILL = {
@@ -71,7 +71,7 @@ export const BB_ICON_BADGE_FILL = {
 
 /** Modal close control */
 export const BB_BTN_CLOSE =
-  `inline-flex h-10 w-10 items-center justify-center ${BB_RADIUS_SOFT} border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/35 hover:border-border bb-transition duration-200 active:scale-95 motion-reduce:active:scale-100 disabled:opacity-50`;
+  `inline-flex h-10 w-10 items-center justify-center ${BB_RADIUS_SOFT} border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/35 hover:border-border bb-transition active:scale-95 motion-reduce:active:scale-100 disabled:opacity-50`;
 
 /** Data card / content panel shell */
 export const BB_DATA_CARD =
