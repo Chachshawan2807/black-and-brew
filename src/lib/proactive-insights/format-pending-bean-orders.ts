@@ -1,35 +1,31 @@
+import {
+  isBeanOrderDeliveryComplete,
+  isBeanOrderPaymentComplete,
+} from '@/lib/bean-orders/workflow-status';
 import type { PendingBeanOrderInsight } from '@/lib/proactive-insights/types';
-import { isBeanOrderPaymentSettled } from '@/lib/bean-orders/order-status';
 
 export interface BeanOrderPendingCounts {
   unpaidCount: number;
   pendingShipmentCount: number;
 }
 
-function isAwaitingPayment(
-  order: Pick<PendingBeanOrderInsight, 'paymentStatus' | 'fulfillmentStatus' | 'slipUploadedAt'>,
-): boolean {
-  return (
-    !isBeanOrderPaymentSettled(order.paymentStatus, order.slipUploadedAt) &&
-    order.fulfillmentStatus === 'pending'
-  );
-}
+type BeanOrderPendingCountInput = Pick<
+  PendingBeanOrderInsight,
+  'paymentStatus' | 'fulfillmentStatus' | 'trackingStatus' | 'slipUploadedAt'
+>;
 
-/** Counts actionable payment and shipment queues (excludes legacy unpaid+shipped orders). */
+/** Counts incomplete payment and delivery buckets using the same rules as bean-order UI. */
 export function countBeanOrderPendingStatuses(
-  orders: Pick<
-    PendingBeanOrderInsight,
-    'paymentStatus' | 'fulfillmentStatus' | 'trackingStatus' | 'slipUploadedAt'
-  >[],
+  orders: BeanOrderPendingCountInput[],
 ): BeanOrderPendingCounts {
   let unpaidCount = 0;
   let pendingShipmentCount = 0;
 
   for (const order of orders) {
-    if (isAwaitingPayment(order)) {
+    if (!isBeanOrderPaymentComplete(order)) {
       unpaidCount += 1;
     }
-    if (order.fulfillmentStatus === 'pending') {
+    if (!isBeanOrderDeliveryComplete(order)) {
       pendingShipmentCount += 1;
     }
   }

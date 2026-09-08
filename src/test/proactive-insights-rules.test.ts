@@ -180,7 +180,7 @@ describe('evaluateInsightRules', () => {
     const insights = evaluateInsightRules(sampleSnapshot({ pendingBeanOrders: pending }));
     const hit = insights.find((i) => i.ruleId === 'bean_orders_inventory_gap');
     expect(hit).toBeDefined();
-    expect(hit!.summary).toBe('ค้างชำระเงิน 1 รายการ · ค้างจัดส่ง 2 รายการ');
+    expect(hit!.summary).toBe('ค้างชำระเงิน 3 รายการ · ค้างจัดส่ง 5 รายการ');
     expect(hit!.summary).not.toContain('คุณเอ');
   });
 

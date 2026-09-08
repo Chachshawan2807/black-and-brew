@@ -49,15 +49,15 @@ function ruleLeaveCoverageRisk(snapshot: OperationalSnapshot): Insight | null {
 }
 
 function ruleBeanOrdersPending(snapshot: OperationalSnapshot): Insight | null {
-  const { unpaidCount, pendingShipmentCount } = countBeanOrderPendingStatuses(
-    snapshot.pendingBeanOrders,
-  );
-  if (unpaidCount + pendingShipmentCount < INSIGHT_THRESHOLDS.beanOrdersMinPending) {
+  if (snapshot.pendingBeanOrders.length < INSIGHT_THRESHOLDS.beanOrdersMinPending) {
     return null;
   }
 
+  const { unpaidCount, pendingShipmentCount } = countBeanOrderPendingStatuses(
+    snapshot.pendingBeanOrders,
+  );
   const summary = formatPendingBeanOrdersSummary(snapshot.pendingBeanOrders);
-  if (!summary) return null;
+  if (!summary || (unpaidCount === 0 && pendingShipmentCount === 0)) return null;
 
   return {
     ruleId: 'bean_orders_inventory_gap',
