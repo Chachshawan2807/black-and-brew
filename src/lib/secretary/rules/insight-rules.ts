@@ -1,5 +1,9 @@
 import { evaluateInsightRules } from '@/lib/proactive-insights/rules';
 import type { Insight, InsightRuleId } from '@/lib/proactive-insights/types';
+import {
+  formatSecretaryBeanInventoryBridgeDescription,
+  resolveSecretaryBeanInventoryBridgeSourceRef,
+} from '@/lib/secretary/format-bean-inventory-bridge-description';
 import { buildSourceRefHash } from '@/lib/secretary/source-ref-hash';
 import type { DerivedTaskDraft, SecretarySnapshot } from '@/lib/secretary/types';
 
@@ -35,24 +39,22 @@ export function deriveInsightBridgeTasks(snapshot: SecretarySnapshot): DerivedTa
     !insightAlreadyCovered(beanInventoryGap, snapshot) &&
     snapshot.itemsToOrder.length > 0
   ) {
-    const sourceRef = {
-      rule: 'insight_bridge',
-      insightRuleId: beanInventoryGap.ruleId,
-      beanPending: snapshot.operational.pendingBeanOrders.length,
-      reorderCount: snapshot.itemsToOrder.length,
-    };
-    tasks.push({
-      taskType: 'custom',
-      title: 'ตรวจ bean orders และสต็อกคลังที่เกี่ยวข้อง',
-      description: `${beanInventoryGap.summary} · สั่งซื้อคลัง ${snapshot.itemsToOrder.length} รายการ`,
-      priority: 'urgent',
-      module: 'bean_orders',
-      sourceRef,
-      sourceRefHash: buildSourceRefHash('insight_bridge_bean_inventory', sourceRef),
-      actionHref: `${localePrefix}/bean-orders`,
-      estimatedMinutes: 25,
-      metadata: { insightBridge: true, insightRuleId: beanInventoryGap.ruleId },
-    });
+    const description = formatSecretaryBeanInventoryBridgeDescription(snapshot);
+    if (description) {
+      const sourceRef = resolveSecretaryBeanInventoryBridgeSourceRef(snapshot);
+      tasks.push({
+        taskType: 'custom',
+        title: 'ตรวจ bean orders และสต็อกคลังที่เกี่ยวข้อง',
+        description,
+        priority: 'urgent',
+        module: 'bean_orders',
+        sourceRef,
+        sourceRefHash: buildSourceRefHash('insight_bridge_bean_inventory', sourceRef),
+        actionHref: `${localePrefix}/bean-orders`,
+        estimatedMinutes: 25,
+        metadata: { insightBridge: true, insightRuleId: beanInventoryGap.ruleId },
+      });
+    }
   }
 
   const actionableInsights = insights.filter(

@@ -43,4 +43,23 @@ describe('resolveSecretaryTaskDetailText', () => {
   test('returns null when description is empty', () => {
     expect(resolveSecretaryTaskDetailText(task())).toBeNull();
   });
+
+  test('falls back to stored description for non-bridge tasks when snapshot is provided', () => {
+    expect(
+      resolveSecretaryTaskDetailText(task({ description: 'รายละเอียดจาก description' }), {
+        operational: {
+          dateIso: '2026-08-29',
+          dateDisplay: '29/08/2026',
+          locale: 'th',
+          headcount: 0,
+          leaveCount: 0,
+          offCount: 0,
+          weeklyDays: [],
+          pendingBeanOrders: [],
+          upcomingHoliday: null,
+        },
+        itemsToOrder: [],
+      }),
+    ).toBe('รายละเอียดจาก description');
+  });
 });

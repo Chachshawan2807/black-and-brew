@@ -130,7 +130,7 @@ export default function SecretaryTaskOverlay({
   if (!task || !overlayKind) return null;
 
   const pending = isPending || parentPending;
-  const taskDetailText = resolveSecretaryTaskDetailText(task);
+  const taskDetailText = resolveSecretaryTaskDetailText(task, snapshot);
 
   const handleSaveManualTask = () => {
     const title = editTitle.trim();
