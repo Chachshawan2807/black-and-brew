@@ -1798,7 +1798,7 @@ export default function InventoryClient({
           <div className="w-full flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 md:px-2">
             <InventorySyncStatus state={savingState} />
 
-            <div className="flex items-center gap-2 border border-border/60 rounded-2xl bg-card/50 p-1">
+            <div className="flex w-fit self-end items-center gap-2 md:self-auto md:border md:border-border/60 md:rounded-2xl md:bg-card/50 md:p-1">
               <InventoryIconButton
                 onClick={handleUndo}
                 disabled={isReadOnly || undoStack.length === 0 || isSyncing}
