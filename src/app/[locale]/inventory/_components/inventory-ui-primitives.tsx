@@ -55,6 +55,10 @@ export const INVENTORY_SECONDARY_ACTION =
 export const INVENTORY_PASTEL_ACTION =
   'bb-pastel-surface shrink-0 inline-flex h-[3.25rem] sm:h-auto sm:min-h-[3.25rem] w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-normal text-black bb-shadow-sm bb-transition hover:brightness-[0.98] active:scale-[0.99] motion-reduce:active:scale-100';
 
+/** Pastel action buttons sharing one mobile row (e.g. withdraw + channel filter). */
+export const INVENTORY_PASTEL_ACTION_PAIR =
+  'flex-1 min-w-0 w-auto px-2.5 sm:flex-none sm:w-auto sm:px-4 text-[11px] sm:text-sm gap-1 sm:gap-2 h-auto min-h-[3.25rem] py-2 leading-tight';
+
 export const INVENTORY_FORM_LABEL =
   'text-[12px] font-normal text-muted-foreground ml-1 uppercase tracking-wider';
 

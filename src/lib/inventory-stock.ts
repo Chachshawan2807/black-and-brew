@@ -97,6 +97,42 @@ export function computeItemsToOrder<T extends InventoryStockFields>(
   });
 }
 
+export const INVENTORY_SOURCE_UNSPECIFIED_LABEL = 'ไม่ได้ระบุแหล่งที่มา';
+
+export function inventorySourceLabel(item: Pick<InventoryStockFields, 'source'>): string {
+  return item.source || INVENTORY_SOURCE_UNSPECIFIED_LABEL;
+}
+
+/** Unique ordering-channel labels across the full inventory grid. */
+export function getInventoryGridSources<T extends InventoryStockFields>(items: T[]): string[] {
+  return Array.from(new Set(items.map((item) => inventorySourceLabel(item))));
+}
+
+/** Filter warehouse grid rows by selected ordering channels. */
+export function filterInventoryItemsBySources<T extends InventoryStockFields>(
+  items: T[],
+  selectedSources: string[] = ['all'],
+): T[] {
+  if (selectedSources.includes('all')) return items;
+  return items.filter((item) => selectedSources.includes(inventorySourceLabel(item)));
+}
+
+export function toggleInventorySourceSelection(
+  previous: string[],
+  sourceId: string,
+  allId = 'all',
+): string[] {
+  if (sourceId === allId) return [allId];
+
+  let next = previous.filter((entry) => entry !== allId);
+  if (next.includes(sourceId)) {
+    next = next.filter((entry) => entry !== sourceId);
+  } else {
+    next = [...next, sourceId];
+  }
+  return next.length === 0 ? [allId] : next;
+}
+
 export function computePurchaseOrderDerivedState<T extends InventoryStockFields>(
   items: T[],
   selectedChannels: string[] = ['all'],
@@ -106,14 +142,13 @@ export function computePurchaseOrderDerivedState<T extends InventoryStockFields>
   },
 ) {
   const itemsToOrder = computeItemsToOrder(items);
-  const sourceLabel = (item: T) => item.source || 'ไม่ได้ระบุแหล่งที่มา';
-  const poSources = Array.from(new Set(itemsToOrder.map((item) => sourceLabel(item))));
+  const poSources = Array.from(new Set(itemsToOrder.map((item) => inventorySourceLabel(item))));
   const excludeFromAll = new Set(options?.excludeFromAllSources ?? []);
   const displayedPoItems = selectedChannels.includes('all')
-    ? itemsToOrder.filter((item) => !excludeFromAll.has(sourceLabel(item)))
-    : itemsToOrder.filter((item) => selectedChannels.includes(sourceLabel(item)));
+    ? itemsToOrder.filter((item) => !excludeFromAll.has(inventorySourceLabel(item)))
+    : itemsToOrder.filter((item) => selectedChannels.includes(inventorySourceLabel(item)));
   const allTabItemCount = itemsToOrder.filter(
-    (item) => !excludeFromAll.has(sourceLabel(item)),
+    (item) => !excludeFromAll.has(inventorySourceLabel(item)),
   ).length;
 
   return {

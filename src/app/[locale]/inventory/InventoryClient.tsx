@@ -8,6 +8,7 @@ import {
   INVENTORY_BTN_PRIMARY,
   INVENTORY_BTN_SECONDARY,
   INVENTORY_PASTEL_ACTION,
+  INVENTORY_PASTEL_ACTION_PAIR,
   InventoryEmptyState,
   InventoryIconButton,
   InventoryModalCloseButton,
@@ -30,7 +31,7 @@ import {
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { getClientSessionId } from '@/lib/client-session';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
-import { computePurchaseOrderDerivedState, formatInventoryNumericDisplay, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
+import { computePurchaseOrderDerivedState, filterInventoryItemsBySources, formatInventoryNumericDisplay, getInventoryGridSources, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { getInventoryItemDisplayOrder } from '@/lib/inventory-grid-search';
 import { applyWithdrawRequiredItemOrder } from '@/lib/inventory-withdraw-required-items';
@@ -49,6 +50,7 @@ import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { InventoryQuickActionBar } from './_components/InventoryQuickActionBar';
 import { InventoryModalPortal } from './_components/InventoryModalPortal';
 import { InventoryGridSearchBar } from './_components/InventoryGridSearchBar';
+import { InventoryGridSourceFilterButton, InventoryGridSourceFilterPanel } from './_components/InventoryGridSourceFilter';
 import {
   queueOfflineMutation,
   shouldQueueMutationError,
@@ -124,6 +126,22 @@ function normalizeCountPolicy(value: unknown): InventoryCountPolicy {
 function isManualOrderQty(item: InventoryItem): boolean {
   void item;
   return false;
+}
+
+function getInventoryGridEmptyMessage(
+  searchQuery: string,
+  sourceFilterActive: boolean,
+  selectedSources: string[],
+): string {
+  const trimmed = searchQuery.trim();
+  if (trimmed && sourceFilterActive) {
+    return `ไม่พบรายการที่ตรงกับ "${trimmed}" ในช่องทางที่เลือก`;
+  }
+  if (trimmed) {
+    return `ไม่พบรายการที่ตรงกับ "${trimmed}"`;
+  }
+  const labels = selectedSources.filter((source) => source !== 'all').join(', ');
+  return labels ? `ไม่มีรายการในช่องทาง ${labels}` : 'ไม่มีรายการในช่องทางที่เลือก';
 }
 
 function getInventoryCellDisplayValue(item: InventoryItem, col: ColumnDef, manualOrderQty: boolean) {
@@ -964,12 +982,21 @@ export default function InventoryClient({
   );
   const columnById = useMemo(() => new Map(columns.map((column) => [column.id, column])), [columns]);
   const [gridSearchQuery, setGridSearchQuery] = useState('');
+  const [gridSelectedSources, setGridSelectedSources] = useState<string[]>(['all']);
+  const [gridSourceFilterExpanded, setGridSourceFilterExpanded] = useState(false);
   const [scrollTargetId, setScrollTargetId] = useState<string | null>(null);
   const isGridSearchActive = gridSearchQuery.trim().length > 0;
-  const { visibleItems } = useInventoryGridFilter(items, gridSearchQuery);
+  const isGridSourceFilterActive = !gridSelectedSources.includes('all');
+  const isGridFilterActive = isGridSearchActive || isGridSourceFilterActive;
+  const gridSources = useMemo(() => getInventoryGridSources(items), [items]);
+  const sourceFilteredItems = useMemo(
+    () => filterInventoryItemsBySources(items, gridSelectedSources),
+    [items, gridSelectedSources],
+  );
+  const { visibleItems } = useInventoryGridFilter(sourceFilteredItems, gridSearchQuery);
   const sortableItemIds = useMemo(
-    () => (isGridSearchActive ? visibleItems : items).map((item) => item.id),
-    [items, visibleItems, isGridSearchActive],
+    () => (isGridFilterActive ? visibleItems : items).map((item) => item.id),
+    [items, visibleItems, isGridFilterActive],
   );
   const [loading, setLoading] = useState(false);
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced' | 'queued'>('idle');
@@ -1608,7 +1635,7 @@ export default function InventoryClient({
 
   async function handleDragEndRows(event: DragEndEvent) {
     if (blockIfReadOnly()) return;
-    if (isGridSearchActive) return;
+    if (isGridFilterActive) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const rollbackItems = [...items];
@@ -1876,35 +1903,55 @@ export default function InventoryClient({
                 เปิด Quick Action
               </button>
             ) : null}
-            <div className="flex flex-col-reverse sm:flex-row gap-2 w-full min-w-0">
-              <div className="min-w-0 flex-1">
-                <InventoryGridSearchBar
-                  gridSearchQuery={gridSearchQuery}
-                  setGridSearchQuery={setGridSearchQuery}
-                  filteredCount={visibleItems.length}
-                  totalCount={items.length}
-                  onEnter={handleGridSearchEnter}
-                />
+            <div className="flex flex-col gap-2 w-full min-w-0">
+              <div className="flex flex-row gap-2 w-full min-w-0 sm:w-auto sm:self-end">
+                {gridSources.length > 0 ? (
+                  <InventoryGridSourceFilterButton
+                    filteredCount={sourceFilteredItems.length}
+                    expanded={gridSourceFilterExpanded}
+                    onExpandedChange={setGridSourceFilterExpanded}
+                    isActive={isGridSourceFilterActive}
+                  />
+                ) : null}
+                <HintTooltip tip="ดูรายการสินค้าประเภทต้องเบิกทั้งหมด">
+                  <button
+                    type="button"
+                    onClick={() => setShowWithdrawRequiredModal(true)}
+                    onMouseEnter={preloadWithdrawRequiredItemsModal}
+                    onFocus={preloadWithdrawRequiredItemsModal}
+                    aria-haspopup="dialog"
+                    className={cn(
+                      INVENTORY_PASTEL_ACTION,
+                      INVENTORY_PASTEL_ACTION_PAIR,
+                      bbPastelClass('bg-[#dbeafe]'),
+                    )}
+                  >
+                    <ClipboardList className="w-4 h-4 shrink-0" strokeWidth={1.5} aria-hidden />
+                    <span className="min-w-0 text-center">รายการที่ต้องเบิก</span>
+                    <span className={cn(bbPastelClass('bg-[#bfdbfe]/60'), 'shrink-0 rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] tabular-nums')}>
+                      {withdrawRequiredItems.length}
+                    </span>
+                  </button>
+                </HintTooltip>
               </div>
-              <HintTooltip tip="ดูรายการสินค้าประเภทต้องเบิกทั้งหมด">
-                <button
-                  type="button"
-                  onClick={() => setShowWithdrawRequiredModal(true)}
-                  onMouseEnter={preloadWithdrawRequiredItemsModal}
-                  onFocus={preloadWithdrawRequiredItemsModal}
-                  aria-haspopup="dialog"
-                  className={cn(
-                    INVENTORY_PASTEL_ACTION,
-                    bbPastelClass('bg-[#dbeafe]'),
-                  )}
-                >
-                  <ClipboardList className="w-4 h-4 shrink-0" strokeWidth={1.5} aria-hidden />
-                  <span className="whitespace-nowrap">รายการที่ต้องเบิก</span>
-                  <span className={cn(bbPastelClass('bg-[#bfdbfe]/60'), 'shrink-0 rounded-full px-2 py-0.5 text-[11px] tabular-nums')}>
-                    {withdrawRequiredItems.length}
-                  </span>
-                </button>
-              </HintTooltip>
+              <InventoryGridSearchBar
+                gridSearchQuery={gridSearchQuery}
+                setGridSearchQuery={setGridSearchQuery}
+                filteredCount={visibleItems.length}
+                totalCount={sourceFilteredItems.length}
+                onEnter={handleGridSearchEnter}
+              />
+              {gridSources.length > 0 ? (
+                <InventoryGridSourceFilterPanel
+                  items={items}
+                  sources={gridSources}
+                  selectedSources={gridSelectedSources}
+                  onSelectedSourcesChange={setGridSelectedSources}
+                  filteredCount={sourceFilteredItems.length}
+                  expanded={gridSourceFilterExpanded}
+                  onExpandedChange={setGridSourceFilterExpanded}
+                />
+              ) : null}
             </div>
           </div>
 
@@ -1925,7 +1972,7 @@ export default function InventoryClient({
               ) : visibleItems.length === 0 ? (
                 <InventoryEmptyState
                   icon={<Package className="w-8 h-8" strokeWidth={ICON_STROKE} />}
-                  message={`ไม่พบรายการที่ตรงกับ "${gridSearchQuery.trim()}"`}
+                  message={getInventoryGridEmptyMessage(gridSearchQuery, isGridSourceFilterActive, gridSelectedSources)}
                 />
               ) : (
                 <SortableContext items={sortableItemIds} strategy={verticalListSortingStrategy}>
@@ -1941,7 +1988,7 @@ export default function InventoryClient({
                         requestDelete={setDeleteId}
                         handleFocus={handleFocus}
                         totalItems={items.length}
-                        dragDisabled={isGridSearchActive}
+                        dragDisabled={isGridFilterActive}
                       />
                     ))}
                   </div>
@@ -1958,7 +2005,7 @@ export default function InventoryClient({
               ) : visibleItems.length === 0 ? (
                 <InventoryEmptyState
                   icon={<Package className="w-8 h-8" strokeWidth={ICON_STROKE} />}
-                  message={`ไม่พบรายการที่ตรงกับ "${gridSearchQuery.trim()}"`}
+                  message={getInventoryGridEmptyMessage(gridSearchQuery, isGridSourceFilterActive, gridSelectedSources)}
                 />
               ) : (
                 <SortableContext items={sortableItemIds} strategy={verticalListSortingStrategy}>
@@ -1975,7 +2022,7 @@ export default function InventoryClient({
                         requestDelete={setDeleteId}
                         handleFocus={handleFocus}
                         getStockColorClass={getStockColorClass}
-                        dragDisabled={isGridSearchActive}
+                        dragDisabled={isGridFilterActive}
                       />
                     ))}
                   </div>
