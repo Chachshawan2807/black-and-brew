@@ -121,7 +121,9 @@ export function formatDateRangePickerLabel(
   if (!startLabel && endLabel) return `${startPlaceholder}${sep}${endLabel}`;
   if (!startParts || !endParts) return `${startLabel}${sep}${endLabel}`;
 
-  if (calendarPartsYmd(startParts) === calendarPartsYmd(endParts)) return startLabel;
+  if (calendarPartsYmd(startParts) === calendarPartsYmd(endParts)) {
+    return formatCalendarPartsDdMmYyyy(startParts);
+  }
 
   if (startParts.m === endParts.m && startParts.y === endParts.y) {
     const startDay = String(startParts.d).padStart(2, '0');
