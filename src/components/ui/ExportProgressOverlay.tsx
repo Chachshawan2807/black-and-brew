@@ -4,20 +4,26 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { fadeOverlay, modalContent, withReducedMotion } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { EXPORT_PROGRESS_OVERLAY_Z_CLASS } from '@/lib/floating-action-layout';
-import { ImageDown } from '@/lib/icons';
+import { ImageDown, Save } from '@/lib/icons';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { cn } from '@/lib/utils';
+
+export type ExportProgressOverlayVariant = 'image-export' | 'save';
 
 type ExportProgressOverlayProps = {
   visible: boolean;
   title?: string;
   subtitle?: string;
+  variant?: ExportProgressOverlayVariant;
 };
+
+const OVERLAY_ICON_CLASS = 'h-6 w-6 shrink-0 text-foreground';
 
 export function ExportProgressOverlay({
   visible,
   title = 'กำลังบันทึกรูปภาพ',
   subtitle = 'กรุณารอสักครู่...',
+  variant = 'image-export',
 }: ExportProgressOverlayProps) {
   const reduced = usePrefersReducedMotion();
   const overlay = withReducedMotion(fadeOverlay, reduced);
@@ -75,11 +81,11 @@ export function ExportProgressOverlay({
                   animate={reduced ? undefined : { y: [0, -1, 0] }}
                   transition={{ duration: 2.2, repeat: reduced ? 0 : Infinity, ease: 'easeInOut', delay: 0.08 }}
                 >
-                  <ImageDown
-                    className="h-6 w-6 shrink-0 text-foreground"
-                    strokeWidth={1.75}
-                    aria-hidden
-                  />
+                  {variant === 'save' ? (
+                    <Save className={OVERLAY_ICON_CLASS} strokeWidth={1.75} aria-hidden />
+                  ) : (
+                    <ImageDown className={OVERLAY_ICON_CLASS} strokeWidth={1.75} aria-hidden />
+                  )}
                 </motion.div>
               </div>
 

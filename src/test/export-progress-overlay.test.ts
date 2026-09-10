@@ -21,4 +21,21 @@ describe('ExportProgressOverlay', () => {
     expect(overlay).not.toContain('onClose');
     expect(overlay).not.toContain('setShow');
   });
+
+  test('save variant uses Save icon for data persistence overlays', () => {
+    const overlay = readFileSync(
+      resolve(ROOT, 'src/components/ui/ExportProgressOverlay.tsx'),
+      'utf-8',
+    );
+    const schedule = readFileSync(
+      resolve(ROOT, 'src/app/[locale]/schedule/ScheduleClient.tsx'),
+      'utf-8',
+    );
+
+    expect(overlay).toContain("variant === 'save'");
+    expect(overlay).toContain('<Save');
+    expect(overlay).toContain('<ImageDown');
+    expect(schedule).toMatch(/visible=\{loading\}[\s\S]*variant="save"/);
+    expect(schedule).toContain('title="กำลังบันทึกข้อมูล"');
+  });
 });

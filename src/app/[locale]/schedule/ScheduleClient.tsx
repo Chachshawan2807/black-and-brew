@@ -1905,7 +1905,8 @@ export default function ScheduleClient({
       />
       <ExportProgressOverlay
         visible={loading}
-        title="กำลังดำเนินการ"
+        variant="save"
+        title="กำลังบันทึกข้อมูล"
         subtitle="กรุณารอสักครู่..."
       />
 
