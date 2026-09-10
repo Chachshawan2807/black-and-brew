@@ -25,7 +25,7 @@ function SidebarLogo({
     <div
       className={cn(
         'relative z-[110] min-w-0 bb-sidebar-logo',
-        sidebarOpen ? 'h-[90px] w-full max-w-[calc(100%-0.5rem)]' : 'h-14 w-14 mx-auto',
+        sidebarOpen ? 'h-[90px] w-full max-w-[calc(100%-2.5rem)]' : 'h-14 w-14 mx-auto',
       )}
     >
       <motion.div
@@ -72,16 +72,16 @@ export function Sidebar() {
       animate={surfaceMotion.animate}
       transition={surfaceMotion.transition}
       className={cn(
-        'fixed top-0 left-0 z-[100] h-[100svh] text-foreground transition-[width] [transition-duration:var(--bb-duration-slow)] [transition-timing-function:var(--bb-ease-out)] motion-reduce:transition-none bg-transparent border-none md:flex md:border-r md:border-black/5 dark:md:border-white/10',
+        'fixed top-0 left-0 z-[100] h-[100svh] overflow-visible text-foreground transition-[width] [transition-duration:var(--bb-duration-slow)] [transition-timing-function:var(--bb-ease-out)] motion-reduce:transition-none bg-transparent border-none md:flex md:border-r md:border-black/5 dark:md:border-white/10',
         sidebarOpen === false
           ? 'md:w-20'
           : 'md:w-[280px]'
       )}
     >
-      <div className="relative h-full flex flex-col pl-2 pr-3 py-4 overflow-hidden bg-[var(--sidebar-surface)] md:bg-transparent w-full">
+      <div className="relative h-full flex flex-col overflow-visible pl-2 pr-3 py-4 bg-[var(--sidebar-surface)] md:bg-transparent w-full">
         <div
           className={cn(
-            'relative mb-4 flex items-center transition-[justify-content] [transition-duration:var(--bb-duration-slow)] [transition-timing-function:var(--bb-ease-out)] motion-reduce:transition-none',
+            'relative z-[120] mb-4 flex items-center overflow-visible transition-[justify-content] [transition-duration:var(--bb-duration-slow)] [transition-timing-function:var(--bb-ease-out)] motion-reduce:transition-none',
             sidebarOpen === false ? 'justify-center' : 'justify-start pr-9',
           )}
         >

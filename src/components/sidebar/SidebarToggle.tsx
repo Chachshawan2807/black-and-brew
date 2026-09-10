@@ -12,7 +12,14 @@ interface SidebarToggleProps {
 
 export function SidebarToggle({ isOpen, setIsOpen }: SidebarToggleProps) {
   return (
-    <div className="invisible lg:visible absolute top-1/2 right-0 z-[9999] -translate-y-1/2 translate-x-1/2">
+    <div
+      className={cn(
+        "invisible lg:visible absolute z-[130] shrink-0 top-1/2 -translate-y-1/2",
+        isOpen === false
+          ? "left-full ml-1.5"
+          : "right-0",
+      )}
+    >
       <HintTooltip tip={isOpen === false ? "ขยายเมนูด้านข้าง" : "ย่อเมนูด้านข้าง"} side="right">
         <Button
           onClick={() => setIsOpen?.()}
