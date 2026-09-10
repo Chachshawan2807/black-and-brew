@@ -93,6 +93,46 @@ export function bangkokIsoToThaiDisplay(isoDate: string): string {
   return `${d}/${m}/${y}`;
 }
 
+function formatCalendarPartsDdMmYyyy({ y, m, d }: CalendarParts): string {
+  return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
+}
+
+function calendarPartsYmd({ y, m, d }: CalendarParts): string {
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+/** Trigger label for ClickableDateRangePicker (placeholders + compact hyphenated range). */
+export function formatDateRangePickerLabel(
+  startValue?: string,
+  endValue?: string,
+  startPlaceholder = 'เริ่ม',
+  endPlaceholder = 'สิ้นสุด',
+): string {
+  const sep = '-';
+  const empty = `${startPlaceholder}${sep}${endPlaceholder}`;
+
+  const startParts = startValue ? parseCalendarParts(startValue) : null;
+  const endParts = endValue ? parseCalendarParts(endValue) : null;
+  const startLabel = startParts ? formatCalendarPartsDdMmYyyy(startParts) : null;
+  const endLabel = endParts ? formatCalendarPartsDdMmYyyy(endParts) : null;
+
+  if (!startLabel && !endLabel) return empty;
+  if (startLabel && !endLabel) return `${startLabel}${sep}${endPlaceholder}`;
+  if (!startLabel && endLabel) return `${startPlaceholder}${sep}${endLabel}`;
+  if (!startParts || !endParts) return `${startLabel}${sep}${endLabel}`;
+
+  if (calendarPartsYmd(startParts) === calendarPartsYmd(endParts)) return startLabel;
+
+  if (startParts.m === endParts.m && startParts.y === endParts.y) {
+    const startDay = String(startParts.d).padStart(2, '0');
+    const endDay = String(endParts.d).padStart(2, '0');
+    const month = String(startParts.m).padStart(2, '0');
+    return `${startDay}${sep}${endDay}/${month}/${startParts.y}`;
+  }
+
+  return `${startLabel}${sep}${endLabel}`;
+}
+
 /** DD/MM/YYYY with abbreviated Thai weekday (e.g. "21/08/2026 ศ."). */
 export function formatScheduleNotificationDateDisplay(input: Date | string): string {
   const parts = parseCalendarParts(input);

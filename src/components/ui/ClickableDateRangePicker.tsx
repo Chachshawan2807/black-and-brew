@@ -21,7 +21,7 @@ import {
   isWithinInterval,
 } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
+import { formatDateRangePickerLabel } from '@/lib/date-utils';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import {
@@ -67,11 +67,6 @@ function parseDate(value?: string): Date | null {
   } catch {
     return null;
   }
-}
-
-function formatDisplayDate(value?: string): string | null {
-  const parsed = parseDate(value);
-  return parsed ? format(parsed, THAI_DISPLAY_DATE_FORMAT) : null;
 }
 
 export function ClickableDateRangePicker({
@@ -262,21 +257,10 @@ export function ClickableDateRangePicker({
     setViewDate(prev => addMonths(prev, 1));
   };
 
-  const displayValue = React.useMemo(() => {
-    const startLabel = formatDisplayDate(startValue);
-    const endLabel = formatDisplayDate(endValue);
-
-    if (startLabel && endLabel) {
-      return `${startLabel} ${endLabel}`;
-    }
-    if (startLabel) {
-      return `${startLabel} ${endPlaceholder}`;
-    }
-    if (endLabel) {
-      return `${startPlaceholder} ${endLabel}`;
-    }
-    return `${startPlaceholder} ${endPlaceholder}`;
-  }, [startValue, endValue, startPlaceholder, endPlaceholder]);
+  const displayValue = React.useMemo(
+    () => formatDateRangePickerLabel(startValue, endValue, startPlaceholder, endPlaceholder),
+    [startValue, endValue, startPlaceholder, endPlaceholder],
+  );
 
   const monthStart = startOfMonth(viewDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: endOfMonth(viewDate) });
