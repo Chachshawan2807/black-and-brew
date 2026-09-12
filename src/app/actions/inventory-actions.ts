@@ -73,11 +73,27 @@ type InventoryAuditOptions = {
   notificationContext?: 'inventory_count' | 'inventory';
   /** Tags audit logs with the UI origin that triggered the stock change. */
   notificationSource?: InventoryNotificationSource;
+  /** Client-known item name when server meta fetch is unavailable. */
+  itemName?: string | null;
   /** Client-known value before a field edit avoids a pre-mutation SELECT on the critical path. */
   previousFieldValue?: string | number | null;
   /** Business date for IN/OUT ledger rows (ISO UTC). */
   transactionAt?: string;
 };
+
+function resolveInventoryAuditItemName(
+  itemMeta: { name: string } | null | undefined,
+  options?: InventoryAuditOptions,
+): string | null {
+  return itemMeta?.name ?? options?.itemName ?? null;
+}
+
+function buildStockAuditFieldChanges(
+  oldStock: number | null,
+  newStock: number | null,
+): { field: string; old_value: number | null; new_value: number | null }[] {
+  return [{ field: 'stock', old_value: oldStock, new_value: newStock }];
+}
 
 type InventoryLifecycleType = 'ADD' | 'DELETE';
 
@@ -242,26 +258,22 @@ export async function recordTransaction(
 
     deferInventorySideEffects('recordTransaction', async () => {
       const itemMeta = await fetchInventoryItemAuditMeta(productId);
+      const itemName = resolveInventoryAuditItemName(itemMeta, auditOptions);
       await recordDataChange({
         action: 'UPDATE',
         module: 'inventory',
         entityType: 'inventory_item',
         entityId: productId,
-        entityLabel: itemMeta?.name ?? null,
-        fieldChanges: [
-          {
-            field: 'stock',
-            old_value: oldStock,
-            new_value: newStock,
-          },
-        ],
+        entityLabel: itemName,
+        fieldChanges: buildStockAuditFieldChanges(oldStock, newStock),
         metadata: withAuditMetadata(
           {
             operation: 'record_transaction',
             type,
             quantity,
             note,
-            itemName: itemMeta?.name ?? null,
+            itemName,
+            newStock,
             order_point: data?.order_point ?? itemMeta?.order_point ?? null,
           },
           auditOptions
@@ -366,19 +378,14 @@ export async function recordBulkInventoryTransactions(
 
           pendingAudits.push(async () => {
             const itemMeta = await fetchInventoryItemAuditMeta(entry.itemId);
+            const itemName = resolveInventoryAuditItemName(itemMeta, auditOptions);
             await recordDataChange({
               action: 'UPDATE',
               module: 'inventory',
               entityType: 'inventory_item',
               entityId: entry.itemId,
-              entityLabel: itemMeta?.name ?? null,
-              fieldChanges: [
-                {
-                  field: 'stock',
-                  old_value: oldStock,
-                  new_value: newStock,
-                },
-              ],
+              entityLabel: itemName,
+              fieldChanges: buildStockAuditFieldChanges(oldStock, newStock),
               metadata: withAuditMetadata(
                 {
                   operation: 'record_transaction',
@@ -386,7 +393,8 @@ export async function recordBulkInventoryTransactions(
                   quantity: entry.quantity,
                   note,
                   bulk: true,
-                  itemName: itemMeta?.name ?? null,
+                  itemName,
+                  newStock,
                   order_point: data?.order_point ?? itemMeta?.order_point ?? null,
                 },
                 auditOptions,
@@ -491,22 +499,21 @@ export async function updateInventoryStock(
 
     deferInventorySideEffects('updateInventoryStock', async () => {
       const itemMeta = await fetchInventoryItemAuditMeta(itemId);
+      const itemName = resolveInventoryAuditItemName(itemMeta, options);
       await recordDataChange({
         action: 'UPDATE',
         module: 'inventory',
         entityType: 'inventory_item',
         entityId: itemId,
-        entityLabel: itemMeta?.name ?? null,
-        fieldChanges: computeFieldChanges(
-          { stock: oldStock },
-          { stock: newStock }
-        ),
+        entityLabel: itemName,
+        fieldChanges: buildStockAuditFieldChanges(oldStock, newStock),
         metadata: withAuditMetadata(
           {
             operation: 'set_stock',
             note,
             recordHistory,
-            itemName: itemMeta?.name ?? null,
+            itemName,
+            newStock,
             order_point: itemMeta?.order_point ?? null,
           },
           options

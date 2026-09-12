@@ -125,6 +125,7 @@ async function recordBranchWithdrawInventoryNotifications(
           ...metadataBase,
           quantity: line.qtyBranch1,
           itemName: item.name,
+          newStock,
           order_point: item.order_point,
         },
       }),

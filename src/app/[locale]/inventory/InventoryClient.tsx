@@ -1551,6 +1551,7 @@ export default function InventoryClient({
         const result = await updateInventoryStock(id, sanitizedValue as number, 'Warehouse edit', {
           clientSessionId: getClientSessionId(),
           notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+          itemName: original?.name ?? itemsRef.current.find((item) => item.id === id)?.name ?? null,
         });
         if (!result.success) {
           if (shouldQueueMutationResult(result)) {

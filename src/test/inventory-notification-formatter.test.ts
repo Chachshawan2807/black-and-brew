@@ -7,6 +7,7 @@ import {
   formatFieldChange,
   formatInventoryNotification,
   resolveNotificationPriority,
+  resolveNotificationStockLevel,
   summarizeFieldChanges,
 } from '@/lib/inventory-notification-formatter';
 
@@ -225,6 +226,54 @@ describe('formatInventoryNotification stock operations', () => {
     );
     expect(n.title).toBe('⇄ ถ้วยกระดาษ');
     expect(n.summary).toBe('คงเหลือ 12');
+  });
+
+  test('set_stock uses metadata newStock when field_changes is empty', () => {
+    const n = formatInventoryNotification(
+      makeRow({
+        entity_label: null,
+        field_changes: [],
+        metadata: {
+          operation: 'set_stock',
+          newStock: 8,
+          itemName: 'ใบไทม์',
+          notificationSource: 'inventory_quick_action_bar',
+        },
+      }),
+      'th'
+    );
+    expect(n.title).toBe('⇄ ใบไทม์');
+    expect(n.summary).toBe('คงเหลือ 8');
+    expect(n.summary).not.toContain('อัปเดตสต็อกแล้ว');
+  });
+
+  test('set_stock never falls back to generic stock updated copy', () => {
+    const n = formatInventoryNotification(
+      makeRow({
+        entity_label: 'ใบโรสแมรี่',
+        field_changes: [{ field: 'stock', old_value: 3, new_value: null }],
+        metadata: { operation: 'set_stock' },
+      }),
+      'th'
+    );
+    expect(n.summary).toBe('⇄ ปรับจำนวนคงเหลือ');
+    expect(n.summary).not.toContain('อัปเดตสต็อกแล้ว');
+  });
+
+  test('resolveNotificationStockLevel derives IN balance from metadata quantity', () => {
+    expect(
+      resolveNotificationStockLevel(
+        makeRow({
+          field_changes: [{ field: 'stock', old_value: null, new_value: null }],
+          metadata: {
+            operation: 'record_transaction',
+            type: 'IN',
+            quantity: 2,
+            newStock: 2,
+          },
+        }),
+      ),
+    ).toBe(2);
   });
 
   test('hides inventory sort_order from stock-in notification summary', () => {

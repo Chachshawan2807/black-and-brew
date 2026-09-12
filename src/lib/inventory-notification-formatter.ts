@@ -707,6 +707,72 @@ export function resolveEntityName(row: DataChangeLogRow, isTh: boolean): string 
 
 
 
+function parseNotificationStockNumber(value: unknown): number | null {
+
+  if (value == null) return null;
+
+  const parsed = Number(value);
+
+  return Number.isNaN(parsed) ? null : parsed;
+
+}
+
+
+
+/** Resolve post-change stock for notification summaries from field changes and audit metadata. */
+
+export function resolveNotificationStockLevel(row: DataChangeLogRow): number | null {
+
+  const resolved = withResolvedFieldChanges(row);
+
+  const stockChange = resolved.field_changes?.find((change) => change.field === 'stock');
+
+  const fromChange = parseNotificationStockNumber(stockChange?.new_value);
+
+  if (fromChange != null) return fromChange;
+
+
+
+  const meta = row.metadata ?? {};
+
+  const fromMeta = parseNotificationStockNumber(meta.newStock ?? meta.new_stock);
+
+  if (fromMeta != null) return fromMeta;
+
+
+
+  const operation = detectStockOperation(row);
+
+  const qty = parseNotificationStockNumber(meta.quantity);
+
+  if (qty == null) return null;
+
+
+
+  const oldStock = parseNotificationStockNumber(stockChange?.old_value);
+
+  if (operation === 'IN') {
+
+    if (oldStock != null) return oldStock + qty;
+
+    return qty;
+
+  }
+
+  if (operation === 'OUT' && oldStock != null) {
+
+    return oldStock - qty;
+
+  }
+
+
+
+  return null;
+
+}
+
+
+
 function buildStockOperationSummary(
 
   row: DataChangeLogRow,
@@ -719,15 +785,7 @@ function buildStockOperationSummary(
 
   const meta = row.metadata ?? {};
 
-  const stockChange = row.field_changes?.find((c) => c.field === 'stock');
-
-  const currentStock =
-
-    stockChange?.new_value != null && !Number.isNaN(Number(stockChange.new_value))
-
-      ? Number(stockChange.new_value)
-
-      : null;
+  const currentStock = resolveNotificationStockLevel(row);
 
   const remainingLabel =
 
@@ -757,7 +815,7 @@ function buildStockOperationSummary(
 
   }
 
-  if (operation === 'ADJUST' && stockChange) {
+  if (operation === 'ADJUST') {
 
     if (remainingLabel) return remainingLabel;
 
@@ -767,7 +825,7 @@ function buildStockOperationSummary(
 
   if (remainingLabel) return remainingLabel;
 
-  return isTh ? 'อัปเดตสต็อกแล้ว' : 'Stock updated';
+  return isTh ? '⇄ ปรับจำนวนคงเหลือ' : '⇄ Stock level adjusted';
 
 }
 

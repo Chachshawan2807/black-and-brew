@@ -323,9 +323,11 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       if (bulkQuickType === 'ADJUST') {
         const results = await Promise.all(
           payload.map(async (entry) => {
+            const itemName = items.find((item) => item.id === entry.itemId)?.name ?? null;
             const result = await updateInventoryStock(entry.itemId, entry.quantity, bulkNote, {
               clientSessionId: getClientSessionId(),
               notificationSource,
+              itemName,
             });
             return {
               itemId: entry.itemId,
@@ -431,6 +433,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
             clientSessionId: getClientSessionId(),
             notificationSource,
             transactionAt,
+            itemName: item.name,
           });
 
           if (!res.success) {
@@ -606,6 +609,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
             const res = await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
               clientSessionId: getClientSessionId(),
               notificationSource,
+              itemName: item.name,
             });
 
             if (!res.success) {
