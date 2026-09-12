@@ -1,8 +1,16 @@
 import { describe, expect, test } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { shouldHideMobileFabTriggersForOverlay } from '@/lib/floating-action-layout';
 
 describe('Inventory Quick Action FAB', () => {
+  test('shouldHideMobileFabTriggersForOverlay is true only on mobile with an open overlay', () => {
+    expect(shouldHideMobileFabTriggersForOverlay(true, true)).toBe(true);
+    expect(shouldHideMobileFabTriggersForOverlay(true, false)).toBe(false);
+    expect(shouldHideMobileFabTriggersForOverlay(false, true)).toBe(false);
+    expect(shouldHideMobileFabTriggersForOverlay(false, false)).toBe(false);
+  });
+
   test('quick action FAB panel stays vertically centered on mobile when bulk queue grows', () => {
     const fabCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
@@ -441,7 +449,31 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).toContain('!fabMobileBulkShell');
   });
 
-  test('quick action FAB keeps mobile panel centered when keyboard is open', () => {
+  test('mobile FAB triggers hide while quick action overlay is open (Android keyboard safe)', () => {
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+    const hideCode = fs.readFileSync(
+      path.resolve(__dirname, '../components/floating/FabStackHideToggle.tsx'),
+      'utf-8',
+    );
+    const layoutCode = fs.readFileSync(
+      path.resolve(__dirname, '../lib/floating-action-layout.ts'),
+      'utf-8',
+    );
+
+    expect(layoutCode).toContain('shouldHideMobileFabTriggersForOverlay');
+    expect(fabCode).toContain('shouldHideMobileFabTriggersForOverlay');
+    expect(fabCode).toMatch(
+      /shouldHideMobileFabTriggersForOverlay\(isMobile,\s*isPanelRendered\)/,
+    );
+    expect(hideCode).toContain('shouldHideMobileFabTriggersForOverlay');
+    expect(hideCode).toContain("isOpen('quick-action')");
+    expect(hideCode).toContain("isOpen('notification')");
+  });
+
+  test('quick action FAB anchors to visual viewport when Android keyboard is open', () => {
     const fabCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
       'utf-8',
@@ -451,16 +483,13 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
 
-    expect(fabCode).not.toContain('mobileKeyboardSheet');
-    expect(fabCode).not.toContain('getMobileQuickActionKeyboardSheetBackdropStyle');
-    expect(fabCode).not.toContain('getMobileQuickActionKeyboardSheetPanelStyle');
+    expect(fabCode).toContain('mobileKeyboardSheet');
+    expect(fabCode).toContain('getMobileQuickActionKeyboardSheetBackdropStyle');
+    expect(fabCode).toContain('getMobileQuickActionKeyboardSheetPanelStyle');
     expect(fabCode).toContain('getModalBackdropKeyboardAwareStyle');
     expect(fabCode).toContain('getModalContentKeyboardAwareStyle');
-    expect(fabCode).toMatch(/FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS/);
-    expect(fabCode).not.toMatch(/!mobileKeyboardSheet && 'isolate'/);
+    expect(fabCode).toMatch(/!mobileKeyboardSheet && FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS/);
     expect(fabCode).toContain("verticalAlign: 'center'");
-    expect(fabCode).not.toContain('keyboardOpenOnMobile');
-    expect(fabCode).not.toContain('!keyboardOpenOnMobile && FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS');
     expect(fabCode).toContain('document.body.style.overflow = \'hidden\'');
     expect(barCode).toContain('shouldPortalQuickSearchSuggestions');
     expect(barCode).toContain('shouldCollapseBulkQueueForMobileSearch');

@@ -10,20 +10,33 @@ import {
   FAB_HIDE_TOGGLE_SHELL,
   FAB_HIDE_TOGGLE_SIZE_CLASS,
   FAB_RIGHT_CLASS,
+  shouldHideMobileFabTriggersForOverlay,
 } from '@/lib/floating-action-layout';
 import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { useMaxMd } from '@/hooks/use-max-md';
 
 export function FabStackHideToggle() {
-  const { fabStackHidden, fabStackSuppressed, toggleFabStackHidden } = useFloatingOverlay();
+  const {
+    fabStackHidden,
+    fabStackSuppressed,
+    toggleFabStackHidden,
+    isOpen,
+  } = useFloatingOverlay();
+  const maxMd = useMaxMd();
+  const isMobile = maxMd === true;
   const [isMounted, setIsMounted] = useState(false);
+  const hideForMobileOverlay = shouldHideMobileFabTriggersForOverlay(
+    isMobile,
+    isOpen('quick-action') || isOpen('notification'),
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
     setIsMounted(true);
   }, []);
 
-  if (!isMounted || fabStackSuppressed) return null;
+  if (!isMounted || fabStackSuppressed || hideForMobileOverlay) return null;
 
   return (
     <HintTooltip

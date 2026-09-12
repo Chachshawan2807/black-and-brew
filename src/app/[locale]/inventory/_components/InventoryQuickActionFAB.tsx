@@ -32,7 +32,8 @@ import {
   FAB_OUTLINED_SHELL,
   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
   FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
-  FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS } from '@/lib/floating-action-layout';
+  FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS,
+  shouldHideMobileFabTriggersForOverlay } from '@/lib/floating-action-layout';
 import {
   INVENTORY_QUICK_ACTION_HOVER,
   inventoryQuickActionTypeColors } from '@/lib/shift-colors';
@@ -41,7 +42,9 @@ import {
   getFabPanelKeyboardAwareStyle,
   getFabMobileBulkPanelStyle,
   getModalBackdropKeyboardAwareStyle,
-  getModalContentKeyboardAwareStyle } from '@/lib/keyboard-aware-panel-style';
+  getModalContentKeyboardAwareStyle,
+  getMobileQuickActionKeyboardSheetBackdropStyle,
+  getMobileQuickActionKeyboardSheetPanelStyle } from '@/lib/keyboard-aware-panel-style';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { useMaxMd } from '@/hooks/use-max-md';
 import { FabFadePresence } from '@/components/floating/FabFadePresence';
@@ -98,13 +101,19 @@ export default function InventoryQuickActionFAB() {
   const isDesktop = maxMd === false;
   const motionPresets = useInventoryMotion();
   const viewportInsets = useVisualViewportInsets(isMounted && isPanelRendered);
+  const mobileKeyboardSheet = isMobile && viewportInsets.isKeyboardOpen;
   const mobileBackdropStyle = isMobile
-    ? getModalBackdropKeyboardAwareStyle({
-        insets: viewportInsets,
-        verticalAlign: 'center' })
+    ? mobileKeyboardSheet
+      ? getMobileQuickActionKeyboardSheetBackdropStyle(viewportInsets)
+      : getModalBackdropKeyboardAwareStyle({
+          insets: viewportInsets,
+          verticalAlign: 'center',
+        })
     : undefined;
   const mobilePanelStyle = isMobile
-    ? getModalContentKeyboardAwareStyle({ insets: viewportInsets })
+    ? mobileKeyboardSheet
+      ? getMobileQuickActionKeyboardSheetPanelStyle(viewportInsets)
+      : getModalContentKeyboardAwareStyle({ insets: viewportInsets })
     : undefined;
   const desktopPanelStyle = isDesktop
     ? getFabPanelKeyboardAwareStyle({ insets: viewportInsets })
@@ -212,6 +221,7 @@ export default function InventoryQuickActionFAB() {
     fabStackHidden ||
     fabStackSuppressed ||
     isAnyOtherOpen('quick-action') ||
+    shouldHideMobileFabTriggersForOverlay(isMobile, isPanelRendered) ||
     showAddModal ||
     showHistoryModal ||
     showPurchaseOrderModal;
@@ -360,7 +370,7 @@ export default function InventoryQuickActionFAB() {
               className={cn(
                 'z-[199] md:contents',
                 'max-md:fixed max-md:inset-0',
-                FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
+                !mobileKeyboardSheet && FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
               )}
               style={mobileBackdropStyle}
             >

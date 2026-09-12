@@ -1,79 +1,60 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import {
+  computeVisualViewportInsets,
+  DEFAULT_VISUAL_VIEWPORT_INSETS,
+  nextLayoutHeightBaseline,
+  type VisualViewportInsets,
+} from '@/lib/visual-viewport-insets';
 
-export type VisualViewportInsets = {
-  /** Pixels obscured at the bottom (keyboard, browser chrome). */
-  bottomInset: number;
-  /** Top offset of the visible viewport within the layout viewport. */
-  offsetTop: number;
-  /** Left offset of the visible viewport within the layout viewport (iOS keyboard pan). */
-  offsetLeft: number;
-  /** Height of the visible viewport. */
-  visibleHeight: number;
-  /** Width of the visible viewport. */
-  visibleWidth: number;
-  /** Software keyboard is likely open. */
-  isKeyboardOpen: boolean;
-};
+export type { VisualViewportInsets };
 
-const KEYBOARD_OPEN_THRESHOLD_PX = 50;
-
-const DEFAULT_INSETS: VisualViewportInsets = {
-  bottomInset: 0,
-  offsetTop: 0,
-  offsetLeft: 0,
-  visibleHeight: 0,
-  visibleWidth: 0,
-  isKeyboardOpen: false,
-};
+let layoutHeightBaseline = 0;
 
 function readVisualViewportInsets(): VisualViewportInsets {
-  if (typeof window === 'undefined') return DEFAULT_INSETS;
+  if (typeof window === 'undefined') return DEFAULT_VISUAL_VIEWPORT_INSETS;
 
-  const vv = window.visualViewport;
-  if (!vv) {
-    return {
-      bottomInset: 0,
-      offsetTop: 0,
-      offsetLeft: 0,
-      visibleHeight: window.innerHeight,
-      visibleWidth: window.innerWidth,
-      isKeyboardOpen: false,
-    };
-  }
+  layoutHeightBaseline = nextLayoutHeightBaseline(
+    layoutHeightBaseline,
+    window.innerHeight,
+  );
 
-  const bottomInset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-
-  return {
-    bottomInset,
-    offsetTop: vv.offsetTop,
-    offsetLeft: vv.offsetLeft,
-    visibleHeight: vv.height,
-    visibleWidth: vv.width,
-    isKeyboardOpen: bottomInset > KEYBOARD_OPEN_THRESHOLD_PX,
-  };
+  return computeVisualViewportInsets({
+    innerHeight: window.innerHeight,
+    innerWidth: window.innerWidth,
+    layoutHeightBaseline,
+    vv: window.visualViewport,
+  });
 }
 
 /** Track mobile software-keyboard insets via Visual Viewport API. */
 export function useVisualViewportInsets(enabled = true): VisualViewportInsets {
-  const [insets, setInsets] = useState<VisualViewportInsets>(DEFAULT_INSETS);
+  const [insets, setInsets] = useState<VisualViewportInsets>(
+    DEFAULT_VISUAL_VIEWPORT_INSETS,
+  );
 
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
 
     const update = () => setInsets(readVisualViewportInsets());
+    const resetBaseline = () => {
+      layoutHeightBaseline = window.innerHeight;
+      update();
+    };
 
     const vv = window.visualViewport;
     vv?.addEventListener('resize', update, { passive: true });
     vv?.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update, { passive: true });
+    window.addEventListener('orientationchange', resetBaseline, { passive: true });
     update();
 
     return () => {
       vv?.removeEventListener('resize', update);
       vv?.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', resetBaseline);
     };
   }, [enabled]);
 

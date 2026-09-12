@@ -82,3 +82,11 @@ export const SELECT_LISTBOX_Z_CLASS = 'z-[245]';
 
 /** Image export / save progress above every app overlay (modals, FAB, tooltips). */
 export const EXPORT_PROGRESS_OVERLAY_Z_CLASS = 'z-[260]';
+
+/** Hide FAB triggers on phone while a FAB overlay is open so they do not sit under the keyboard. */
+export function shouldHideMobileFabTriggersForOverlay(
+  isMobile: boolean,
+  isOverlayOpen: boolean,
+): boolean {
+  return isMobile && isOverlayOpen;
+}
