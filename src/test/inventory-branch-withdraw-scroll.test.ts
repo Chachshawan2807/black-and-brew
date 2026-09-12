@@ -20,16 +20,18 @@ describe('branch withdraw scroll layout', () => {
     expect(BRANCH_WITHDRAW_SCROLL_BODY_CLASS).toContain('bb-smooth-scroll');
   });
 
-  test('mobile standalone shell is fixed within main landmark (top-0, not double header offset)', () => {
-    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:fixed');
-    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:top-0');
-    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:bottom-0');
+  test('mobile standalone shell uses flex column instead of fixed positioning', () => {
+    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:flex');
+    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:flex-1');
+    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).not.toContain('max-md:fixed');
+    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).not.toContain('max-md:top-0');
   });
 
-  test('desktop page shell bounds height for inner scroll', () => {
+  test('page shell bounds mobile height below header and desktop height for inner scroll', () => {
+    expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).toContain('max-md:min-h-[calc(100svh-72px)]');
     expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).toContain('md:h-[calc(100svh-2rem)]');
     expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).toContain('md:overflow-hidden');
-    expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).toContain('max-md:contents');
+    expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).not.toContain('max-md:contents');
   });
 
   test('desktop client shell fills bounded page shell', () => {

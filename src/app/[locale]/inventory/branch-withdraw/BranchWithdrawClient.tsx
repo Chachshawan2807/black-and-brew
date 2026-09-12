@@ -45,7 +45,13 @@ import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProv
 import { getClientSessionId } from '@/lib/client-session';
 import { useMaxMd } from '@/hooks/use-max-md';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
-import { buildBranchWithdrawStandaloneMobileShellStyle } from '@/lib/branch-withdraw-mobile-shell';
+import { buildBranchWithdrawScrollBodyKeyboardStyle } from '@/lib/branch-withdraw-mobile-shell';
+import {
+  BRANCH_WITHDRAW_DIALOG_POSITION_CLASS,
+  closeBranchWithdrawDialog,
+  openBranchWithdrawDialog,
+} from '@/lib/branch-withdraw-dialog';
+import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
 import { cn } from '@/lib/utils';
 import {
@@ -97,8 +103,10 @@ const UNIT_INPUT_FIELD_CLASS = cn(
   'placeholder:text-[10px] placeholder:leading-tight md:placeholder:text-xs',
 );
 const MOBILE_INPUT_GRID_CLASS = 'grid grid-cols-3 gap-1.5 md:contents';
-const BRANCH_WITHDRAW_DIALOG_BASE_CLASS =
-  'bb-modal-panel m-auto max-h-[min(85dvh,100%)] overscroll-contain rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40 motion-reduce:open:animate-none';
+const BRANCH_WITHDRAW_DIALOG_BASE_CLASS = cn(
+  'bb-modal-panel max-h-[min(85dvh,100%)] overscroll-contain rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40 motion-reduce:open:animate-none',
+  BRANCH_WITHDRAW_DIALOG_POSITION_CLASS,
+);
 const BRANCH_WITHDRAW_DIALOG_PREVIEW_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-fit max-w-[92vw]`;
 const BRANCH_WITHDRAW_DIALOG_WIDE_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[min(780px,92vw)]`;
 const BRANCH_WITHDRAW_DIALOG_HISTORY_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[92vw] md:w-[min(560px,92vw)]`;
@@ -306,9 +314,9 @@ export default function BranchWithdrawClient({
   const viewportInsets = useVisualViewportInsets(!embedded);
   const { items: realtimeItems, hasLoaded, refresh } = useInventoryRealtime();
 
-  const standaloneMobileShellStyle = useMemo(
+  const scrollBodyKeyboardStyle = useMemo(
     () =>
-      buildBranchWithdrawStandaloneMobileShellStyle({
+      buildBranchWithdrawScrollBodyKeyboardStyle({
         embedded,
         isMaxMd,
         viewportInsets,
@@ -435,17 +443,11 @@ export default function BranchWithdrawClient({
   );
 
   const openDialog = (dialog: HTMLDialogElement | null) => {
-    if (!dialog) return;
-    if (!dialog.open) {
-      dialog.showModal();
-    }
+    openBranchWithdrawDialog(dialog);
   };
 
   const closeDialog = (dialog: HTMLDialogElement | null) => {
-    if (!dialog) return;
-    if (dialog.open) {
-      dialog.close();
-    }
+    closeBranchWithdrawDialog(dialog);
   };
 
   const handleSaveDraft = useCallback(() => {
@@ -802,7 +804,6 @@ export default function BranchWithdrawClient({
               BRANCH_WITHDRAW_STANDALONE_DESKTOP_SHELL_CLASS,
             )
       }
-      style={standaloneMobileShellStyle}
     >
       <div
         className={
@@ -831,12 +832,13 @@ export default function BranchWithdrawClient({
         )}
 
         {addFromCatalogBar}
-        <div className={BRANCH_WITHDRAW_SCROLL_BODY_CLASS}>
+        <div className={BRANCH_WITHDRAW_SCROLL_BODY_CLASS} style={scrollBodyKeyboardStyle}>
           {scrollableSections}
         </div>
       </div>
 
-      <dialog ref={previewDialogRef} className={BRANCH_WITHDRAW_DIALOG_PREVIEW_CLASS}>
+      <ModalPortal>
+        <dialog ref={previewDialogRef} className={BRANCH_WITHDRAW_DIALOG_PREVIEW_CLASS}>
         <div className="flex w-fit max-w-[92vw] flex-col p-4 md:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -890,7 +892,9 @@ export default function BranchWithdrawClient({
           </div>
         </div>
       </dialog>
+      </ModalPortal>
 
+      <ModalPortal>
       <dialog
         ref={addItemDialogRef}
         className={BRANCH_WITHDRAW_DIALOG_NARROW_CLASS}
@@ -953,7 +957,9 @@ export default function BranchWithdrawClient({
           </div>
         </div>
       </dialog>
+      </ModalPortal>
 
+      <ModalPortal>
       <dialog ref={saveResultDialogRef} className={BRANCH_WITHDRAW_DIALOG_WIDE_CLASS}>
         <div className="p-4 md:p-5">
           <div className="flex items-start justify-between gap-3">
@@ -1005,7 +1011,9 @@ export default function BranchWithdrawClient({
           </div>
         </div>
       </dialog>
+      </ModalPortal>
 
+      <ModalPortal>
       <dialog
         ref={historyLineDialogRef}
         className={BRANCH_WITHDRAW_DIALOG_HISTORY_CLASS}
@@ -1055,6 +1063,7 @@ export default function BranchWithdrawClient({
           </div>
         </div>
       </dialog>
+      </ModalPortal>
     </div>
   );
 }

@@ -55,6 +55,8 @@ describe('inventory branch withdraw overlay', () => {
     expect(client).toContain('embedded && \'pr-12 pt-1\'');
     expect(client).toContain('BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS');
     expect(client).toContain('useVisualViewportInsets');
+    expect(client).toContain('buildBranchWithdrawScrollBodyKeyboardStyle');
+    expect(client).toContain('ModalPortal');
     expect(client).not.toContain('h-[100dvh] flex-col overflow-hidden');
     expect(client).not.toContain('STANDALONE_ADD_FROM_CATALOG_BAR_CLASS');
     expect(client).not.toMatch(/sticky top-0 z-10 border-b border-border bg-background\/95/);
@@ -84,5 +86,14 @@ describe('inventory branch withdraw overlay', () => {
     expect(client).toContain('writeBranchWithdrawDraft(window.localStorage');
     expect(client).not.toMatch(/onClick=\{\(\) => void handleSave\(\)\}/);
     expect(client).toContain('saveBranchWithdrawal');
+  });
+
+  test('branch withdraw page imports client directly to avoid mobile blank flash', () => {
+    const page = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/inventory/branch-withdraw/page.tsx'),
+      'utf-8',
+    );
+    expect(page).toContain("import BranchWithdrawClient from './BranchWithdrawClient'");
+    expect(page).not.toContain('createLazyFeatureClient');
   });
 });

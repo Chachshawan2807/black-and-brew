@@ -2,20 +2,21 @@ import { describe, expect, test } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS } from '@/app/[locale]/inventory/branch-withdraw/branch-withdraw-layout';
-import { buildBranchWithdrawStandaloneMobileShellStyle } from '@/lib/branch-withdraw-mobile-shell';
+import { buildBranchWithdrawScrollBodyKeyboardStyle } from '@/lib/branch-withdraw-mobile-shell';
 
 const ROOT = path.resolve(__dirname, '..');
 
 describe('branch withdraw FAB overlay (no layout shift)', () => {
-  test('mobile shell fills main landmark below header without FAB clearance', () => {
-    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:fixed');
-    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:top-0');
-    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:bottom-0');
+  test('mobile shell uses flex column inside main landmark (no fixed containment trap)', () => {
+    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:flex');
+    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:flex-1');
+    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).not.toContain('max-md:fixed');
+    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).not.toContain('max-md:z-0');
     expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).not.toContain('11rem');
     expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).not.toContain('4rem');
   });
 
-  test('mobile shell style ignores FAB toggle and only adjusts for keyboard', () => {
+  test('scroll body style adds keyboard padding without fixed shell offsets', () => {
     const baseInsets = {
       bottomInset: 0,
       offsetTop: 0,
@@ -26,14 +27,14 @@ describe('branch withdraw FAB overlay (no layout shift)', () => {
     };
 
     expect(
-      buildBranchWithdrawStandaloneMobileShellStyle({
+      buildBranchWithdrawScrollBodyKeyboardStyle({
         embedded: false,
         isMaxMd: true,
         viewportInsets: baseInsets,
       }),
     ).toBeUndefined();
 
-    const keyboardStyle = buildBranchWithdrawStandaloneMobileShellStyle({
+    const keyboardStyle = buildBranchWithdrawScrollBodyKeyboardStyle({
       embedded: false,
       isMaxMd: true,
       viewportInsets: {
@@ -43,8 +44,8 @@ describe('branch withdraw FAB overlay (no layout shift)', () => {
       },
     });
 
-    expect(keyboardStyle?.top).toBe(0);
-    expect(keyboardStyle?.bottom).toBe(280);
+    expect(keyboardStyle?.paddingBottom).toBe(280);
+    expect(keyboardStyle).not.toHaveProperty('top');
   });
 
   test('client does not react to fab stack visibility for layout', () => {
@@ -53,7 +54,8 @@ describe('branch withdraw FAB overlay (no layout shift)', () => {
       'utf-8',
     );
 
-    expect(client).toContain('buildBranchWithdrawStandaloneMobileShellStyle');
+    expect(client).toContain('buildBranchWithdrawScrollBodyKeyboardStyle');
+    expect(client).toContain('scrollBodyKeyboardStyle');
     expect(client).not.toContain('useFloatingOverlay');
     expect(client).not.toContain('fabStackHidden');
     expect(client).not.toContain('FAB_COLLAPSED');

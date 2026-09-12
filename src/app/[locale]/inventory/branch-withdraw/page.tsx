@@ -3,12 +3,8 @@ import { checkAuth } from '@/app/actions/auth';
 import { fetchBranchWithdrawalHistory } from '@/app/actions/branch-withdraw-actions';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
-import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
+import BranchWithdrawClient from './BranchWithdrawClient';
 import { BRANCH_WITHDRAW_PAGE_SHELL_CLASS } from './branch-withdraw-layout';
-
-const BranchWithdrawClient = createLazyFeatureClient(
-  () => import('./BranchWithdrawClient'),
-);
 
 export default async function BranchWithdrawPage({
   params,

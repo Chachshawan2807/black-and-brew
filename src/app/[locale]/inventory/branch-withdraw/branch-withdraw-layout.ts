@@ -1,14 +1,14 @@
-/** Desktop page shell: bounds height so inner flex scroll works (mobile uses fixed shell on client). */
+/** Page shell: bounded height on mobile/desktop so inner scroll regions work without fixed positioning. */
 export const BRANCH_WITHDRAW_PAGE_SHELL_CLASS =
-  'max-md:contents md:flex md:h-[calc(100svh-2rem)] md:min-h-0 md:flex-col md:overflow-hidden';
+  'flex min-h-0 flex-col max-md:min-h-[calc(100svh-72px)] md:h-[calc(100svh-2rem)] md:overflow-hidden';
 
 /** Scroll region between pinned header/footer chrome inside branch-withdraw. */
 export const BRANCH_WITHDRAW_SCROLL_BODY_CLASS =
   'min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overscroll-contain bb-smooth-scroll';
 
-/** Mobile standalone shell: fills main landmark (already below mobile header); FAB overlays content. */
+/** Mobile standalone shell: flex column inside main landmark (avoids fixed + layout containment bugs). */
 export const BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS =
-  'max-md:fixed max-md:inset-x-0 max-md:z-0 max-md:top-0 max-md:bottom-0';
+  'max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col';
 
 export const BRANCH_WITHDRAW_STANDALONE_DESKTOP_SHELL_CLASS =
   'md:relative md:h-full md:min-h-0 md:max-h-full';

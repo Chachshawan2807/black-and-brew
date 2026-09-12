@@ -110,11 +110,12 @@ describe('inventory save performance', () => {
   });
 
   test('branch withdraw client shows receive success before background refresh', () => {
+    expect(branchWithdrawClient).toContain('openBranchWithdrawDialog');
     expect(branchWithdrawClient).toMatch(/openDialog\(saveResultDialogRef\.current\)/);
     expect(branchWithdrawClient).toMatch(/void[\s\S]*refresh\(\{ soft: true \}\)/);
     expect(branchWithdrawClient).toMatch(/handleReceive/);
     expect(branchWithdrawClient).not.toMatch(
-      /await refresh\([\s\S]*openDialog\(saveResultDialogRef\.current\)/,
+      /await refresh\([\s\S]*openBranchWithdrawDialog\(saveResultDialogRef\.current\)/,
     );
     expect(branchWithdrawClient).not.toContain('fetchBranchWithdrawalHistory');
     expect(branchWithdrawClient).not.toContain('router.refresh()');
