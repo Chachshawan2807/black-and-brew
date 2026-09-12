@@ -56,6 +56,8 @@ import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
 import { cn } from '@/lib/utils';
 import {
   BRANCH_WITHDRAW_ACTION_BAR_CLASS,
+  BRANCH_WITHDRAW_EMBEDDED_SHELL_CLASS,
+  BRANCH_WITHDRAW_EMBEDDED_TOOLBAR_CLASS,
   BRANCH_WITHDRAW_SCROLL_BODY_CLASS,
   BRANCH_WITHDRAW_STANDALONE_DESKTOP_SHELL_CLASS,
   BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS,
@@ -122,12 +124,12 @@ const STICKY_ACTION_PRIMARY_CLASS = cn(
   'hover:bg-[#c3e6cb]/70',
 );
 const ADD_FROM_CATALOG_BUTTON_CLASS =
-  'inline-flex w-full min-h-[44px] touch-manipulation items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2.5 text-sm transition-colors hover:border-foreground/20 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto';
+  'inline-flex w-full min-h-[44px] touch-manipulation items-center justify-center gap-1.5 rounded-xl border border-dashed border-border/80 bg-card px-3 py-2.5 text-sm shadow-sm transition-colors hover:border-foreground/25 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto';
 const DIALOG_CLOSE_BUTTON_CLASS =
   'inline-flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-xl border border-border text-foreground transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15';
 const DIALOG_SECONDARY_BUTTON_CLASS =
   'inline-flex min-h-[44px] touch-manipulation items-center justify-center rounded-xl border border-border bg-background px-4 py-2 text-sm transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15';
-const ADD_FROM_CATALOG_BAR_CLASS = 'shrink-0 bg-background pb-3';
+const ADD_FROM_CATALOG_BAR_CLASS = 'shrink-0 pb-3';
 const COPY_ICON_BUTTON_CLASS =
   'inline-flex min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center rounded-xl border border-border bg-background p-2 text-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 disabled:cursor-not-allowed disabled:opacity-50';
 const ITEM_ROW_BADGE_CLASS =
@@ -698,7 +700,12 @@ export default function BranchWithdrawClient({
   );
 
   const addFromCatalogBar = (
-    <div className={cn(ADD_FROM_CATALOG_BAR_CLASS, embedded && 'pr-12 pt-1')}>
+    <div
+      className={cn(
+        ADD_FROM_CATALOG_BAR_CLASS,
+        embedded ? BRANCH_WITHDRAW_EMBEDDED_TOOLBAR_CLASS : 'bg-background',
+      )}
+    >
       {addFromCatalogButton}
     </div>
   );
@@ -797,7 +804,7 @@ export default function BranchWithdrawClient({
     <div
       className={
         embedded
-          ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground'
+          ? BRANCH_WITHDRAW_EMBEDDED_SHELL_CLASS
           : cn(
               'flex min-h-0 flex-col overflow-hidden bg-background px-4 pb-4 text-foreground max-md:pt-0 md:p-8',
               BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS,
@@ -812,14 +819,7 @@ export default function BranchWithdrawClient({
             : 'mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col overflow-hidden'
         }
       >
-        {embedded ? (
-          <header className="shrink-0 pb-2 pr-12 pt-0.5">
-            <h2 className="text-base font-normal text-balance text-foreground">เบิกของสาขา 2</h2>
-            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-              กรอกจำนวนเบิก แล้วกดรับเข้าเพื่ออัปเดตคลัง
-            </p>
-          </header>
-        ) : (
+        {!embedded ? (
           <header className="flex shrink-0 items-center justify-between pb-3 max-md:pb-2 max-md:pt-1 md:pb-4">
             <Link
               href={`/${locale}/inventory`}
@@ -829,10 +829,16 @@ export default function BranchWithdrawClient({
               <span>กลับไปคลังสินค้า</span>
             </Link>
           </header>
-        )}
+        ) : null}
 
         {addFromCatalogBar}
-        <div className={BRANCH_WITHDRAW_SCROLL_BODY_CLASS} style={scrollBodyKeyboardStyle}>
+        <div
+          className={cn(
+            BRANCH_WITHDRAW_SCROLL_BODY_CLASS,
+            embedded && '-mx-4 bg-muted/15 px-4 pt-3',
+          )}
+          style={scrollBodyKeyboardStyle}
+        >
           {scrollableSections}
         </div>
       </div>

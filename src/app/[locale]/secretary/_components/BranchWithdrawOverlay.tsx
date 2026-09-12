@@ -90,7 +90,11 @@ export default function BranchWithdrawOverlay({
   }, [hasCatalogSeed, hasRealtimeInventory]);
 
   return (
-    <SecretaryTaskSubwindow title="เบิกของสาขา 2" onClose={onClose}>
+    <SecretaryTaskSubwindow
+      title="เบิกของสาขา 2"
+      subtitle="กรอกจำนวนเบิก แล้วกดรับเข้าเพื่ออัปเดตคลัง"
+      onClose={onClose}
+    >
       {loadError ? <SecretaryOverlayErrorState message={loadError} /> : null}
       {catalogLoading ? (
         <SecretaryOverlayLoadingSkeleton variant="embed" label="กำลังโหลดรายการเบิกของ..." />

@@ -5,6 +5,7 @@ import SecretaryTaskPanelShell from './SecretaryTaskPanelShell';
 
 type SecretaryTaskSubwindowProps = {
   title: string;
+  subtitle?: string;
   ariaLabel?: string;
   onClose: () => void;
   children: ReactNode;
@@ -16,6 +17,7 @@ type SecretaryTaskSubwindowProps = {
 /** Shared secretary task sub-window: delegates chrome to SecretaryTaskPanelShell. */
 export default function SecretaryTaskSubwindow({
   title,
+  subtitle,
   ariaLabel,
   onClose,
   children,
@@ -25,6 +27,7 @@ export default function SecretaryTaskSubwindow({
   return (
     <SecretaryTaskPanelShell
       title={title}
+      subtitle={subtitle}
       ariaLabel={ariaLabel}
       onClose={onClose}
       maxWidthClass={maxWidthClass}

@@ -42,6 +42,7 @@ describe('inventory branch withdraw overlay', () => {
     expect(overlay).toContain('mapSecretaryReorderItemsToInventoryRealtime');
     expect(overlay).not.toContain('dynamic(');
     expect(overlay).toContain('SecretaryTaskSubwindow');
+    expect(overlay).toContain('subtitle=');
     expect(overlay).toContain('embedded');
   });
 
@@ -52,7 +53,8 @@ describe('inventory branch withdraw overlay', () => {
     );
     expect(client).toContain('BRANCH_WITHDRAW_SCROLL_BODY_CLASS');
     expect(client).toContain('branch-withdraw-layout');
-    expect(client).toContain('embedded && \'pr-12 pt-1\'');
+    expect(client).toContain('BRANCH_WITHDRAW_EMBEDDED_TOOLBAR_CLASS');
+    expect(client).not.toContain('pr-12');
     expect(client).toContain('BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS');
     expect(client).toContain('useVisualViewportInsets');
     expect(client).toContain('buildBranchWithdrawScrollBodyKeyboardStyle');

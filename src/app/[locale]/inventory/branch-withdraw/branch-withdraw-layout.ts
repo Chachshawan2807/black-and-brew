@@ -15,3 +15,11 @@ export const BRANCH_WITHDRAW_STANDALONE_DESKTOP_SHELL_CLASS =
 
 export const BRANCH_WITHDRAW_ACTION_BAR_CLASS =
   'rounded-2xl border border-border bg-card p-3 shadow-sm';
+
+/** Embedded secretary overlay: full-width toolbar flush under panel header. */
+export const BRANCH_WITHDRAW_EMBEDDED_TOOLBAR_CLASS =
+  'shrink-0 -mx-4 -mt-3 border-b border-border bg-muted/30 px-4 py-3';
+
+/** Embedded secretary overlay: scroll region on muted surface for section contrast. */
+export const BRANCH_WITHDRAW_EMBEDDED_SHELL_CLASS =
+  'flex min-h-0 flex-1 flex-col overflow-hidden text-foreground';
