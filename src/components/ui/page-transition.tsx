@@ -8,6 +8,10 @@ import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { useMaxMd } from '@/hooks/use-max-md';
 import { completeViewTransitionNavigation } from '@/lib/view-transition-navigation-state';
 import { shouldUseViewTransition } from '@/lib/view-transition';
+import { cn } from '@/lib/utils';
+
+/** Flex fill wrapper so bounded-height routes (e.g. branch withdraw) can scroll inside main. */
+export const BB_PAGE_ROUTE_FILL_CLASS = 'bb-page-route-fill min-h-0 flex flex-1 flex-col';
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -28,7 +32,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
 
   if (viewTransitionEnabled && isMaxMd === false && !reduced) {
     return (
-      <div key={pathname} className="min-h-0 bb-view-transition-page">
+      <div key={pathname} className={cn(BB_PAGE_ROUTE_FILL_CLASS, 'bb-view-transition-page')}>
         {children}
       </div>
     );
@@ -37,7 +41,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   // Mobile / reduced motion: no pathname key or opacity-0 enter avoids blank flashes
   // while App Router streams the next segment (e.g. bean-order detail drill-in).
   if (useLightTransition || isViewportUnknown) {
-    return <div className="min-h-0">{children}</div>;
+    return <div className={BB_PAGE_ROUTE_FILL_CLASS}>{children}</div>;
   }
 
   const motionPreset = withReducedMotion(pageContent, reduced);
@@ -50,7 +54,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
         animate={motionPreset.animate}
         exit={motionPreset.exit}
         transition={motionPreset.transition}
-        className="min-h-0"
+        className={BB_PAGE_ROUTE_FILL_CLASS}
       >
         {children}
       </motion.div>

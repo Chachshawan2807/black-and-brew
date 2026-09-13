@@ -28,10 +28,28 @@ describe('branch withdraw scroll layout', () => {
   });
 
   test('page shell bounds mobile height below header and desktop height for inner scroll', () => {
-    expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).toContain('max-md:min-h-[calc(100svh-72px)]');
+    expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).toContain('max-md:h-[calc(100svh-72px)]');
+    expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).toContain('max-md:max-h-[calc(100svh-72px)]');
+    expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).toContain('max-md:overflow-hidden');
+    expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).toContain('flex-1');
     expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).toContain('md:h-[calc(100svh-2rem)]');
     expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).toContain('md:overflow-hidden');
     expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).not.toContain('max-md:contents');
+    expect(BRANCH_WITHDRAW_PAGE_SHELL_CLASS).not.toContain('max-md:min-h-[calc(100svh-72px)]');
+  });
+
+  test('sidebar route keeps flex min-h-0 chain from main through page transition', () => {
+    const sidebarLayout = fs.readFileSync(
+      path.resolve(ROOT, 'components/sidebar/SidebarLayout.tsx'),
+      'utf-8',
+    );
+    const pageTransition = fs.readFileSync(
+      path.resolve(ROOT, 'components/ui/page-transition.tsx'),
+      'utf-8',
+    );
+
+    expect(sidebarLayout).toMatch(/id="app-main"[\s\S]*flex flex-col/);
+    expect(pageTransition).toContain('BB_PAGE_ROUTE_FILL_CLASS');
   });
 
   test('desktop client shell fills bounded page shell', () => {

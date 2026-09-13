@@ -27,7 +27,7 @@ export function LazySidebarLayout({ children }: { children: ReactNode }) {
 
   if (!Layout) {
     return (
-      <main id="app-main" className="bb-main-container flex-1 min-h-0 bg-transparent">
+      <main id="app-main" className="bb-main-container flex flex-col flex-1 min-h-0 bg-transparent">
         {children}
       </main>
     );

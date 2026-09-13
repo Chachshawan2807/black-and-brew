@@ -34,7 +34,7 @@ export default function SidebarLayout({
         id="app-main"
         inert={mobileDrawerInert ? true : undefined}
         className={cn(
-          "bb-main-container flex-1 min-h-0 bg-transparent transition-[margin-left] [transition-duration:var(--bb-duration-slow)] [transition-timing-function:var(--bb-ease-out)] motion-reduce:transition-none [contain:layout_style]",
+          "bb-main-container flex flex-col flex-1 min-h-0 bg-transparent transition-[margin-left] [transition-duration:var(--bb-duration-slow)] [transition-timing-function:var(--bb-ease-out)] motion-reduce:transition-none [contain:layout_style]",
           sidebarOpen === false ? "md:ml-20" : "md:ml-[280px]"
         )}
       >
