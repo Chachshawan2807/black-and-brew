@@ -1117,7 +1117,13 @@ const GENERIC_ACTION_LABELS: Record<string, { th: string; en: string }> = {
 
 
 
-export function resolveEffectiveFieldChanges(row: DataChangeLogRow): FieldChange[] {
+export type FieldChangesResolvableRow = {
+  field_changes?: FieldChange[] | null;
+  old_value: unknown;
+  new_value: unknown;
+};
+
+export function resolveEffectiveFieldChanges(row: FieldChangesResolvableRow): FieldChange[] {
 
   const explicit = row.field_changes ?? [];
 

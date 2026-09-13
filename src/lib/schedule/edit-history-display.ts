@@ -5,6 +5,7 @@ export type ScheduleEditHistoryRow = {
   module: string;
   entity_type: string;
   entity_label: string | null;
+  field_changes?: FieldChange[] | null;
   old_value: unknown;
   new_value: unknown;
   metadata: Record<string, unknown>;
