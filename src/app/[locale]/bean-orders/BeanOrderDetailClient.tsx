@@ -169,15 +169,8 @@ export default function BeanOrderDetailClient({
       return;
     }
 
-    setOrder((prev) => ({
-      ...prev,
-      payment: {
-        slipUrl: result.slipUrl ?? null,
-        uploadedAt: result.uploadedAt ?? new Date().toISOString(),
-        confirmedAt: prev.payment?.confirmedAt ?? null,
-        confirmedBy: prev.payment?.confirmedBy ?? null,
-      },
-    }));
+    sessionStorage.setItem('bb-bean-order-flash', 'อัปโหลดสลิปแล้ว');
+    navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
   }
 
   async function handleConfirmPayment() {

@@ -56,6 +56,23 @@ describe('bean order navigation after save/delete', () => {
     );
   });
 
+  test('slip upload success redirects to bean-orders list with flash message', () => {
+    const detailSource = readFileSync(
+      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
+      'utf8',
+    );
+    const uploadFnStart = detailSource.indexOf('async function handleUploadSlip');
+    expect(uploadFnStart).toBeGreaterThan(-1);
+    const uploadFnBody = detailSource.slice(uploadFnStart, uploadFnStart + 900);
+    expect(uploadFnBody).toMatch(
+      /sessionStorage\.setItem\('bb-bean-order-flash',\s*'อัปโหลดสลิปแล้ว'\)/,
+    );
+    expect(uploadFnBody).toMatch(
+      /navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
+    );
+    expect(uploadFnBody).not.toContain('void reload()');
+  });
+
   test('deliver success redirects to bean-orders list with flash message', () => {
     const detailSource = readFileSync(
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
