@@ -9,15 +9,15 @@ function readFile(relativePath: string): string {
 }
 
 describe('NotificationPanel mobile layout', () => {
-  test('uses centered modal on mobile and FAB-anchored panel on desktop', () => {
+  test('uses centered modal with smooth fade motion', () => {
     const code = readFile('components/notifications/NotificationPanel.tsx');
-    expect(code).toContain('modalContent');
-    expect(code).toContain('fadeOverlay');
+    expect(code).toContain('notificationPanel');
+    expect(code).toContain('notificationOverlay');
     expect(code).toContain('withReducedMotion');
     expect(code).toContain('usePrefersReducedMotion');
-    expect(code).toContain('FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS');
-    expect(code).toContain('FAB_PANEL_ABOVE_NOTIFICATION_CLASS');
+    expect(code).toMatch(/items-center justify-center/);
     expect(code).toMatch(/rounded-2xl/);
+    expect(code).not.toContain('FAB_PANEL_ABOVE_NOTIFICATION_CLASS');
   });
 
   test('uses single keyed overlay so AnimatePresence can run exit animation', () => {

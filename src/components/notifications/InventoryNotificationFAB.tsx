@@ -6,24 +6,15 @@ import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext
 import { FabFadePresence } from '@/components/floating/FabFadePresence';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useNotificationState, useNotificationActions } from '@/components/notifications/NotificationProvider';
-import {
-  FAB_BOTTOM_NOTIFICATION_CLASS,
-  shouldHideMobileFabTriggersForOverlay,
-} from '@/lib/floating-action-layout';
-import { useMaxMd } from '@/hooks/use-max-md';
+import { FAB_BOTTOM_NOTIFICATION_CLASS } from '@/lib/floating-action-layout';
 
 export function InventoryNotificationFAB() {
   const { panelOpen } = useNotificationState();
   const { setPanelOpen } = useNotificationActions();
   const { fabStackHidden, fabStackSuppressed, isAnyOtherOpen, setOverlayOpen } = useFloatingOverlay();
-  const maxMd = useMaxMd();
-  const isMobile = maxMd === true;
 
   const hidden =
-    fabStackHidden ||
-    fabStackSuppressed ||
-    isAnyOtherOpen('notification') ||
-    shouldHideMobileFabTriggersForOverlay(isMobile, panelOpen);
+    panelOpen || fabStackHidden || fabStackSuppressed || isAnyOtherOpen('notification');
 
   useEffect(() => {
     setOverlayOpen('notification', panelOpen);
