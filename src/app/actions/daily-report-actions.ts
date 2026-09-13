@@ -5,6 +5,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import {
   addBangkokCalendarDays,
   bangkokCalendarIsoToDate,
+  getBangkokCalendarDayQueryBounds,
   getBangkokCalendarIso,
   THAI_DISPLAY_DATE_FORMAT,
 } from '@/lib/date-utils';
@@ -66,13 +67,14 @@ export async function fetchTodayShifts(targetDate: Date) {
     }
 
     const dateStr = formatInTimeZone(targetDate, THAI_TIMEZONE, 'yyyy-MM-dd');
+    const { startInclusive, endInclusive } = getBangkokCalendarDayQueryBounds(dateStr);
 
     const [profilesRes, shiftsRes] = await Promise.all([
       supabaseAdmin.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true }),
       supabaseAdmin.from('shifts')
         .select('id, employee_id, status, metadata')
-        .gte('start_time', `${dateStr}T00:00:00`)
-        .lte('start_time', `${dateStr}T23:59:59`)
+        .gte('start_time', startInclusive)
+        .lte('start_time', endInclusive)
     ]);
 
     if (profilesRes.error) {

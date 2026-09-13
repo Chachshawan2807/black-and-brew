@@ -61,8 +61,16 @@ export function buildDailyReportNotificationLines(data: DailyReportData): string
   return lines;
 }
 
+export function buildDailyReportFieldSummary(data: DailyReportData): string {
+  return buildDailyReportNotificationLines(data).join('\n');
+}
+
 export function buildDailyReportAltText(data: DailyReportData): string {
-  return truncate(buildDailyReportNotificationLines(data).join('\n'), 400);
+  return truncate(buildDailyReportFieldSummary(data), 400);
+}
+
+export function buildDailyReportSummaryLine(data: DailyReportData): string {
+  return buildDailyReportNotificationLines(data)[0] ?? '';
 }
 
 function isStaffShiftEntry(value: unknown): value is StaffShiftEntry {

@@ -3,7 +3,13 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { THAI_TIMEZONE } from '@/lib/timezone';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
-import { buildDailyReportAltText } from '@/lib/daily-report-summary';
+import {
+  buildDailyReportAltText,
+  buildDailyReportFieldSummary,
+  buildDailyReportSummaryLine,
+  parseDailyReportSnapshot,
+} from '@/lib/daily-report-summary';
+import { bangkokCalendarIsoToDate, getBangkokCalendarIso, addBangkokCalendarDays } from '@/lib/date-utils';
 import { formatScheduleNotificationDateDisplay, THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
 import { sanitizeJsonValue } from '@/lib/data-change-log';
 import type { InventoryNotification } from '@/lib/notification-types';
@@ -28,10 +34,12 @@ function scheduleTitle(schedule: DailyReportSchedule, locale: string): string {
 
 function buildDailyReportLogPayload(data: DailyReportData, locale: string) {
   const logId = dailyReportNotificationLogId(data.schedule, data.dateStr);
+  const fieldSummary = buildDailyReportFieldSummary(data);
   const alt = buildDailyReportAltText(data);
   const schedulePath = `/${locale}/schedule`;
   const title = scheduleTitle(data.schedule, locale);
-  const summary = alt.length > 220 ? `${alt.slice(0, 217)}…` : alt;
+  const summaryLine = buildDailyReportSummaryLine(data);
+  const summary = summaryLine.length > 220 ? `${summaryLine.slice(0, 217)}…` : summaryLine;
   const isTh = locale === 'th';
 
   return {
@@ -40,7 +48,29 @@ function buildDailyReportLogPayload(data: DailyReportData, locale: string) {
     schedulePath,
     title,
     summary,
+    fieldSummary,
     isTh,
+  };
+}
+
+function buildDailyReportMetadata(
+  data: DailyReportData,
+  locale: string,
+  previousMetadata?: Record<string, unknown> | null,
+) {
+  const { logId, alt, schedulePath, title, summary, fieldSummary, isTh } =
+    buildDailyReportLogPayload(data, locale);
+
+  return {
+    ...(previousMetadata ?? {}),
+    kind: 'daily_report',
+    schedule: data.schedule,
+    url: schedulePath,
+    notificationLogId: logId,
+    title,
+    summary,
+    fieldSummary,
+    locale,
   };
 }
 
@@ -131,20 +161,26 @@ function getSupabaseAdmin() {
   });
 }
 
-/** Persist a daily schedule report so the in-app notification panel can catch up and show history. */
-export async function recordDailyReportNotificationLog(
+/** Insert or refresh a daily schedule report log (cron + roster sync share this path). */
+export async function syncDailyReportNotificationLog(
   data: DailyReportData,
   locale = 'th',
-): Promise<{ success: boolean; skipped?: boolean }> {
+): Promise<{ success: boolean; created: boolean; updated: boolean }> {
   const supabase = getSupabaseAdmin();
-  if (!supabase) return { success: false };
+  if (!supabase) return { success: false, created: false, updated: false };
 
-  const { logId, alt, schedulePath, title, summary, isTh } = buildDailyReportLogPayload(data, locale);
+  const { logId, isTh } = buildDailyReportLogPayload(data, locale);
 
   try {
     const { row: existing, tableMissing } = await findDailyReportLogRow(supabase, logId);
-    if (tableMissing) return { success: false };
-    if (existing) return { success: true, skipped: true };
+    if (tableMissing) return { success: false, created: false, updated: false };
+
+    if (existing) {
+      const updated = await updateDailyReportNotificationLog(data, locale);
+      return { success: updated.success, created: false, updated: updated.updated };
+    }
+
+    const metadata = buildDailyReportMetadata(data, locale);
 
     const { error } = await supabase.from('data_change_logs').insert({
       occurred_at: new Date().toISOString(),
@@ -161,31 +197,35 @@ export async function recordDailyReportNotificationLog(
       new_value: sanitizeJsonValue(data),
       source: 'system',
       status: 'success',
-      metadata: {
-        kind: 'daily_report',
-        schedule: data.schedule,
-        url: schedulePath,
-        notificationLogId: logId,
-        title,
-        summary,
-        fieldSummary: alt,
-        locale,
-      },
+      metadata,
     });
 
     if (error) {
       if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
-        return { success: false };
+        return { success: false, created: false, updated: false };
       }
       console.error('Supabase Error:', error.message, error.details);
       throw error;
     }
 
-    return { success: true };
+    return { success: true, created: true, updated: false };
   } catch (error) {
-    console.error('[recordDailyReportNotificationLog] Exception:', error);
-    return { success: false };
+    console.error('[syncDailyReportNotificationLog] Exception:', error);
+    return { success: false, created: false, updated: false };
   }
+}
+
+/**
+ * Persist a daily schedule report so the in-app notification panel can catch up.
+ * Cron retries upsert fresh roster data instead of leaving a stale zero-headcount log.
+ */
+export async function recordDailyReportNotificationLog(
+  data: DailyReportData,
+  locale = 'th',
+): Promise<{ success: boolean; skipped?: boolean }> {
+  const result = await syncDailyReportNotificationLog(data, locale);
+  if (!result.success) return { success: false };
+  return { success: true, skipped: result.updated && !result.created };
 }
 
 /** Refresh an existing cron daily report log after roster edits (no new notification row). */
@@ -196,28 +236,24 @@ export async function updateDailyReportNotificationLog(
   const supabase = getSupabaseAdmin();
   if (!supabase) return { success: false, updated: false };
 
-  const { logId, alt, schedulePath, title, summary } = buildDailyReportLogPayload(data, locale);
+  const { logId } = buildDailyReportLogPayload(data, locale);
 
   try {
     const { row: existing, tableMissing } = await findDailyReportLogRow(supabase, logId);
     if (tableMissing) return { success: false, updated: false };
     if (!existing) return { success: true, updated: false };
 
+    const previousMetadata =
+      typeof existing.metadata === 'object' && existing.metadata !== null
+        ? (existing.metadata as Record<string, unknown>)
+        : undefined;
+
     const { error } = await supabase
       .from('data_change_logs')
       .update({
         // Keep original cron occurred_at roster edits must not re-trigger notifications.
         new_value: sanitizeJsonValue(data),
-        metadata: {
-          kind: 'daily_report',
-          schedule: data.schedule,
-          url: schedulePath,
-          notificationLogId: logId,
-          title,
-          summary,
-          fieldSummary: alt,
-          locale,
-        },
+        metadata: buildDailyReportMetadata(data, locale, previousMetadata),
       })
       .eq('id', existing.id);
 
@@ -242,20 +278,25 @@ export async function refreshDailyReportNotificationsForDate(
   locale = 'th',
 ): Promise<void> {
   const dateStr = formatInTimeZone(targetDate, THAI_TIMEZONE, THAI_DISPLAY_DATE_FORMAT);
+  const targetIso = formatInTimeZone(targetDate, THAI_TIMEZONE, 'yyyy-MM-dd');
+  const bangkokTodayIso = getBangkokCalendarIso();
+  const bangkokTomorrowIso = addBangkokCalendarDays(bangkokTodayIso, 1);
   const schedules: DailyReportSchedule[] = ['today', 'tomorrow'];
   const { compileDailyReportDataForDate } = await import('@/app/actions/daily-report-actions');
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return;
 
   await Promise.all(
     schedules.map(async (schedule) => {
       const logId = dailyReportNotificationLogId(schedule, dateStr);
-      const supabase = getSupabaseAdmin();
-      if (!supabase) return;
-
       const { row: existing } = await findDailyReportLogRow(supabase, logId);
-      if (!existing) return;
+      const shouldForceSync =
+        (schedule === 'today' && targetIso === bangkokTodayIso) ||
+        (schedule === 'tomorrow' && targetIso === bangkokTomorrowIso);
+      if (!existing && !shouldForceSync) return;
 
       const data = await compileDailyReportDataForDate(targetDate, schedule);
-      await updateDailyReportNotificationLog(data, locale);
+      await syncDailyReportNotificationLog(data, locale);
     }),
   );
 }
@@ -283,16 +324,23 @@ export function formatDailyReportNotification(
       : isTh
         ? 'ตารางงาน'
         : 'Schedule';
+
+  const snapshot = parseDailyReportSnapshot(row.new_value);
+  const fieldSummaryFromSnapshot = snapshot ? buildDailyReportFieldSummary(snapshot) : '';
+  const summaryFromSnapshot = snapshot ? buildDailyReportSummaryLine(snapshot) : '';
+
   const fieldSummary =
-    typeof meta.fieldSummary === 'string'
+    fieldSummaryFromSnapshot ||
+    (typeof meta.fieldSummary === 'string'
       ? meta.fieldSummary
       : typeof meta.summary === 'string'
         ? meta.summary
-        : '';
+        : '');
   const summary =
-    typeof meta.summary === 'string'
+    summaryFromSnapshot ||
+    (typeof meta.summary === 'string'
       ? meta.summary
-      : fieldSummary.split('\n').filter(Boolean)[0] ?? '';
+      : fieldSummary.split('\n').filter(Boolean)[0] ?? '');
 
   return {
     id: logId,

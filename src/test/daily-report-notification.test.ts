@@ -79,6 +79,39 @@ describe('daily-report-notification', () => {
     expect(formatted.metadata.kind).toBe('daily_report');
   });
 
+  test('formatDailyReportNotification prefers new_value snapshot over stale metadata', () => {
+    const logId = dailyReportNotificationLogId('today', '13/09/2026');
+    const formatted = formatDailyReportNotification(
+      sampleDailyReportRow({
+        entity_id: logId,
+        metadata: {
+          kind: 'daily_report',
+          notificationLogId: logId,
+          title: 'ตารางงานวันนี้',
+          summary: 'ตารางงาน 13/09/2026 อา. (วันนี้) · เข้างาน 0 คน',
+          fieldSummary: 'ตารางงาน 13/09/2026 อา. (วันนี้) · เข้างาน 0 คน',
+        },
+        new_value: {
+          schedule: 'today',
+          dateStr: '13/09/2026',
+          activeStaff: [
+            { name: 'ปิ่น', shiftText: '6:30' },
+            { name: 'นิต้า', shiftText: '7:00' },
+          ],
+          otherDutyStaff: [],
+          offStaff: [],
+          headcount: 2,
+          holiday: null,
+        },
+      }),
+      'th',
+    );
+
+    expect(formatted.summary).toContain('เข้างาน 2 คน');
+    expect(formatted.fieldSummary).toContain('ปิ่น 6:30');
+    expect(formatted.fieldSummary).not.toContain('เข้างาน 0 คน');
+  });
+
   test('daily report data type is compatible with notification log metadata', () => {
     const data: DailyReportData = {
       schedule: 'today',
@@ -96,6 +129,7 @@ describe('daily-report-notification', () => {
 describe('daily report notification sync', () => {
   const mockSelect = vi.fn();
   const mockUpdate = vi.fn();
+  const mockInsert = vi.fn();
   const mockEqThird = vi.fn();
   const mockEqSecond = vi.fn();
   const mockEqFirst = vi.fn();
@@ -113,12 +147,14 @@ describe('daily report notification sync', () => {
     mockEqFirst.mockReturnValue({ eq: mockEqSecond });
     mockSelect.mockReturnValue({ eq: mockEqFirst });
     mockUpdate.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+    mockInsert.mockResolvedValue({ error: null });
 
     vi.doMock('@supabase/supabase-js', () => ({
       createClient: vi.fn(() => ({
         from: vi.fn(() => ({
           select: mockSelect,
           update: mockUpdate,
+          insert: mockInsert,
         })),
       })),
     }));
@@ -148,5 +184,37 @@ describe('daily report notification sync', () => {
     expect(mockUpdate).toHaveBeenCalled();
     const updatePayload = mockUpdate.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(updatePayload).not.toHaveProperty('occurred_at');
+  });
+
+  test('recordDailyReportNotificationLog upserts when cron log already exists', async () => {
+    mockLimit.mockResolvedValue({
+      data: [{ id: 'log-row-1', metadata: { webPushDispatchedAt: '2026-09-13T05:01:00.000Z' } }],
+      error: null,
+    });
+
+    const { recordDailyReportNotificationLog } = await import('@/lib/daily-report-notification');
+    const data: DailyReportData = {
+      schedule: 'today',
+      dateStr: '13/09/2026',
+      activeStaff: [{ name: 'ปิ่น', shiftText: '6:30' }],
+      otherDutyStaff: [],
+      offStaff: [],
+      headcount: 1,
+      holiday: null,
+    };
+
+    const result = await recordDailyReportNotificationLog(data, 'th');
+
+    expect(result.success).toBe(true);
+    expect(result.skipped).toBe(true);
+    expect(mockInsert).not.toHaveBeenCalled();
+    expect(mockUpdate).toHaveBeenCalled();
+    const updatePayload = mockUpdate.mock.calls[0]?.[0] as {
+      metadata?: Record<string, unknown>;
+      new_value?: { headcount?: number };
+    };
+    expect(updatePayload.new_value?.headcount).toBe(1);
+    expect(updatePayload.metadata?.webPushDispatchedAt).toBe('2026-09-13T05:01:00.000Z');
+    expect(updatePayload.metadata?.fieldSummary).toContain('เข้างาน 1 คน');
   });
 });

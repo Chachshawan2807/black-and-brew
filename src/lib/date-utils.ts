@@ -88,6 +88,17 @@ export function bangkokCalendarIsoToDate(isoDate: string): Date {
   return fromZonedTime(new Date(y, m - 1, d, 12, 0, 0), THAI_TIMEZONE);
 }
 
+/** Inclusive timestamptz bounds for shifts on a Bangkok calendar day (yyyy-MM-dd). */
+export function getBangkokCalendarDayQueryBounds(isoDate: string): {
+  startInclusive: string;
+  endInclusive: string;
+} {
+  return {
+    startInclusive: `${isoDate}T00:00:00+07:00`,
+    endInclusive: `${isoDate}T23:59:59.999+07:00`,
+  };
+}
+
 export function bangkokIsoToThaiDisplay(isoDate: string): string {
   const [y, m, d] = isoDate.split('-');
   return `${d}/${m}/${y}`;

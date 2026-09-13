@@ -16,6 +16,7 @@ import {
   MGMT_HISTORY_PAGE_SIZE,
   MGMT_HISTORY_QUERY_OR,
 } from '@/lib/schedule/mgmt-history';
+import { addBangkokCalendarDays, bangkokCalendarIsoToDate } from '@/lib/date-utils';
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
 import { requireServiceRoleKey } from '@/lib/security/server-auth';
 
@@ -25,7 +26,8 @@ const supabaseAdmin = createClient(supabaseUrl, requireServiceRoleKey());
 const shiftIdSchema = z.string().uuid();
 
 function scheduleDailyReportRefreshForDate(datePart: string) {
-  const targetDate = new Date(`${datePart}T12:00:00`);
+  const isoDate = datePart.split('T')[0];
+  const targetDate = bangkokCalendarIsoToDate(isoDate);
   after(async () => {
     try {
       await refreshDailyReportNotificationsForDate(targetDate);
@@ -36,14 +38,14 @@ function scheduleDailyReportRefreshForDate(datePart: string) {
 }
 
 function scheduleDailyReportRefreshForRange(startDate: string, endDate: string) {
-  const start = new Date(`${startDate.split('T')[0]}T12:00:00`);
-  const end = new Date(`${endDate.split('T')[0]}T12:00:00`);
+  const startIso = startDate.split('T')[0];
+  const endIso = endDate.split('T')[0];
   after(async () => {
     try {
-      const cursor = new Date(start);
-      while (cursor <= end) {
-        await refreshDailyReportNotificationsForDate(new Date(cursor));
-        cursor.setDate(cursor.getDate() + 1);
+      let cursorIso = startIso;
+      while (cursorIso <= endIso) {
+        await refreshDailyReportNotificationsForDate(bangkokCalendarIsoToDate(cursorIso));
+        cursorIso = addBangkokCalendarDays(cursorIso, 1);
       }
     } catch (error) {
       console.error('[scheduleDailyReportRefreshForRange] Exception:', error);
