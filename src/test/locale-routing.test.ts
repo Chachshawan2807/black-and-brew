@@ -21,4 +21,45 @@ describe('locale routing (Thai-first ERP)', () => {
     expect(code).toContain("pathname.startsWith('/en/')");
     expect(code).toMatch(/\/th\$\{pathname\.slice\(3\)\}/);
   });
+
+  test('proxy uses Next.js 16 proxyConfig matcher', () => {
+    const code = fs.readFileSync(
+      path.resolve(__dirname, '../proxy.ts'),
+      'utf-8',
+    );
+    expect(code).toContain('export const proxyConfig');
+    expect(code).not.toMatch(/export const config\s*=/);
+    expect(code).toMatch(/\(?!api\|_next\|_vercel/);
+  });
+
+  test('proxy rewrites locale-prefixed static assets to root paths', () => {
+    const code = fs.readFileSync(
+      path.resolve(__dirname, '../proxy.ts'),
+      'utf-8',
+    );
+    expect(code).toContain('rewriteLocalePrefixedPublicAsset');
+    expect(code).toMatch(/startsWith\('\/_next\/'\)/);
+    expect(code).toContain("'/manifest.webmanifest'");
+  });
+
+  test('dev script uses webpack to avoid Turbopack /[locale] 404 in local dev', () => {
+    const pkg = JSON.parse(
+      fs.readFileSync(
+        path.resolve(__dirname, '../../package.json'),
+        'utf-8',
+      ),
+    ) as { scripts: { dev: string; 'dev:turbo'?: string } };
+    expect(pkg.scripts.dev).toContain('stop-next-dev.mjs');
+    expect(pkg.scripts.dev).toContain('--webpack');
+    expect(pkg.scripts['dev:turbo']).toBe('next dev');
+  });
+
+  test('locale layout rejects unknown locale segments', () => {
+    const code = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/layout.tsx'),
+      'utf-8',
+    );
+    expect(code).toContain('hasLocale(routing.locales, locale)');
+    expect(code).toMatch(/notFound\(\)/);
+  });
 });

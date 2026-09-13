@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
     qualities: [100, 75],
   },
   // PPR + optimizePackageImports can stall Turbopack's first /[locale] dev compile (120s+ hang).
+  // Turbopack dev can also serve bare 404 for /th while production/webpack dev return 200; use `npm run dev` (webpack).
   // Keep both for production bundle size and PPR; skip in dev for responsive local iteration.
   cacheComponents: isProduction,
   ...(isProduction

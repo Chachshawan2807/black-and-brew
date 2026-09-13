@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from 'react';
+import { hasLocale } from 'next-intl';
+import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
+import { routing } from '@/i18n/routing';
 import { AppShellLoader } from '@/components/shell/AppShellLoader';
 import I18nProvider from '@/components/providers/I18nProvider';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
@@ -54,6 +57,10 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+
+  if (!hasLocale(routing.locales, locale)) {
+    notFound();
+  }
 
   setRequestLocale(locale);
 
