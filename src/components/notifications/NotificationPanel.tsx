@@ -6,11 +6,18 @@ import { useParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Bell, CheckCheck, Trash2 } from '@/lib/icons';
 import { cn } from '@/lib/utils';
-import { notificationOverlay, notificationPanel, withReducedMotion } from '@/lib/motion-presets';
+import { fadeOverlay, modalContent, withReducedMotion } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+import { useMaxMd } from '@/hooks/use-max-md';
+import {
+  FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS,
+  FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
+  FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
+} from '@/lib/floating-action-layout';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { useMobileBackLayer } from '@/hooks/use-mobile-back-layer';
 import {
+  getFabPanelKeyboardAwareStyle,
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,
 } from '@/lib/keyboard-aware-panel-style';
@@ -110,8 +117,11 @@ export function NotificationPanel() {
   const locale = (params?.locale as string) || 'th';
   const isTh = locale === 'th';
   const reduced = usePrefersReducedMotion();
-  const overlayMotion = withReducedMotion(notificationOverlay, reduced);
-  const panelMotion = withReducedMotion(notificationPanel, reduced);
+  const overlayMotion = withReducedMotion(fadeOverlay, reduced);
+  const panelMotion = withReducedMotion(modalContent, reduced);
+  const maxMd = useMaxMd();
+  const isMobile = maxMd === true;
+  const isDesktop = maxMd === false;
 
   const {
     notifications,
@@ -125,8 +135,14 @@ export function NotificationPanel() {
   const viewportInsets = useVisualViewportInsets(panelOpen);
 
   useMobileBackLayer('notification-panel', panelOpen, closePanel);
-  const backdropStyle = getModalBackdropKeyboardAwareStyle({ insets: viewportInsets });
-  const panelStyle = getModalContentKeyboardAwareStyle({ insets: viewportInsets });
+  const backdropStyle = getModalBackdropKeyboardAwareStyle({
+    insets: viewportInsets,
+    verticalAlign: 'center',
+  });
+  const mobilePanelStyle = getModalContentKeyboardAwareStyle({ insets: viewportInsets });
+  const desktopPanelStyle = isDesktop
+    ? getFabPanelKeyboardAwareStyle({ insets: viewportInsets })
+    : undefined;
 
   const groups = groupNotificationsByTime(notifications, locale);
   const visibleUnread = countUnread(notifications);
@@ -156,26 +172,34 @@ export function NotificationPanel() {
           exit={overlayMotion.exit}
           transition={overlayMotion.transition}
         >
-          <motion.div
-            className="absolute inset-0 bg-black/25 backdrop-blur-[2px]"
+          <div
+            className="absolute inset-0 bg-black/15 backdrop-blur-[2px] md:bg-black/0 md:backdrop-blur-none"
             onClick={closePanel}
             aria-hidden
           />
           <div
-            className="fixed inset-0 z-[205] flex items-center justify-center pointer-events-none p-4 max-md:p-3"
-            style={backdropStyle}
+            className={cn(
+              'z-[205] md:contents',
+              'max-md:fixed max-md:inset-0',
+              FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
+            )}
+            style={isMobile ? backdropStyle : undefined}
           >
             <motion.aside
               initial={panelMotion.initial}
               animate={panelMotion.animate}
               exit={panelMotion.exit}
               transition={panelMotion.transition}
-              style={panelStyle}
+              style={{
+                ...(isMobile ? mobilePanelStyle : desktopPanelStyle),
+              }}
               className={cn(
-                'pointer-events-auto box-border flex flex-col overflow-hidden w-full max-w-md',
-                'bg-background border border-border rounded-2xl bb-shadow-lg',
-                'max-h-[min(75vh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-8rem))]',
-                'max-md:max-h-[min(80dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-6rem))]',
+                'pointer-events-auto box-border flex flex-col overflow-hidden w-full max-w-md min-h-0',
+                'bg-background border border-border rounded-2xl bb-shadow-xl isolate',
+                FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS,
+                'max-md:relative max-md:w-full max-md:overflow-y-auto max-md:bb-smooth-scroll',
+                'md:fixed md:z-[205] md:left-auto md:right-6 md:overflow-y-auto md:bb-smooth-scroll',
+                FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
               )}
               role="dialog"
               aria-modal="true"

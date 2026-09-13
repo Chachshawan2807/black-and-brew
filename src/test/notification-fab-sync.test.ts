@@ -258,19 +258,22 @@ describe('notification fab cross-platform sync', () => {
     expect(fabSource).toContain("isAnyOtherOpen('notification')");
   });
 
-  test('notification FAB fades out while its own panel is open', () => {
+  test('notification FAB hides on mobile while panel is open; stays visible on desktop', () => {
     const fabSource = readFileSync(
       resolve(__dirname, '../components/notifications/InventoryNotificationFAB.tsx'),
       'utf8',
     );
 
-    expect(fabSource).toMatch(/panelOpen\s*\|\|/);
+    expect(fabSource).toContain('shouldHideMobileFabTriggersForOverlay');
+    expect(fabSource).toContain('panelOpen');
+    expect(fabSource).not.toMatch(/panelOpen\s*\|\|\s*fabStackHidden/);
     expect(fabSource).toContain('FabFadePresence');
   });
 
-  test('notification bell FAB does not render a close icon', () => {
-    expect(bellSource).not.toContain('AnimatePresence');
-    expect(bellSource).not.toContain('key="close"');
+  test('notification bell FAB swaps to close icon like quick action FAB', () => {
+    expect(bellSource).toContain('AnimatePresence');
+    expect(bellSource).toContain('key="close"');
+    expect(bellSource).toContain('fabIconClose');
   });
 
   test('notification FAB matches quick action FAB (yellow pastel, same size)', () => {

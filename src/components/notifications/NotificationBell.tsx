@@ -2,9 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Bell } from '@/lib/icons';
-import { motion } from 'framer-motion';
-import { FAB_HOVER, FAB_TAP } from '@/lib/motion-presets';
+import { Bell, X } from '@/lib/icons';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  FAB_HOVER,
+  FAB_TAP,
+  fabIconClose,
+  fabIconOpen,
+  withReducedMotion,
+} from '@/lib/motion-presets';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { cn } from '@/lib/utils';
 import { formatInAppBadgeLabel, getInAppBadgeClassName } from '@/lib/notification-badge';
 import { FAB_SIZE_CLASS, FAB_RIGHT_CLASS, FAB_STACK_INNER_CLASS } from '@/lib/floating-action-layout';
@@ -28,6 +35,9 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
   const { openPanel, closePanel } = useNotificationActions();
   const [pulse, setPulse] = useState(false);
   const isFab = variant === 'fab';
+  const reduced = usePrefersReducedMotion();
+  const fabOpenMotion = withReducedMotion(fabIconOpen, reduced);
+  const fabCloseMotion = withReducedMotion(fabIconClose, reduced);
 
   useEffect(() => {
     const handler = () => {
@@ -48,16 +58,45 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
         : 'การแจ้งเตือน',
   };
 
+  const sidebarBell = (
+    <Bell
+      className="h-[18px] w-[18px] text-foreground/80"
+      size={18}
+      strokeWidth={1.75}
+    />
+  );
+
+  const fabBellIcon = (
+    <AnimatePresence mode="wait" initial={false}>
+      {panelOpen ? (
+        <motion.span
+          key="close"
+          initial={fabCloseMotion.initial}
+          animate={fabCloseMotion.animate}
+          exit={fabCloseMotion.exit}
+          transition={fabCloseMotion.transition}
+          className="flex items-center justify-center"
+        >
+          <X size={18} strokeWidth={1.5} className="text-black" aria-hidden />
+        </motion.span>
+      ) : (
+        <motion.span
+          key="open"
+          initial={fabOpenMotion.initial}
+          animate={fabOpenMotion.animate}
+          exit={fabOpenMotion.exit}
+          transition={fabOpenMotion.transition}
+          className="flex items-center justify-center"
+        >
+          <Bell size={20} strokeWidth={1.65} className="text-black" aria-hidden />
+        </motion.span>
+      )}
+    </AnimatePresence>
+  );
+
   const content = (
     <>
-      <Bell
-        className={cn(
-          isFab ? 'text-black' : 'h-[18px] w-[18px] text-foreground/80',
-        )}
-        size={isFab ? 20 : 18}
-        strokeWidth={isFab ? 1.65 : 1.75}
-        aria-hidden={isFab}
-      />
+      {isFab ? fabBellIcon : sidebarBell}
       {unreadCount > 0 && (
         <span
           aria-hidden
@@ -86,10 +125,13 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
     unreadCount > 0
       ? `การแจ้งเตือน (${unreadCount} ใหม่)`
       : 'การแจ้งเตือน';
+  const fabTip = panelOpen
+    ? 'ปิดการแจ้งเตือน'
+    : bellTip;
 
   if (isFab) {
     return (
-      <HintTooltip tip={bellTip} side="left">
+      <HintTooltip tip={fabTip} side="left">
         <motion.button
           {...sharedProps}
           aria-expanded={panelOpen}
@@ -100,7 +142,6 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
             INVENTORY_QUICK_ACTION_COLORS.fab,
             INVENTORY_QUICK_ACTION_HOVER.fab,
             FAB_STACK_INNER_CLASS,
-            panelOpen && 'ring-2 ring-amber-600/35 ring-offset-2 ring-offset-background',
             !stacked && cn('fixed z-[201]', FAB_RIGHT_CLASS),
             className,
           )}
