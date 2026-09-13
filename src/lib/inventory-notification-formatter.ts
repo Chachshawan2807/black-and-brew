@@ -1,4 +1,5 @@
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
+import { formatScheduleShiftEditHistoryDisplay } from '@/lib/schedule/edit-history-display';
 
 import type { FieldChange } from '@/lib/data-change-log';
 
@@ -121,7 +122,7 @@ const FIELD_LABELS: Record<string, { th: string; en: string }> = {
 
 const METADATA_FIELD_LABELS: Record<string, { th: string; en: string }> = {
 
-  location: { th: 'สถานที่', en: 'Location' },
+  location: { th: 'กะ', en: 'Shift' },
 
   is_management: { th: 'กะจัดการ', en: 'Management shift' },
 
@@ -1142,7 +1143,7 @@ export function resolveEffectiveFieldChanges(row: DataChangeLogRow): FieldChange
 
 
 
-function expandFieldChanges(changes: FieldChange[]): FieldChange[] {
+export function expandFieldChanges(changes: FieldChange[]): FieldChange[] {
 
   const expanded: FieldChange[] = [];
 
@@ -1298,6 +1299,29 @@ function buildMetadataOperationDetail(row: DataChangeLogRow, isTh: boolean): str
 
       return isTh ? 'ลบประวัติกะจัดการ' : 'Deleted management shift history';
 
+    }
+
+    case 'save_management_history_range': {
+      const staffName = meta.staffName as string | undefined;
+      const startDate = meta.startDate as string | undefined;
+      const endDate = meta.endDate as string | undefined;
+      const shiftType = meta.shiftType as string | undefined;
+      const count = meta.count as number | undefined;
+      const namePart = staffName?.trim() ? `${staffName.trim()} · ` : '';
+      const range =
+        startDate && endDate
+          ? startDate === endDate
+            ? startDate
+            : `${startDate}–${endDate}`
+          : '';
+      const shiftPart = shiftType ? ` · ${shiftType}` : '';
+      const countPart = count != null && count > 1 ? (isTh ? ` (${count} วัน)` : ` (${count} days)`) : '';
+      if (range) {
+        return isTh
+          ? `${namePart}บันทึกประวัติกะจัดการ ${range}${shiftPart}${countPart}`
+          : `${namePart}Management shift history ${range}${shiftPart}${countPart}`;
+      }
+      return isTh ? `${namePart}บันทึกประวัติกะจัดการ` : `${namePart}Management shift history saved`;
     }
 
     case 'sync_holidays': {
@@ -1616,6 +1640,10 @@ export function formatDataChangeLogDisplay(
 
     return { headline: formatted.title, detail: buildHistoryDetail(row, isTh) };
 
+  }
+
+  if (row.module === 'schedule' && row.entity_type === 'shift') {
+    return formatScheduleShiftEditHistoryDisplay(row, locale);
   }
 
 

@@ -59,16 +59,33 @@ describe('edit history display coverage', () => {
   });
 
   test('schedule shift change derives readable Thai detail', () => {
-    expectReadableThaiDisplay(
+    const display = formatDataChangeLogDisplay(
       makeRow({
         module: 'schedule',
         entity_type: 'shift',
-        entity_label: 'กะเช้า',
+        entity_label: 'เม',
         field_changes: [],
-        old_value: { status: 'OFF' },
-        new_value: { status: 'MORNING' },
+        metadata: { staffName: 'เม', workDate: '2026-06-10' },
+        old_value: {
+          employee_id: 'emp-2',
+          start_time: '2026-06-10T00:00:00',
+          status: 'scheduled',
+          metadata: { location: 'วันหยุด' },
+        },
+        new_value: {
+          employee_id: 'emp-2',
+          start_time: '2026-06-10T00:00:00',
+          status: 'scheduled',
+          metadata: { location: '7:00' },
+        },
       }),
+      'th',
     );
+    expect(display.headline).toContain('เม');
+    expect(display.headline).toContain('แก้ไขกะ');
+    expect(display.detail).toContain('กะ:');
+    expect(display.detail).toContain('7:00');
+    expect(display.detail).not.toContain('วันที่สิ้นสุด');
   });
 
   test('dashboard reorder uses metadata operation detail', () => {

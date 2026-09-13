@@ -17,6 +17,9 @@ import {
 import { ensureServerSession, requireServiceRoleKey } from '@/lib/security/server-auth';
 import { resolveOptionalClientIp } from '@/lib/security/request-ip';
 import { dispatchInventoryWebPush, rowToDataChangeLogRow } from '@/lib/web-push';
+import {
+  enrichScheduleEditHistoryRows,
+} from '@/lib/schedule/edit-history-enrich';
 
 const dataChangeLogInputSchema = z.object({
   action: z.enum(['CREATE', 'UPDATE', 'DELETE', 'BULK_UPDATE', 'BULK_DELETE']),
@@ -270,11 +273,26 @@ export async function fetchDataChangeLogs(
       throw error;
     }
 
-    const rows = (data ?? []) as DataChangeLogRow[];
+    let rows = (data ?? []) as DataChangeLogRow[];
+
+    if (options.forEditHistory) {
+      rows = filterEditHistoryRows(rows);
+      rows = await enrichScheduleEditHistoryRows(rows, async (ids) => {
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', ids);
+        if (profileError) {
+          console.error('Supabase Error:', profileError.message, profileError.details);
+          return [];
+        }
+        return (profiles ?? []) as { id: string; full_name: string | null }[];
+      });
+    }
 
     return {
       success: true,
-      rows: options.forEditHistory ? filterEditHistoryRows(rows) : rows,
+      rows,
     };
   } catch {
     return { success: false, error: 'Failed to load data change history' };

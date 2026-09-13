@@ -37,6 +37,26 @@ function scheduleDailyReportRefreshForDate(datePart: string) {
   });
 }
 
+async function resolveShiftAuditLabels(employeeId: string, startTime?: string | null) {
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('full_name')
+    .eq('id', employeeId)
+    .maybeSingle();
+
+  const staffName = profile?.full_name?.trim() || null;
+  const workDate = startTime ? String(startTime).split('T')[0] : null;
+
+  return {
+    entityLabel: staffName,
+    metadata: {
+      employeeId,
+      ...(staffName ? { staffName } : {}),
+      ...(workDate ? { workDate } : {}),
+    },
+  };
+}
+
 function scheduleDailyReportRefreshForRange(startDate: string, endDate: string) {
   const startIso = startDate.split('T')[0];
   const endIso = endDate.split('T')[0];
@@ -71,6 +91,10 @@ export async function deleteShift(id: string) {
       .eq('id', shiftId)
       .maybeSingle();
 
+    const auditLabels = shiftBefore?.employee_id
+      ? await resolveShiftAuditLabels(shiftBefore.employee_id, shiftBefore.start_time)
+      : { entityLabel: null, metadata: {} };
+
     const { error } = await supabaseAdmin.from('shifts').delete().eq('id', shiftId);
     if (error) {
       await recordDataChange({
@@ -78,9 +102,11 @@ export async function deleteShift(id: string) {
         module: 'schedule',
         entityType: 'shift',
         entityId: shiftId,
+        entityLabel: auditLabels.entityLabel,
         oldValue: shiftBefore ?? null,
         status: 'failed',
         errorMessage: error.message,
+        metadata: auditLabels.metadata,
       });
       return { success: false, error: error.message };
     }
@@ -90,7 +116,9 @@ export async function deleteShift(id: string) {
       module: 'schedule',
       entityType: 'shift',
       entityId: shiftId,
+      entityLabel: auditLabels.entityLabel,
       oldValue: shiftBefore ?? null,
+      metadata: auditLabels.metadata,
     });
 
     if (shiftBefore?.start_time) {
@@ -273,6 +301,7 @@ export async function saveShift(payload: ShiftPayload) {
       .maybeSingle();
 
     const isUpdate = Boolean(shiftBefore);
+    const auditLabels = await resolveShiftAuditLabels(parsed.data.employee_id, cleanStartTime);
 
     const { error: deleteError } = await supabaseAdmin
       .from('shifts')
@@ -288,10 +317,12 @@ export async function saveShift(payload: ShiftPayload) {
           module: 'schedule',
           entityType: 'shift',
           entityId: shiftBefore?.id ?? parsed.data.id ?? null,
+          entityLabel: auditLabels.entityLabel,
           oldValue: (shiftBefore ?? null) as Json | null,
           newValue: parsed.data as Json,
           status: 'failed',
           errorMessage: deleteError.message,
+          metadata: auditLabels.metadata,
         });
       });
       return { success: false, error: deleteError.message };
@@ -317,10 +348,12 @@ export async function saveShift(payload: ShiftPayload) {
           module: 'schedule',
           entityType: 'shift',
           entityId: shiftBefore?.id ?? parsed.data.id ?? null,
+          entityLabel: auditLabels.entityLabel,
           oldValue: (shiftBefore ?? null) as Json | null,
           newValue: parsed.data as Json,
           status: 'failed',
           errorMessage: error.message,
+          metadata: auditLabels.metadata,
         });
       });
       return { success: false, error: error.message };
@@ -332,8 +365,10 @@ export async function saveShift(payload: ShiftPayload) {
         module: 'schedule',
         entityType: 'shift',
         entityId: data?.id ?? shiftBefore?.id ?? parsed.data.id ?? null,
+        entityLabel: auditLabels.entityLabel,
         oldValue: (shiftBefore ?? null) as Json | null,
         newValue: (data ?? parsed.data) as Json,
+        metadata: auditLabels.metadata,
       });
     });
 
@@ -422,6 +457,7 @@ export async function saveManagementHistoryRange(payload: ManagementRangePayload
   }
 
   const { employeeId, startDate, endDate, shiftType, remark, previousRange } = parsed.data;
+  const auditLabels = await resolveShiftAuditLabels(employeeId, `${startDate.split('T')[0]}T00:00:00`);
 
   try {
     if (previousRange) {
@@ -487,7 +523,7 @@ export async function saveManagementHistoryRange(payload: ManagementRangePayload
           errorMessage: insertError.message,
           metadata: {
             operation: 'save_management_history_range',
-            employeeId,
+            ...auditLabels.metadata,
             startDate,
             endDate,
             shiftType,
@@ -502,9 +538,10 @@ export async function saveManagementHistoryRange(payload: ManagementRangePayload
         action: 'BULK_UPDATE',
         module: 'schedule',
         entityType: 'shift',
+        entityLabel: auditLabels.entityLabel,
         metadata: {
           operation: 'save_management_history_range',
-          employeeId,
+          ...auditLabels.metadata,
           startDate,
           endDate,
           shiftType,

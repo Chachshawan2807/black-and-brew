@@ -499,7 +499,7 @@ describe('formatDataChangeLogDisplay', () => {
       }),
       'th'
     );
-    expect(display.detail).toContain('สถานที่');
+    expect(display.detail).toContain('กะ');
     expect(display.detail).toContain('หน้าร้าน');
     expect(display.detail).toContain('ครัว');
   });
