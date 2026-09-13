@@ -130,5 +130,7 @@ describe('keyboard-aware panel styles', () => {
     expect(backdrop.bottom).toBe('auto');
     expect(backdrop.height).toBe(420);
     expect(panel.maxHeight).toBe(404);
+    expect(panel.flex).toBe('0 1 auto');
+    expect(panel.alignSelf).toBe('flex-start');
   });
 });

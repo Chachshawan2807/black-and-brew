@@ -156,6 +156,7 @@ export function getMobileQuickActionKeyboardSheetPanelStyle(
     width: '100%',
     maxHeight: Math.max(120, insets.visibleHeight - margin * 2),
     minHeight: 0,
-    flex: '1 1 auto',
+    flex: '0 1 auto',
+    alignSelf: 'flex-start',
   };
 }
