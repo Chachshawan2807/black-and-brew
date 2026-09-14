@@ -43,10 +43,14 @@ describe('splitSecretaryCardTitle', () => {
 
 describe('resolveSecretaryCardTitleFontClass', () => {
   test('uses default size for short titles', () => {
-    expect(resolveSecretaryCardTitleFontClass(2)).toContain('14px');
+    const classes = resolveSecretaryCardTitleFontClass(2);
+    expect(classes).toContain('14px');
+    expect(classes).toContain('md:text-[clamp(14px,2.1vw,17px)]');
   });
 
   test('shrinks font for longer wrapped titles', () => {
-    expect(resolveSecretaryCardTitleFontClass(4)).toContain('11px');
+    const classes = resolveSecretaryCardTitleFontClass(4);
+    expect(classes).toContain('11px');
+    expect(classes).toContain('md:text-[clamp(12px,1.65vw,14px)]');
   });
 });

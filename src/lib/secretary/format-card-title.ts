@@ -18,12 +18,12 @@ export function splitSecretaryCardTitle(title: string): string[] {
 
 export function resolveSecretaryCardTitleFontClass(lineCount: number): string {
   if (lineCount <= 2) {
-    return 'text-[clamp(12px,3.2vw,14px)] leading-[1.35]';
+    return 'text-[clamp(12px,3.2vw,14px)] md:text-[clamp(14px,2.1vw,17px)] leading-[1.35] md:leading-[1.32]';
   }
   if (lineCount <= 3.5) {
-    return 'text-[clamp(11px,2.9vw,12px)] leading-[1.3]';
+    return 'text-[clamp(11px,2.9vw,12px)] md:text-[clamp(13px,1.85vw,15px)] leading-[1.3] md:leading-[1.28]';
   }
-  return 'text-[clamp(10px,2.5vw,11px)] leading-[1.25]';
+  return 'text-[clamp(10px,2.5vw,11px)] md:text-[clamp(12px,1.65vw,14px)] leading-[1.25] md:leading-[1.24]';
 }
 
 function splitHeadline(headline: string): string[] {
