@@ -41,7 +41,7 @@ describe('carrier selection helpers', () => {
 
   test('formats carrier change message for updates and first save', () => {
     expect(formatBeanOrderCarrierChangeMessage(null, 'kerryexpress-th')).toBe(
-      'บันทึกช่องทางจัดส่ง: Kerry',
+      'บันทึกช่องทางการจัดส่ง: Kerry',
     );
     expect(formatBeanOrderCarrierChangeMessage('kerryexpress-th', 'flashexpress')).toBe(
       'เปลี่ยนช่องทางการจัดส่งจาก Kerry เป็น Flash',

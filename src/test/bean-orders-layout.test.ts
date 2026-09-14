@@ -7,8 +7,10 @@ import {
   BEAN_ORDER_DETAIL_FULFILLMENT_CARD,
   BEAN_ORDER_DETAIL_LINES_CARD,
   BEAN_ORDER_DETAIL_PAYMENT_BODY,
+  BEAN_ORDER_DETAIL_PAYMENT_COLUMN,
   BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID,
   BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT,
+  BEAN_ORDER_DETAIL_SHIPPING_COLUMN,
   BEAN_ORDER_PAYMENT_ACTIONS_WIDTH,
   BEAN_ORDER_LIST_CARD,
   BEAN_ORDER_LIST_GRID,
@@ -27,12 +29,16 @@ describe('bean order detail desktop layout', () => {
 
   test('stacks slip preview below payment action buttons on detail', () => {
     expect(BEAN_ORDER_DETAIL_PAYMENT_BODY).toContain('flex-col');
-    expect(BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT).toContain(BEAN_ORDER_PAYMENT_ACTIONS_WIDTH);
+    expect(BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT).toContain('w-full');
     expect(BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT).not.toContain('flex-1');
   });
 
-  test('uses wider payment column on detail fulfillment', () => {
-    expect(BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID).toContain('lg:grid-cols-[11rem_minmax(0,1fr)]');
+  test('splits shipping and payment evenly on detail fulfillment desktop', () => {
+    expect(BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID).toContain('lg:grid-cols-2');
+    expect(BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID).toContain('lg:gap-0');
+    expect(BEAN_ORDER_DETAIL_SHIPPING_COLUMN).toContain('lg:pr-6');
+    expect(BEAN_ORDER_DETAIL_PAYMENT_COLUMN).toContain('lg:pl-6');
+    expect(BEAN_ORDER_DETAIL_PAYMENT_COLUMN).toContain('lg:border-l-2');
     expect(BEAN_ORDER_PAYMENT_ACTIONS_WIDTH).toBe('w-[11rem]');
     expect(BEAN_ORDER_DETAIL_FULFILLMENT_CARD).not.toContain('min-w-[26rem]');
   });

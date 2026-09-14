@@ -105,21 +105,21 @@ export const BEAN_ORDER_ACTION_BADGE_MUTED =
 export const BEAN_ORDER_PAYMENT_SHIPPING_GRID =
   'grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-8';
 
-/** Detail: payment + shipping columns inside wider fulfillment card */
+/** Detail: equal halves on desktop; divider on payment column (center) */
 export const BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID =
-  'grid h-full min-h-0 flex-1 gap-6 lg:grid-cols-[11rem_minmax(0,1fr)] lg:items-stretch lg:gap-6';
+  'grid h-full min-h-0 flex-1 gap-6 lg:grid-cols-2 lg:items-stretch lg:gap-0';
 
 export const BEAN_ORDER_PAYMENT_COLUMN =
   'min-w-0 space-y-3 lg:pr-8';
 
 export const BEAN_ORDER_DETAIL_PAYMENT_COLUMN =
-  'flex min-h-0 min-w-0 flex-col space-y-3';
+  'flex min-h-0 w-full min-w-0 flex-col space-y-3 lg:order-2 lg:border-l-2 lg:border-border lg:pl-6 lg:pt-0';
 
 export const BEAN_ORDER_SHIPPING_COLUMN =
   'min-w-0 space-y-3 border-t-2 border-border pt-6 lg:border-l-2 lg:border-t-0 lg:pl-8 lg:pt-0';
 
 export const BEAN_ORDER_DETAIL_SHIPPING_COLUMN =
-  'flex min-h-0 min-w-0 flex-col space-y-3 border-t-2 border-border pt-6 lg:border-l-2 lg:border-t-0 lg:pl-6 lg:pt-0';
+  'flex min-h-0 w-full min-w-0 flex-col space-y-3 border-t-2 border-border pt-6 lg:order-1 lg:pr-6 lg:border-t-0 lg:pt-0';
 
 export const BEAN_ORDER_PAYMENT_ACTIONS_WIDTH = 'w-[11rem]';
 
@@ -131,13 +131,16 @@ export const BEAN_ORDER_PAYMENT_BODY =
 
 /** Detail page: action buttons then slip preview below */
 export const BEAN_ORDER_DETAIL_PAYMENT_BODY =
-  'flex flex-col gap-3';
+  'flex w-full min-w-0 flex-col gap-3';
 
 export const BEAN_ORDER_PAYMENT_SLIP_SLOT =
   'h-[9rem] min-h-[9rem] min-w-0 flex-1 self-stretch overflow-hidden';
 
+export const BEAN_ORDER_DETAIL_PAYMENT_ACTIONS =
+  'flex w-full min-w-0 shrink-0 flex-col justify-start gap-2 self-stretch';
+
 export const BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT =
-  `h-[9rem] min-h-[9rem] ${BEAN_ORDER_PAYMENT_ACTIONS_WIDTH} overflow-hidden`;
+  'h-[9rem] min-h-[9rem] w-full min-w-0 overflow-hidden';
 
 export const BEAN_ORDER_ACTION_BTN_OUTLINE = BB_BTN_OUTLINE;
 

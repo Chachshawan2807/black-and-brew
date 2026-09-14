@@ -54,7 +54,7 @@ export function formatBeanOrderCarrierChangeMessage(
   const nextLabel = getCarrierLabel(nextCarrierCode);
   const previousLabel = getCarrierLabel(previousCarrierCode);
   if (!previousCarrierCode || previousLabel === ' ') {
-    return `บันทึกช่องทางจัดส่ง: ${nextLabel}`;
+    return `บันทึกช่องทางการจัดส่ง: ${nextLabel}`;
   }
   if (previousLabel === nextLabel) {
     return 'อัปเดตการจัดส่งแล้ว';

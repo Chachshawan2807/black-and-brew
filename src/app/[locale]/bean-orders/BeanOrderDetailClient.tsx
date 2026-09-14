@@ -17,10 +17,14 @@ import {
 } from '@/app/actions/bean-order-actions';
 import {
   formatBeanOrderCarrierChangeMessage,
-  getCarrierLabel,
   initialCarrierSelection,
+  OTHER_CARRIER_CODE,
   resolveCarrierCodeForSave,
 } from '@/lib/bean-orders/carriers';
+import {
+  getBeanOrderDetailShipmentSaveButtonLabel,
+  shouldShowBeanOrderDetailShipmentSaveButton,
+} from '@/lib/bean-orders/detail-shipment-save-ui';
 import {
   resolveBeanOrderTrackingNumberForSave,
   shouldMarkBeanOrderShipped,
@@ -28,7 +32,6 @@ import {
 } from '@/lib/bean-orders/shipment-persist';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
 import { formatBeanOrderStatusHistoryLine } from '@/lib/bean-orders/history-display';
-import { formatShipmentTrackingLabel } from '@/lib/bean-orders/tracking-status-labels';
 import { PaymentSlipViewer } from './_components/PaymentSlipViewer';
 import { BeanOrderShippingFields } from './_components/BeanOrderShippingFields';
 import {
@@ -47,7 +50,7 @@ import {
   stashBeanOrderDeliveredPatch,
 } from '@/lib/bean-orders/delivered-notify-snapshot';
 import { OrderListStatusGroup } from './_components/OrderStatusBadge';
-import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_BODY_GRID, BEAN_ORDER_DETAIL_FULFILLMENT_CARD, BEAN_ORDER_DETAIL_LINES_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_DETAIL_PAYMENT_BODY, BEAN_ORDER_DETAIL_PAYMENT_COLUMN, BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID, BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT, BEAN_ORDER_DETAIL_SHIPPING_COLUMN, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_INFO, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE, BEAN_ORDER_PAYMENT_ACTIONS } from './_components/bean-order-layout';
+import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_BODY_GRID, BEAN_ORDER_DETAIL_FULFILLMENT_CARD, BEAN_ORDER_DETAIL_LINES_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_DETAIL_PAYMENT_ACTIONS, BEAN_ORDER_DETAIL_PAYMENT_BODY, BEAN_ORDER_DETAIL_PAYMENT_COLUMN, BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID, BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT, BEAN_ORDER_DETAIL_SHIPPING_COLUMN, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_INFO, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE } from './_components/bean-order-layout';
 import {
   BeanOrderBackLink,
   BeanOrderIconBadge,
@@ -137,12 +140,10 @@ export default function BeanOrderDetailClient({
   const hasSlip = Boolean(order.payment?.uploadedAt || pendingSlipPreview);
   const confirmEnabled = isConfirmPaymentButtonEnabled(hasSlip);
 
-  const shipmentTrackingLabel = order.shipment
-    ? formatShipmentTrackingLabel(order.shipment.trackingStatus, {
-        fulfillmentStatus: order.fulfillmentStatus,
-        trackingNumber: order.shipment.trackingNumber,
-      })
-    : null;
+  const showShipmentSaveButton = shouldShowBeanOrderDetailShipmentSaveButton({
+    fulfillmentStatus: order.fulfillmentStatus,
+    trackingNumber,
+  });
 
   function reload() {
     router.refresh();
@@ -200,11 +201,17 @@ export default function BeanOrderDetailClient({
     void reload();
   }
 
-  async function handleShip() {
+  async function persistShipmentFromForm(
+    code: string,
+    customLabel: string,
+    successMessage: string | ((previousCarrier: string | null, resolvedCarrier: string) => string),
+  ) {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
+    if (busy) return;
+
     const carrierValidation = validateBeanOrderShipmentCarrier({
-      carrierCode,
-      customCarrierLabel,
+      carrierCode: code,
+      customCarrierLabel: customLabel,
     });
     if (!carrierValidation.ok) {
       setError(carrierValidation.error);
@@ -222,6 +229,7 @@ export default function BeanOrderDetailClient({
       fulfillmentStatus: order.fulfillmentStatus,
     });
     setBusy(true);
+    setError(null);
     const result = markShipped
       ? await shipBeanOrder(
           order.id,
@@ -246,8 +254,48 @@ export default function BeanOrderDetailClient({
         shippedAt: prev.shipment?.shippedAt ?? new Date().toISOString(),
       },
     }));
-    setMessage(formatBeanOrderCarrierChangeMessage(previousCarrierCode, resolvedCarrierCode));
+    const messageText =
+      typeof successMessage === 'function'
+        ? successMessage(previousCarrierCode, resolvedCarrierCode)
+        : successMessage;
+    setMessage(messageText);
     void reload();
+  }
+
+  async function autoSaveCarrierChannel(code: string, customLabel: string) {
+    const carrierValidation = validateBeanOrderShipmentCarrier({
+      carrierCode: code,
+      customCarrierLabel: customLabel,
+    });
+    if (!carrierValidation.ok) return;
+
+    const resolvedCarrierCode = carrierValidation.resolvedCarrierCode;
+    const previousCarrierCode = order.shipment?.carrierCode ?? null;
+    if (resolvedCarrierCode === previousCarrierCode) return;
+
+    await persistShipmentFromForm(code, customLabel, (previous, resolved) =>
+      formatBeanOrderCarrierChangeMessage(previous, resolved),
+    );
+  }
+
+  function handleCarrierCodeChange(next: string) {
+    setCarrierCode(next);
+    if (next === OTHER_CARRIER_CODE) {
+      setCustomCarrierLabel('');
+      return;
+    }
+    void autoSaveCarrierChannel(next, '');
+  }
+
+  function handleCustomCarrierLabelBlur() {
+    if (carrierCode !== OTHER_CARRIER_CODE) return;
+    void autoSaveCarrierChannel(OTHER_CARRIER_CODE, customCarrierLabel);
+  }
+
+  async function handleShip() {
+    await persistShipmentFromForm(carrierCode, customCarrierLabel, (previous, resolved) =>
+      formatBeanOrderCarrierChangeMessage(previous, resolved),
+    );
   }
 
   async function handleConfirmDelivered() {
@@ -433,7 +481,7 @@ export default function BeanOrderDetailClient({
                 ) : null}
                 <div className={BEAN_ORDER_DETAIL_PAYMENT_BODY}>
                   {!isReadOnly && editable ? (
-                    <div className={BEAN_ORDER_PAYMENT_ACTIONS}>
+                    <div className={BEAN_ORDER_DETAIL_PAYMENT_ACTIONS}>
                       {canPay ? (
                         <>
                           <input
@@ -530,8 +578,9 @@ export default function BeanOrderDetailClient({
                       carrierCode={carrierCode}
                       customCarrierLabel={customCarrierLabel}
                       trackingNumber={trackingNumber}
-                      onCarrierCodeChange={setCarrierCode}
+                      onCarrierCodeChange={handleCarrierCodeChange}
                       onCustomCarrierLabelChange={setCustomCarrierLabel}
+                      onCustomCarrierLabelBlur={handleCustomCarrierLabelBlur}
                       onTrackingNumberChange={setTrackingNumber}
                       inputClass={inputClass}
                       trackingPlaceholder="เลขพัสดุ (ไม่บังคับ)"
@@ -548,23 +597,23 @@ export default function BeanOrderDetailClient({
                           จัดส่งสำเร็จ
                         </button>
                       ) : null}
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void handleShip()}
-                        className={BEAN_ORDER_ACTION_BTN}
-                      >
-                        {busy ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <LoadingIcon size="sm" className="text-background" />
-                            กำลังบันทึก...
-                          </span>
-                        ) : order.fulfillmentStatus === 'shipped' ? (
-                          'อัปเดตการจัดส่ง'
-                        ) : (
-                          'บันทึกการจัดส่ง'
-                        )}
-                      </button>
+                      {showShipmentSaveButton ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void handleShip()}
+                          className={BEAN_ORDER_ACTION_BTN}
+                        >
+                          {busy ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <LoadingIcon size="sm" className="text-background" />
+                              กำลังบันทึก...
+                            </span>
+                          ) : (
+                            getBeanOrderDetailShipmentSaveButtonLabel(order.fulfillmentStatus)
+                          )}
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -587,29 +636,7 @@ export default function BeanOrderDetailClient({
         </div>
       ) : null}
 
-      {order.shipment ? (
-        <BeanOrderSectionReveal className={`${BEAN_ORDER_CARD} mb-4 p-4`} delay={0.1}>
-          <h2 className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-            <BeanOrderIconBadge tone="shipping" size="sm">
-              <Truck className="h-3.5 w-3.5" aria-hidden />
-            </BeanOrderIconBadge>
-            การจัดส่ง
-          </h2>
-          <div className="space-y-1 text-sm">
-            <p className="text-foreground">{getCarrierLabel(order.shipment.carrierCode)}</p>
-            {order.shipment.trackingNumber ? (
-              <p className="text-muted-foreground">
-                พัสดุ <span className="text-foreground">{order.shipment.trackingNumber}</span>
-                {shipmentTrackingLabel ? <span> / {shipmentTrackingLabel}</span> : null}
-              </p>
-            ) : shipmentTrackingLabel ? (
-              <p className="text-muted-foreground">{shipmentTrackingLabel}</p>
-            ) : null}
-          </div>
-        </BeanOrderSectionReveal>
-      ) : null}
-
-      <BeanOrderSectionReveal className={`${BEAN_ORDER_CARD} p-4`} delay={0.12}>
+      <BeanOrderSectionReveal className={`${BEAN_ORDER_CARD} p-4`} delay={0.1}>
         <h2 className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
           <BeanOrderIconBadge tone="neutral" size="sm">
             <History className="h-3.5 w-3.5" aria-hidden />
