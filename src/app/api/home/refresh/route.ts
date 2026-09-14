@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
-import { retireDerivedSecretaryTasksForDay } from '@/app/actions/home-actions';
+import { refreshDerivedSecretaryTasks } from '@/app/actions/home-actions';
 import { requirePrivilegedSession } from '@/lib/policies/server-gate';
 import { toPublicErrorMessage } from '@/lib/security/public-error';
 
-/** Retires pending derived operational_tasks for the secretary board (no derive rebuild). */
+/** Rebuilds derived operational_tasks for the home secretary board. */
 export async function POST(request: Request) {
   await headers();
   noStore();
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       locale?: string;
     };
 
-    const result = await retireDerivedSecretaryTasksForDay(body);
+    const result = await refreshDerivedSecretaryTasks(body);
     if (!result.success) {
       return NextResponse.json(result, { status: 500 });
     }

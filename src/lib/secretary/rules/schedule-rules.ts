@@ -64,20 +64,5 @@ export function deriveScheduleTasks(snapshot: SecretarySnapshot): DerivedTaskDra
     });
   }
 
-  if (snapshot.headcountToday <= 1) {
-    const sourceRef = { dateIso: snapshot.dateIso, headcount: snapshot.headcountToday };
-    tasks.push({
-      taskType: 'staffing_gap_today',
-      title: 'ตรวจแดชบอร์ด คนวันนี้น้อย',
-      description: `มี ${snapshot.headcountToday} คนในกะวันนี้`,
-      priority: 'normal',
-      module: 'dashboard',
-      sourceRef,
-      sourceRefHash: buildSourceRefHash('staffing_gap_today', sourceRef),
-      actionHref: `${localePrefix}/dashboard`,
-      estimatedMinutes: 15,
-    });
-  }
-
   return tasks;
 }

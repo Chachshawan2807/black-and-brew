@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { CheckCircle2, Plus } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -11,7 +11,8 @@ import {
   BB_CHIP_SELECTED,
 } from '@/lib/ui-outlined-tokens';
 import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
-import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
+import { mergeSecretarySnapshot } from '@/lib/secretary/snapshot-patch';
+import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
 import {
   completeSecretaryTasks,
   createManualSecretaryTask,
@@ -84,21 +85,35 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
   const [overlayTask, setOverlayTask] = useState<SecretaryBoardDisplayTask | null>(null);
 
   const applyBoardSync = useCallback((payload: BoardSyncPayload) => {
-    setBoard((prev) => ({
-      ...prev,
-      tasks: payload.tasks,
-      snapshot: payload.snapshot ?? prev.snapshot,
-    }));
+    setBoard((prev) => {
+      const nextSnapshot = payload.snapshot
+        ? payload.snapshot
+        : payload.snapshotPatch
+          ? mergeSecretarySnapshot(prev.snapshot, payload.snapshotPatch)
+          : prev.snapshot;
+
+      return {
+        ...prev,
+        tasks: payload.tasks,
+        snapshot: nextSnapshot,
+      };
+    });
     if (payload.snapshot?.dateIso) {
       setWorkDateIso(payload.snapshot.dateIso);
+    } else if (payload.snapshotPatch?.dateIso) {
+      setWorkDateIso(payload.snapshotPatch.dateIso);
     }
   }, []);
+
+  const boardRef = useRef(board);
+  boardRef.current = board;
 
   useHomeBoardSync({
     dateIso: workDateIso,
     locale,
     onSync: applyBoardSync,
     onWorkDateChange: setWorkDateIso,
+    getBaseSnapshot: () => boardRef.current.snapshot,
     skipInitialFullSync: true,
   });
 
@@ -116,23 +131,16 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
     [board.tasks, moduleFilter, workDateIso],
   );
 
-  const hasManualTasks = useMemo(
-    () => visibleTasks.some((task) => isManualSecretaryTask(task)),
-    [visibleTasks],
-  );
-
   useEffect(() => {
-    if (!hasManualTasks) return;
+    if (visibleTasks.length === 0) return;
 
     return scheduleIdleWork(() => {
       preloadSecretaryTaskOverlayShell();
       for (const task of visibleTasks) {
-        if (isManualSecretaryTask(task)) {
-          preloadSecretaryOverlayForTask(task);
-        }
+        preloadSecretaryOverlayForTask(task);
       }
     }, { timeout: 2000 });
-  }, [hasManualTasks, visibleTasks]);
+  }, [visibleTasks]);
 
   const visibleTaskCount = useMemo(
     () => countConsolidatedSecretaryBoardTasks(board.tasks, 'all', visibility),
@@ -189,7 +197,7 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-5">
-      <p className="bb-page-subtitle">งานที่เพิ่มเอง · อัปเดตเมื่อมีการเปลี่ยนแปลง</p>
+      <p className="bb-page-subtitle">งานประจำวัน · อัปเดตเมื่อมีการเปลี่ยนแปลง</p>
 
       <div className="flex flex-wrap gap-2 items-center">
         <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
@@ -259,11 +267,7 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
               task={task}
               isDone={task.status === 'done'}
               isPending={isPending}
-              onPreloadOpen={
-                isManualSecretaryTask(task)
-                  ? () => preloadSecretaryOverlayForTask(task)
-                  : undefined
-              }
+              onPreloadOpen={() => preloadSecretaryOverlayForTask(task)}
               onOpen={() => setOverlayTask(task)}
               onComplete={() => handleComplete(task.consolidatedTaskIds)}
             />
@@ -273,6 +277,7 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
 
       <SecretaryTaskOverlay
         task={overlayTask}
+        snapshot={board.snapshot}
         locale={locale}
         onClose={() => setOverlayTask(null)}
         onTaskUpdated={handleTaskUpdated}
@@ -300,7 +305,7 @@ function TaskCard({
 }) {
   const titleLines = splitSecretaryCardTitle(task.title);
   const titleFontClass = resolveSecretaryCardTitleFontClass(titleLines.length);
-  const canOpenDetail = isManualSecretaryTask(task);
+  const canOpenDetail = canOpenSecretaryTaskDetail(task);
   const cardClassName = cn(
     'relative flex aspect-square min-h-0 rounded-2xl border p-2.5 bb-transition',
     isDone ? SECRETARY_TASK_COLORS.done : SECRETARY_TASK_COLORS.card,

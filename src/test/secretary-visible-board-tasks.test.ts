@@ -101,7 +101,7 @@ describe('filterVisibleSecretaryBoardTasks', () => {
     expect(countSecretaryBoardTasksByModule(tasks, 'inventory', visibility)).toBe(2);
   });
 
-  test('hides derived tasks from the manual-only board', () => {
+  test('shows derived operational tasks alongside manual tasks', () => {
     const visible = filterVisibleSecretaryBoardTasks(
       [
         task({ id: 'manual', status: 'pending', source_kind: 'manual' }),
@@ -118,6 +118,43 @@ describe('filterVisibleSecretaryBoardTasks', () => {
           source_kind: 'derived',
           module: 'inventory',
           task_type: 'inventory_reorder',
+        }),
+      ],
+      'all',
+      visibility,
+    );
+
+    expect(visible.map((entry) => entry.id).toSorted()).toEqual([
+      'derived-bean',
+      'derived-inventory',
+      'manual',
+    ]);
+  });
+
+  test('hides retired branch2, roast, and inventory count tasks', () => {
+    const visible = filterVisibleSecretaryBoardTasks(
+      [
+        task({ id: 'manual', status: 'pending', source_kind: 'manual' }),
+        task({
+          id: 'branch2',
+          status: 'pending',
+          source_kind: 'derived',
+          module: 'branch2',
+          task_type: 'roast_carry',
+        }),
+        task({
+          id: 'count',
+          status: 'pending',
+          source_kind: 'derived',
+          module: 'inventory_count',
+          task_type: 'inventory_count_due',
+        }),
+        task({
+          id: 'legacy-bean',
+          status: 'pending',
+          source_kind: 'derived',
+          module: 'bean_orders',
+          task_type: 'bean_payment_pending',
         }),
       ],
       'all',

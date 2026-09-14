@@ -24,10 +24,8 @@ export function deriveMaintenanceTasks(snapshot: SecretarySnapshot): DerivedTask
     });
   }
 
-  const dueSoon = snapshot.maintenanceTasks.filter(
-    (task) => task.urgency === 'within_7_days' || task.urgency === 'within_30_days',
-  );
-  if (dueSoon.length > 0 && overdue.length === 0) {
+  const dueSoon = snapshot.maintenanceTasks.filter((task) => task.urgency === 'within_7_days');
+  if (dueSoon.length > 0) {
     const sourceRef = { rule: 'maintenance_due', ids: dueSoon.map((task) => task.id) };
     tasks.push({
       taskType: 'maintenance_due',

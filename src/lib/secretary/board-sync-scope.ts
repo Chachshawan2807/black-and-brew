@@ -1,3 +1,5 @@
+import type { SecretaryModule } from '@/lib/secretary/types';
+
 export const SECRETARY_REALTIME_TABLES = [
   'operational_tasks',
   'shifts',
@@ -26,6 +28,14 @@ export type SecretaryBoardSyncPlan = {
 };
 
 export const SECRETARY_BOARD_SYNC_DEBOUNCE_MS = 3_000;
+
+export const SCOPE_MODULES: Record<Exclude<SecretarySyncScope, 'tasks'>, SecretaryModule[]> =
+  {
+    inventory: ['inventory', 'branch_withdraw'],
+    bean_orders: ['bean_orders'],
+    maintenance: ['maintenance'],
+    schedule: ['schedule'],
+  };
 
 const TABLE_TO_SCOPES: Record<SecretaryRealtimeTable, SecretarySyncScope[]> = {
   operational_tasks: ['tasks'],
@@ -70,9 +80,22 @@ export function resolveSecretaryBoardSyncPlan(
     (scope): scope is Exclude<SecretarySyncScope, 'tasks'> => scope !== 'tasks',
   );
 
-  if (dataScopes.length >= 1 && !scopeSet.has('tasks')) {
-    return { kind: 'light', scopes: ['tasks'] };
+  if (dataScopes.length > 0 && !scopeSet.has('tasks')) {
+    return { kind: 'scoped', scopes: dataScopes };
   }
 
   return { kind: 'full', scopes: [] };
+}
+
+export function modulesForSyncScopes(
+  scopes: readonly SecretarySyncScope[],
+): SecretaryModule[] {
+  const modules = new Set<SecretaryModule>();
+  for (const scope of scopes) {
+    if (scope === 'tasks') continue;
+    for (const module of SCOPE_MODULES[scope]) {
+      modules.add(module);
+    }
+  }
+  return [...modules];
 }

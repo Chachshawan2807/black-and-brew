@@ -1,0 +1,47 @@
+export type Branch2ShiftLike = {
+  metadata?: {
+    location?: string;
+    remark?: string;
+    is_management?: boolean;
+  } | null;
+};
+
+export type SecretaryStaffDutyEntry = {
+  name: string;
+  shiftText: string;
+  remark?: string;
+};
+
+const BRANCH2_LOCATION = 'ไปสาขา 2';
+
+export function isBranch2Shift(shift: Branch2ShiftLike): boolean {
+  const location = shift.metadata?.location?.trim();
+  return location === BRANCH2_LOCATION;
+}
+
+export function detectBranch2Day(shifts: Branch2ShiftLike[]): {
+  isBranch2Day: boolean;
+  branch2Remark?: string;
+} {
+  const branchShift = shifts.find((shift) => isBranch2Shift(shift));
+  if (!branchShift) {
+    return { isBranch2Day: false };
+  }
+
+  const remark = branchShift.metadata?.remark?.trim();
+  return {
+    isBranch2Day: true,
+    branch2Remark: remark || undefined,
+  };
+}
+
+/** Branch-2 day from today's other-duty shifts (snapshot only; not a home board card). */
+export function resolveSecretaryBranch2Day(
+  otherDutyStaff: SecretaryStaffDutyEntry[],
+): ReturnType<typeof detectBranch2Day> {
+  return detectBranch2Day(
+    otherDutyStaff.map((entry) => ({
+      metadata: { location: entry.shiftText, remark: entry.remark },
+    })),
+  );
+}

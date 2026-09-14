@@ -35,27 +35,5 @@ export function deriveInventoryTasks(snapshot: SecretarySnapshot): DerivedTaskDr
     });
   }
 
-  if (snapshot.branchWithdrawItems.length > 0) {
-    const names = snapshot.branchWithdrawItems
-      .slice(0, 5)
-      .map((item) => item.name)
-      .join(', ');
-    const sourceRef = {
-      rule: 'branch_withdraw',
-      itemIds: snapshot.branchWithdrawItems.map((item) => item.id),
-    };
-    tasks.push({
-      taskType: 'branch_withdraw',
-      title: `เบิกของสาขา 2 (${snapshot.branchWithdrawItems.length} รายการ)`,
-      description: names,
-      priority: 'normal',
-      module: 'branch_withdraw',
-      sourceRef,
-      sourceRefHash: buildSourceRefHash('branch_withdraw', sourceRef),
-      actionHref: `${localePrefix}/inventory/branch-withdraw`,
-      estimatedMinutes: 40,
-    });
-  }
-
   return tasks;
 }

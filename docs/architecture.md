@@ -302,13 +302,14 @@ Event-driven debounce: `scheduleProactiveInsightEvaluation()` after `saveShift` 
 ### Secretary operational task board (v9.4+)
 
 ```text
-SecretaryPage → loadSecretaryBoard() → operational_tasks for scheduled_date
-→ syncDerivedSecretaryTasks() merges module snapshots (schedule, inventory, maintenance, bean orders)
+HomePage → loadSecretaryBoard() → fetchSecretarySnapshot()
+→ syncDerivedSecretaryTasks() in src/app/actions/home-actions.ts
 → deriveTasksFromSnapshot() in src/lib/secretary/module-registry.ts
-→ SecretaryClient board + task overlays (schedule/inventory context via secretary-overlay-actions.ts)
-→ Realtime: operational_tasks + operational_task_sessions + domain tables (migration 20260829120000)
-→ Sidebar badge: countPendingSecretaryTasks() via menu-list.ts
-→ POST /api/secretary/refresh (privileged session) for manual derived-task refresh
+  (schedule understaffed/leave, inventory reorder, bean orders pending, maintenance overdue + within 7 days)
+→ HomeClient board + embedded overlays (purchase orders, bean orders, schedule review, maintenance list)
+→ Realtime: operational_tasks + domain tables via use-home-board-sync (scoped derive)
+→ Sidebar badge: countPendingSecretaryTasks() (manual + visible derived)
+→ POST /api/home/refresh (privileged) rebuilds derived tasks
 ```
 
 > **Retired (2026-09):** `POST /api/chat` and the in-app AI chat stack (`src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, chat UI) were removed. Shell overlays (`DeferredOverlays`) remain notification FAB + inventory quick action only. See **DEC-089** / **DEC-091** in `docs/memory.md`.
