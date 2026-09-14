@@ -9,12 +9,12 @@ function readFile(relativePath: string): string {
 }
 
 describe('Home page empty shell', () => {
-  test('index page renders a minimal empty container only', () => {
+  test('index page redirects to home instead of rendering dashboard widgets', () => {
     const page = readFile('app/[locale]/page.tsx');
-    expect(page).toMatch(/data-testid="home-page-shell"/);
+    expect(page).toMatch(/redirect\(/);
+    expect(page).toMatch(/\/home/);
     expect(page).not.toMatch(/LiveStatusTracker/);
     expect(page).not.toMatch(/HomeOpsPanels/);
-    expect(page).not.toMatch(/HomePageClient/);
   });
 });
 

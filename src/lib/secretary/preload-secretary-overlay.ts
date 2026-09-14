@@ -17,7 +17,7 @@ export function preloadSecretaryOverlayForTask(
 export function preloadSecretaryTaskOverlayShell(): void {
   if (shellPreloaded) return;
   shellPreloaded = true;
-  void import('@/app/[locale]/secretary/_components/SecretaryTaskOverlay');
+  void import('@/app/[locale]/home/_components/SecretaryTaskOverlay');
 }
 
 /** @internal Vitest only */

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
-import { syncAndFetchSecretaryBoard } from '@/app/actions/secretary-actions';
+import { syncAndFetchSecretaryBoard } from '@/app/actions/home-actions';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import {
@@ -62,7 +62,7 @@ function emitInvalidation() {
   });
 }
 
-export function subscribeSecretaryInvalidation(listener: () => void): () => void {
+export function subscribeHomeBoardInvalidation(listener: () => void): () => void {
   invalidationListeners.add(listener);
   return () => {
     invalidationListeners.delete(listener);
@@ -194,7 +194,7 @@ async function runAllBoardSyncs() {
   }
 }
 
-export function requestSecretaryBoardFullSync() {
+export function requestHomeBoardFullSync() {
   forceFullNextSync = true;
   pendingTables.clear();
   if (debounceTimer) {
@@ -204,7 +204,7 @@ export function requestSecretaryBoardFullSync() {
   void runAllBoardSyncs();
 }
 
-export function useSecretaryBoardSync(options: {
+export function useHomeBoardSync(options: {
   dateIso: string;
   locale: string;
   onSync: (payload: BoardSyncPayload) => void;
@@ -246,7 +246,7 @@ export function useSecretaryBoardSync(options: {
       await ensureSharedSecretaryChannel();
       if (cancelled) return;
       if (!skipInitialFullSyncRef.current) {
-        requestSecretaryBoardFullSync();
+        requestHomeBoardFullSync();
       }
     })();
 
@@ -263,14 +263,14 @@ export function useSecretaryBoardSync(options: {
       skipNextDateLocaleSyncRef.current = false;
       return;
     }
-    requestSecretaryBoardFullSync();
+    requestHomeBoardFullSync();
   }, [options.dateIso, options.locale]);
 
   useEffect(() => {
     return watchBangkokWorkDate((nextDateIso) => {
       onWorkDateChangeRef.current?.(nextDateIso);
       dateIsoRef.current = nextDateIso;
-      requestSecretaryBoardFullSync();
+      requestHomeBoardFullSync();
     });
   }, []);
 }

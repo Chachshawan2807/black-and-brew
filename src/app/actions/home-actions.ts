@@ -131,7 +131,7 @@ export async function retireDerivedSecretaryTasksForDay(opts?: {
   const result = await retirePendingDerivedSecretaryTasks(dateIso);
   if (result.success) {
     const locale = opts?.locale ?? 'th';
-    revalidatePath(`/${locale}/secretary`);
+    revalidatePath(`/${locale}/home`);
   }
   return result;
 }
@@ -177,8 +177,8 @@ export async function createManualSecretaryTask(
       return { success: false, error: error.message };
     }
 
-    revalidatePath('/th/secretary');
-    revalidatePath('/en/secretary');
+    revalidatePath('/th/home');
+    revalidatePath('/en/home');
     return { success: true, task: mapRow(data as Record<string, unknown>) };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -219,8 +219,8 @@ export async function updateManualSecretaryTask(
       return { success: false, error: error.message };
     }
 
-    revalidatePath('/th/secretary');
-    revalidatePath('/en/secretary');
+    revalidatePath('/th/home');
+    revalidatePath('/en/home');
     return { success: true, task: mapRow(data as Record<string, unknown>) };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -260,8 +260,8 @@ export async function deferSecretaryTasksToNextDay(
       return { success: false, error: error.message };
     }
 
-    revalidatePath('/th/secretary');
-    revalidatePath('/en/secretary');
+    revalidatePath('/th/home');
+    revalidatePath('/en/home');
     return { success: true, deferred: taskIds.length };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -324,8 +324,8 @@ export async function completeSecretaryTasks(
       completedTasks.push(mapRow(data as Record<string, unknown>));
     }
 
-    revalidatePath('/th/secretary');
-    revalidatePath('/en/secretary');
+    revalidatePath('/th/home');
+    revalidatePath('/en/home');
     return { success: true, tasks: completedTasks };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -432,8 +432,8 @@ export async function updateSecretaryTaskStatus(
       return { success: false, error: error.message };
     }
 
-    revalidatePath('/th/secretary');
-    revalidatePath('/en/secretary');
+    revalidatePath('/th/home');
+    revalidatePath('/en/home');
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -459,8 +459,8 @@ export async function deleteManualSecretaryTask(
       return { success: false, error: error.message };
     }
 
-    revalidatePath('/th/secretary');
-    revalidatePath('/en/secretary');
+    revalidatePath('/th/home');
+    revalidatePath('/en/home');
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

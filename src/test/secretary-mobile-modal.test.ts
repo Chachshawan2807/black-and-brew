@@ -14,7 +14,7 @@ const SECRETARY_SHELL_CONSUMERS = [
 describe('secretary mobile task overlays', () => {
   test('shared layout enables centered scrollable shell with keyboard awareness', () => {
     const layout = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/secretary-modal-layout.ts'),
+      path.resolve(ROOT, 'app/[locale]/home/_components/secretary-modal-layout.ts'),
       'utf-8',
     );
     expect(layout).toContain('items-center justify-center');
@@ -38,7 +38,7 @@ describe('secretary mobile task overlays', () => {
 
   test('SecretaryTaskPanelShell owns mobile-safe scaffold props and scroll body', () => {
     const code = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskPanelShell.tsx'),
+      path.resolve(ROOT, 'app/[locale]/home/_components/SecretaryTaskPanelShell.tsx'),
       'utf-8',
     );
     expect(code).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
@@ -50,7 +50,7 @@ describe('secretary mobile task overlays', () => {
 
   test.each(SECRETARY_SHELL_CONSUMERS)('%s delegates chrome to SecretaryTaskPanelShell', (file) => {
     const code = fs.readFileSync(
-      path.resolve(ROOT, `app/[locale]/secretary/_components/${file}`),
+      path.resolve(ROOT, `app/[locale]/home/_components/${file}`),
       'utf-8',
     );
     expect(code).toContain('SecretaryTaskPanelShell');

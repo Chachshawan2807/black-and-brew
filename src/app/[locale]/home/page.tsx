@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
-import { loadSecretaryBoard } from '@/app/actions/secretary-actions';
-import SecretaryClient from './SecretaryClient';
+import { loadSecretaryBoard } from '@/app/actions/home-actions';
+import HomeClient from './HomeClient';
 
-export default async function SecretaryPage({
+export default async function HomePage({
   params,
 }: {
   params: Promise<{ locale: string }>;
@@ -22,5 +22,5 @@ export default async function SecretaryPage({
     );
   }
 
-  return <SecretaryClient initialBoard={boardResult.board} locale={locale} />;
+  return <HomeClient initialBoard={boardResult.board} locale={locale} />;
 }

@@ -1,7 +1,6 @@
 import {
   ChartColumn,
   CalendarRange,
-  ClipboardCheck,
   ClipboardList,
   Coffee,
   Home,
@@ -33,29 +32,22 @@ export type MenuGroup = {
   menus: MenuItem[];
 };
 
-export function getMenuList(pathname: string, locale: string = 'th', opts?: { secretaryPendingCount?: number }): MenuGroup[] {
+export function getMenuList(pathname: string, locale: string = 'th', opts?: { homePendingCount?: number }): MenuGroup[] {
   const prefix = `/${locale}`;
-  const secretaryPendingCount = opts?.secretaryPendingCount ?? 0;
+  const homePendingCount = opts?.homePendingCount ?? 0;
   return [
     {
       groupLabel: "",
       menus: [
         {
           id: 'home',
-          href: `${prefix}`,
-          label: "หน้าหลัก",
-          active: pathname === `${prefix}` || pathname === `${prefix}/`,
+          href: `${prefix}/home`,
+          label: 'หน้าหลัก',
+          active:
+            pathname === `${prefix}/home` || pathname.startsWith(`${prefix}/home/`),
           icon: Home,
-          submenus: []
-        },
-        {
-          id: 'secretary',
-          href: `${prefix}/secretary`,
-          label: "งาน",
-          active: pathname.includes('/secretary'),
-          icon: ClipboardCheck,
           submenus: [],
-          badgeCount: secretaryPendingCount > 0 ? secretaryPendingCount : undefined,
+          badgeCount: homePendingCount > 0 ? homePendingCount : undefined,
         },
         {
           id: 'dashboard',

@@ -37,7 +37,7 @@ import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
 import { useMobileNavDrawer } from '@/hooks/use-mobile-nav-drawer';
 import { useSidebarMenuOrder } from '@/hooks/use-sidebar-menu-order';
-import { useSecretaryPendingCount } from '@/hooks/use-secretary-pending-count';
+import { useHomePendingCount } from '@/hooks/use-home-pending-count';
 import { applySidebarMenuOrder } from '@/lib/sidebar-menu-order';
 
 interface MenuProps {
@@ -217,7 +217,7 @@ export default function Menu({ isOpen }: MenuProps) {
 
   const orderIds = useSidebarMenuOrder((state) => state.orderIds);
   const setOrderIds = useSidebarMenuOrder((state) => state.setOrderIds);
-  const secretaryPendingCount = useSecretaryPendingCount();
+  const homePendingCount = useHomePendingCount();
 
   const [isMounted, setIsMounted] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -225,7 +225,7 @@ export default function Menu({ isOpen }: MenuProps) {
   const sensors = useSafeDndSensors();
 
   // Build menu from pathname (active state always fresh)
-  const menuList = getMenuList(pathname, locale, { secretaryPendingCount });
+  const menuList = getMenuList(pathname, locale, { homePendingCount });
   const showHolidays = searchParams?.get('showRegularHolidays') === 'true';
 
   const adjustedMenuList = menuList.map(group => ({

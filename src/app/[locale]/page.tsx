@@ -1,12 +1,8 @@
 import { connection } from 'next/server';
+import { redirect } from 'next/navigation';
 
-export default async function IndexPage() {
+export default async function IndexPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   await connection();
-  return (
-    <div
-      className="min-h-[calc(100vh-2rem)] bg-inherit flex flex-col"
-      data-testid="home-page-shell"
-      aria-label="หน้าหลัก"
-    />
-  );
+  redirect(`/${locale}/home`);
 }

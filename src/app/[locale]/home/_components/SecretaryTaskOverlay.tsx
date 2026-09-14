@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState, useTransition } from 'react';
 import {
   deleteManualSecretaryTask,
   updateManualSecretaryTask,
-} from '@/app/actions/secretary-actions';
+} from '@/app/actions/home-actions';
 import type { SecretaryBoardDisplayTask } from '@/lib/secretary/consolidate-board-tasks';
 import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import type { SecretaryTask } from '@/lib/secretary/types';

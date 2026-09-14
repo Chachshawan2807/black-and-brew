@@ -4,7 +4,7 @@ const {
   preload: preloadSecretaryManualTaskDialog,
   resetForTests: resetSecretaryManualTaskDialogPreloadForTests,
 } = createPreloadOnce(() =>
-  import('@/app/[locale]/secretary/_components/SecretaryManualTaskDialog'),
+  import('@/app/[locale]/home/_components/SecretaryManualTaskDialog'),
 );
 
 /** Warm the secretary manual task dialog chunk before the user opens it. */

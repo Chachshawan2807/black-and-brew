@@ -1,11 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { countPendingSecretaryTasks } from '@/app/actions/secretary-actions';
-import { subscribeSecretaryInvalidation } from '@/hooks/use-secretary-board-sync';
+import { countPendingSecretaryTasks } from '@/app/actions/home-actions';
+import { subscribeHomeBoardInvalidation } from '@/hooks/use-home-board-sync';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 
-export function useSecretaryPendingCount(): number {
+export function useHomePendingCount(): number {
   const [count, setCount] = useState(0);
 
   const refresh = useCallback(() => {
@@ -17,7 +17,7 @@ export function useSecretaryPendingCount(): number {
 
   useEffect(() => {
     refresh();
-    const unsubscribe = subscribeSecretaryInvalidation(refresh);
+    const unsubscribe = subscribeHomeBoardInvalidation(refresh);
     const interval = window.setInterval(refresh, 60_000);
     return () => {
       unsubscribe();

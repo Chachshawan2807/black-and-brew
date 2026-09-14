@@ -47,14 +47,14 @@ describe('isManualSecretaryTask', () => {
 
 describe('secretary manual task UI', () => {
   test('exports updateManualSecretaryTask server action', () => {
-    const actions = fs.readFileSync(path.resolve(ROOT, 'app/actions/secretary-actions.ts'), 'utf-8');
+    const actions = fs.readFileSync(path.resolve(ROOT, 'app/actions/home-actions.ts'), 'utf-8');
     expect(actions).toContain('export async function updateManualSecretaryTask');
     expect(actions).toMatch(/\.eq\('source_kind', 'manual'\)/);
   });
 
   test('SecretaryManualTaskDialog supports title, description, save and delete', () => {
     const dialog = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryManualTaskDialog.tsx'),
+      path.resolve(ROOT, 'app/[locale]/home/_components/SecretaryManualTaskDialog.tsx'),
       'utf-8',
     );
     expect(dialog).toContain('รายละเอียด');
@@ -69,7 +69,7 @@ describe('secretary manual task UI', () => {
   });
 
   test('SecretaryClient opens manual task dialog for create with description', () => {
-    const client = fs.readFileSync(path.resolve(ROOT, 'app/[locale]/secretary/SecretaryClient.tsx'), 'utf-8');
+    const client = fs.readFileSync(path.resolve(ROOT, 'app/[locale]/home/HomeClient.tsx'), 'utf-8');
     expect(client).toContain('SecretaryManualTaskDialog');
     expect(client).toContain('createManualSecretaryTask');
     expect(client).toContain('newDescription');
@@ -77,7 +77,7 @@ describe('secretary manual task UI', () => {
 
   test('SecretaryTaskOverlay routes manual tasks to editable dialog', () => {
     const overlay = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskOverlay.tsx'),
+      path.resolve(ROOT, 'app/[locale]/home/_components/SecretaryTaskOverlay.tsx'),
       'utf-8',
     );
     expect(overlay).toContain('isManualSecretaryTask');
@@ -88,11 +88,11 @@ describe('secretary manual task UI', () => {
 
   test('secretary task overlays use centered modal layout by default', () => {
     const layout = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/secretary-modal-layout.ts'),
+      path.resolve(ROOT, 'app/[locale]/home/_components/secretary-modal-layout.ts'),
       'utf-8',
     );
     const shell = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskPanelShell.tsx'),
+      path.resolve(ROOT, 'app/[locale]/home/_components/SecretaryTaskPanelShell.tsx'),
       'utf-8',
     );
     expect(layout).toContain('items-center justify-center');
@@ -101,7 +101,7 @@ describe('secretary manual task UI', () => {
 
     for (const file of ['SecretaryTaskSubwindow.tsx', 'SecretaryManualTaskDialog.tsx']) {
       const code = fs.readFileSync(
-        path.resolve(ROOT, `app/[locale]/secretary/_components/${file}`),
+        path.resolve(ROOT, `app/[locale]/home/_components/${file}`),
         'utf-8',
       );
       expect(code).toContain('SecretaryTaskPanelShell');
@@ -109,7 +109,7 @@ describe('secretary manual task UI', () => {
     }
 
     const overlay = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskOverlay.tsx'),
+      path.resolve(ROOT, 'app/[locale]/home/_components/SecretaryTaskOverlay.tsx'),
       'utf-8',
     );
     expect(overlay).toContain('SecretaryManualTaskDialog');

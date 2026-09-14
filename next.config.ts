@@ -41,6 +41,15 @@ const nextConfig: NextConfig = {
         },
       }
     : {}),
+  async redirects() {
+    return [
+      {
+        source: '/:locale/secretary',
+        destination: '/:locale/home',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

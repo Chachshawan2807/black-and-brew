@@ -16,7 +16,7 @@ import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import {
   completeSecretaryTasks,
   createManualSecretaryTask,
-} from '@/app/actions/secretary-actions';
+} from '@/app/actions/home-actions';
 import { resolveSecretaryCardTitleFontClass, splitSecretaryCardTitle } from '@/lib/secretary/format-card-title';
 import {
   countConsolidatedSecretaryBoardTasks,
@@ -25,10 +25,10 @@ import {
   type SecretaryBoardDisplayTask,
 } from '@/lib/secretary/consolidate-board-tasks';
 import {
-  requestSecretaryBoardFullSync,
-  useSecretaryBoardSync,
+  requestHomeBoardFullSync,
+  useHomeBoardSync,
   type BoardSyncPayload,
-} from '@/hooks/use-secretary-board-sync';
+} from '@/hooks/use-home-board-sync';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import {
   preloadSecretaryOverlayForTask,
@@ -36,7 +36,7 @@ import {
 } from '@/lib/secretary/preload-secretary-overlay';
 import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
-import type { SecretaryBoard } from '@/app/actions/secretary-actions';
+import type { SecretaryBoard } from '@/app/actions/home-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
 import SecretaryTaskOverlay from './_components/SecretaryTaskOverlay';
 
@@ -45,7 +45,7 @@ const SecretaryManualTaskDialog = dynamic(
   { ssr: false },
 );
 
-type SecretaryClientProps = {
+type HomeClientProps = {
   initialBoard: SecretaryBoard;
   locale: string;
 };
@@ -78,7 +78,7 @@ const MODULE_FILTER_TIPS: Record<SecretaryTask['module'], string> = {
   custom: 'งานที่เพิ่มเอง',
 };
 
-export default function SecretaryClient({ initialBoard, locale }: SecretaryClientProps) {
+export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
   const [board, setBoard] = useState(initialBoard);
   const [workDateIso, setWorkDateIso] = useState(() => initialBoard.snapshot.dateIso || todayIsoBkk());
   const [moduleFilter, setModuleFilter] = useState<ModuleFilter>('all');
@@ -99,7 +99,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     }
   }, []);
 
-  useSecretaryBoardSync({
+  useHomeBoardSync({
     dateIso: workDateIso,
     locale,
     onSync: applyBoardSync,
@@ -109,7 +109,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
 
   useEffect(() => {
     const rafId = requestAnimationFrame(() => {
-      requestSecretaryBoardFullSync();
+      requestHomeBoardFullSync();
     });
     return () => cancelAnimationFrame(rafId);
   }, []);

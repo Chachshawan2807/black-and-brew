@@ -12,7 +12,7 @@ const ROOT = path.resolve(__dirname, '..');
 describe('sidebar duplicate page titles', () => {
   test('matches exact sidebar labels', () => {
     expect(isSidebarMenuLabel('เบิกของสาขา 2')).toBe(true);
-    expect(isSidebarMenuLabel('งาน')).toBe(true);
+    expect(isSidebarMenuLabel('หน้าหลัก')).toBe(true);
     expect(isSidebarMenuLabel('ออเดอร์เมล็ดกาแฟ')).toBe(true);
     expect(shouldShowPageTitle('คลังสินค้า')).toBe(false);
   });
@@ -55,7 +55,7 @@ describe('sidebar duplicate page titles', () => {
       'utf-8',
     );
     const secretary = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/SecretaryClient.tsx'),
+      path.resolve(ROOT, 'app/[locale]/home/HomeClient.tsx'),
       'utf-8',
     );
 
@@ -63,16 +63,16 @@ describe('sidebar duplicate page titles', () => {
     expect(schedule).not.toContain('>ตารางงาน</h1>');
     expect(accuracy).toContain('PageTitle');
     expect(beanForm).toContain('PageTitle');
-    expect(secretary).not.toContain('title="งาน"');
+    expect(secretary).not.toContain('title="หน้าหลัก"');
   });
 
   test('secretary overlays hide duplicate sidebar titles', () => {
     const panelShell = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskPanelShell.tsx'),
+      path.resolve(ROOT, 'app/[locale]/home/_components/SecretaryTaskPanelShell.tsx'),
       'utf-8',
     );
     const listOverlay = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskListOverlay.tsx'),
+      path.resolve(ROOT, 'app/[locale]/home/_components/SecretaryTaskListOverlay.tsx'),
       'utf-8',
     );
 

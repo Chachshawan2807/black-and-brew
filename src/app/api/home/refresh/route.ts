@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
-import { retireDerivedSecretaryTasksForDay } from '@/app/actions/secretary-actions';
+import { retireDerivedSecretaryTasksForDay } from '@/app/actions/home-actions';
 import { requirePrivilegedSession } from '@/lib/policies/server-gate';
 import { toPublicErrorMessage } from '@/lib/security/public-error';
 
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal Server Error';
-    console.error('[secretary/refresh]', message);
+    console.error('[home/refresh]', message);
     return NextResponse.json(
       { success: false, error: toPublicErrorMessage(error) },
       { status: 500 },
