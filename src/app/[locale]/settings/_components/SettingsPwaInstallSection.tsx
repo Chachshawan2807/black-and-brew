@@ -2,7 +2,6 @@
 
 import { Download } from '@/lib/icons';
 import { PwaInstallButton } from '@/components/PwaInstallButton';
-import { PWA_DISPLAY_NAME } from '@/lib/pwa-config';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
 import { cn } from '@/lib/utils';
 import {
@@ -30,11 +29,6 @@ export function SettingsPwaInstallSection({ locale, isTh }: SettingsPwaInstallSe
           {isTh ? 'ติดตั้งแอป' : 'Install app'}
         </h2>
       </div>
-      <p className="mb-3 text-[13px] font-normal leading-relaxed text-muted-foreground">
-        {isTh
-          ? `เพิ่ม ${PWA_DISPLAY_NAME} ไปที่หน้าจอโฮมเพื่อเปิดเร็วขึ้นและใช้งานแบบแอป`
-          : `Add ${PWA_DISPLAY_NAME} to your home screen for faster access and an app-like experience`}
-      </p>
       <PwaInstallButton locale={locale} variant="settings" />
     </section>
   );
