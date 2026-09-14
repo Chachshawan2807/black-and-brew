@@ -108,7 +108,7 @@ describe('bean order save performance', () => {
     expect(body).toMatch(/Promise\.all/);
   });
 
-  test('detail slip upload uses instant preview and stays on the detail page', () => {
+  test('detail slip upload uses instant preview then redirects to list without redundant fetch', () => {
     expect(detailClient).toContain('pendingSlipPreview');
     expect(detailClient).toContain('URL.createObjectURL');
     expect(detailClient).not.toContain('getBeanOrderSlipSignedUrl');
@@ -117,10 +117,8 @@ describe('bean order save performance', () => {
     const uploadHandler = detailClient.slice(uploadHandlerStart, uploadHandlerEnd);
     expect(uploadHandler).not.toContain('reload(');
     expect(uploadHandler).not.toContain('getBeanOrderSlipSignedUrl');
-    expect(uploadHandler).toContain("setMessage('อัปโหลดสลิปแล้ว')");
-    expect(uploadHandler).not.toMatch(
-      /navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
-    );
+    expect(uploadHandler).toContain('goToBeanOrderList');
+    expect(uploadHandler).not.toContain('router.refresh()');
   });
 
   test('confirmBeanOrderPayment defers audit log and revalidation off the critical path', () => {
@@ -182,7 +180,7 @@ describe('bean order save performance', () => {
     const deliverFnStart = detailClient.indexOf('async function handleConfirmDelivered');
     const deliverFnEnd = detailClient.indexOf('\n  async function handleDelete', deliverFnStart);
     const deliverFn = detailClient.slice(deliverFnStart, deliverFnEnd);
-    expect(deliverFn).toMatch(/setBusy\(false\)[\s\S]*navigateWithViewTransition/);
+    expect(deliverFn).toMatch(/setBusy\(false\)[\s\S]*goToBeanOrderList/);
     expect(deliverFn).toContain('stashBeanOrderDeliveredPatch');
   });
 

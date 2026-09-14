@@ -781,6 +781,7 @@ export default function BeanOrderFormClient({
       return;
     }
     if ('orderId' in result && result.orderId) {
+      sessionStorage.setItem('bb-bean-order-flash', 'สร้างออเดอร์สำเร็จ');
       navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
     }
   }

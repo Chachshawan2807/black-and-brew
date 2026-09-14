@@ -145,9 +145,15 @@ export default function BeanOrderDetailClient({
     trackingNumber,
   });
 
+  function goToBeanOrderList(flashMessage: string) {
+    sessionStorage.setItem('bb-bean-order-flash', flashMessage);
+    navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
+  }
+
   async function handleUploadSlip(file: File) {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
 
+    const replacingSlip = Boolean(order.payment?.uploadedAt);
     const previewUrl = URL.createObjectURL(file);
     setPendingSlipPreview(previewUrl);
     setBusy(true);
@@ -166,18 +172,7 @@ export default function BeanOrderDetailClient({
       return;
     }
 
-    const uploadedAt = result.uploadedAt ?? new Date().toISOString();
-    setOrder((prev) => ({
-      ...prev,
-      slipUploadedAt: uploadedAt,
-      payment: {
-        slipUrl: result.slipUrl ?? prev.payment?.slipUrl ?? null,
-        uploadedAt,
-        confirmedAt: prev.payment?.confirmedAt ?? null,
-        confirmedBy: prev.payment?.confirmedBy ?? null,
-      },
-    }));
-    setMessage('อัปโหลดสลิปแล้ว');
+    goToBeanOrderList(replacingSlip ? 'เปลี่ยนสลิปแล้ว' : 'อัปโหลดสลิปแล้ว');
   }
 
   async function handleConfirmPayment() {
@@ -190,15 +185,7 @@ export default function BeanOrderDetailClient({
     const result = await confirmBeanOrderPayment(order.id, locale);
     setBusy(false);
     if (!result.success) { setError(result.error ?? 'ยืนยันไม่สำเร็จ'); return; }
-    const confirmedAt = new Date().toISOString();
-    setOrder((prev) => ({
-      ...prev,
-      paymentStatus: 'paid',
-      payment: prev.payment
-        ? { ...prev.payment, confirmedAt, confirmedBy: prev.payment.confirmedBy }
-        : { slipUrl: null, uploadedAt: null, confirmedAt, confirmedBy: null },
-    }));
-    setMessage('ยืนยันชำระเงินแล้ว');
+    goToBeanOrderList('ยืนยันชำระเงินแล้ว');
   }
 
   async function handleRevertPayment() {
@@ -338,10 +325,9 @@ export default function BeanOrderDetailClient({
       setError(result.error ?? 'ยืนยันจัดส่งไม่สำเร็จ');
       return;
     }
-    sessionStorage.setItem('bb-bean-order-flash', 'จัดส่งสำเร็จ');
     stashBeanOrderDeliveredPatch(order.id);
     setBusy(false);
-    navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
+    goToBeanOrderList('จัดส่งสำเร็จ');
   }
 
   async function handleDelete() {

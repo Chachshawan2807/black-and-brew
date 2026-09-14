@@ -54,7 +54,7 @@ describe('bean order navigation after save/delete', () => {
     );
   });
 
-  test('slip upload success updates detail state in place without list redirect', () => {
+  test('slip upload success redirects to bean-orders list with flash message', () => {
     const detailSource = readFileSync(
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
       'utf8',
@@ -62,12 +62,32 @@ describe('bean order navigation after save/delete', () => {
     const uploadFnStart = detailSource.indexOf('async function handleUploadSlip');
     expect(uploadFnStart).toBeGreaterThan(-1);
     const uploadFnBody = detailSource.slice(uploadFnStart, uploadFnStart + 1100);
-    expect(uploadFnBody).toContain("setMessage('อัปโหลดสลิปแล้ว')");
-    expect(uploadFnBody).toContain('setOrder((prev)');
-    expect(uploadFnBody).not.toMatch(
-      /navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
-    );
+    expect(uploadFnBody).toContain('goToBeanOrderList');
+    expect(uploadFnBody).toContain("replacingSlip ? 'เปลี่ยนสลิปแล้ว' : 'อัปโหลดสลิปแล้ว'");
     expect(uploadFnBody).not.toContain('void reload()');
+  });
+
+  test('confirm payment success redirects to bean-orders list with flash message', () => {
+    const detailSource = readFileSync(
+      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
+      'utf8',
+    );
+    const fnStart = detailSource.indexOf('async function handleConfirmPayment');
+    const fnBody = detailSource.slice(fnStart, fnStart + 500);
+    expect(fnBody).toContain("goToBeanOrderList('ยืนยันชำระเงินแล้ว')");
+  });
+
+  test('create order success redirects to bean-orders list with flash message', () => {
+    const formSource = readFileSync(
+      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderFormClient.tsx'),
+      'utf8',
+    );
+    expect(formSource).toMatch(
+      /sessionStorage\.setItem\('bb-bean-order-flash',\s*'สร้างออเดอร์สำเร็จ'\)/,
+    );
+    expect(formSource).toMatch(
+      /'orderId' in result && result\.orderId[\s\S]*navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
+    );
   });
 
   test('deliver success redirects to bean-orders list with flash message', () => {
@@ -78,12 +98,10 @@ describe('bean order navigation after save/delete', () => {
     const deliverFnStart = detailSource.indexOf('async function handleConfirmDelivered');
     expect(deliverFnStart).toBeGreaterThan(-1);
     const deliverFnBody = detailSource.slice(deliverFnStart, deliverFnStart + 1200);
-    expect(deliverFnBody).toMatch(
-      /sessionStorage\.setItem\('bb-bean-order-flash',\s*'จัดส่งสำเร็จ'\)/,
-    );
+    expect(deliverFnBody).toContain("goToBeanOrderList('จัดส่งสำเร็จ')");
     expect(deliverFnBody).toContain('stashBeanOrderDeliveredPatch');
-    expect(deliverFnBody).toMatch(
-      /navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
+    expect(detailSource).toMatch(
+      /function goToBeanOrderList[\s\S]*navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
     );
     expect(deliverFnBody).not.toContain('void reload()');
 
