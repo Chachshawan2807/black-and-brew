@@ -99,22 +99,21 @@ describe('secretary manual task UI', () => {
     expect(layout).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
     expect(shell).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
 
-    for (const file of [
-      'SecretaryTaskSubwindow.tsx',
-      'SecretaryManualTaskDialog.tsx',
-      'BeanOrdersOverlay.tsx',
-      'BranchWithdrawOverlay.tsx',
-    ]) {
+    for (const file of ['SecretaryTaskSubwindow.tsx', 'SecretaryManualTaskDialog.tsx']) {
       const code = fs.readFileSync(
         path.resolve(ROOT, `app/[locale]/secretary/_components/${file}`),
         'utf-8',
       );
-      if (file === 'SecretaryTaskSubwindow.tsx' || file === 'SecretaryManualTaskDialog.tsx') {
-        expect(code).toContain('SecretaryTaskPanelShell');
-      } else {
-        expect(code).toContain('SecretaryTaskSubwindow');
-      }
+      expect(code).toContain('SecretaryTaskPanelShell');
       expect(code).not.toContain('items-end');
     }
+
+    const overlay = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskOverlay.tsx'),
+      'utf-8',
+    );
+    expect(overlay).toContain('SecretaryManualTaskDialog');
+    expect(overlay).not.toContain('BeanOrdersOverlay');
+    expect(overlay).not.toContain('PurchaseOrdersModal');
   });
 });

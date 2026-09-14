@@ -1,5 +1,4 @@
 import { getBangkokCalendarIso } from '@/lib/date-utils';
-import { isLegacyBeanOrderTaskType } from '@/lib/secretary/bean-order-task-consolidation';
 import { compareSecretaryTaskOrder } from '@/lib/secretary/task-order-compare';
 import type { SecretaryTask } from '@/lib/secretary/types';
 
@@ -7,19 +6,6 @@ export type SecretaryBoardVisibilityOptions = {
   workDateIso: string;
   nowIso?: string;
 };
-
-export function isRetiredBranch2RoastTask(task: SecretaryTask): boolean {
-  return task.module === 'branch2' || task.task_type === 'roast_carry';
-}
-
-export function isRetiredInventoryCountTask(task: SecretaryTask): boolean {
-  return (
-    task.module === 'inventory_count' ||
-    task.module === 'inventory_accuracy' ||
-    task.task_type === 'inventory_count_due' ||
-    task.task_type === 'inventory_accuracy_review'
-  );
-}
 
 export function isSecretaryBoardTaskVisible(
   task: SecretaryTask,
@@ -29,13 +15,7 @@ export function isSecretaryBoardTaskVisible(
   const nowIso = options.nowIso ?? new Date().toISOString();
   const { workDateIso } = options;
 
-  if (isLegacyBeanOrderTaskType(task.task_type)) {
-    return false;
-  }
-  if (isRetiredBranch2RoastTask(task)) {
-    return false;
-  }
-  if (isRetiredInventoryCountTask(task)) {
+  if (task.source_kind !== 'manual') {
     return false;
   }
   if (task.status !== 'pending' && task.status !== 'in_progress' && task.status !== 'done') {

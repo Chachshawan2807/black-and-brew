@@ -6,21 +6,19 @@ function task(overrides: Partial<SecretaryTask> = {}): SecretaryTask {
   return {
     id: 'task-1',
     task_type: 'custom',
-    title: 'ตรวจสอบความถูกต้องของสต็อกสินค้า',
+    title: 'งานทดสอบ',
     description: null,
     priority: 'normal',
     status: 'pending',
-    module: 'inventory_accuracy',
+    module: 'custom',
     due_at: null,
     scheduled_date: '2026-08-29',
     assignee_profile_id: null,
-    source_kind: 'derived',
+    source_kind: 'manual',
     source_ref: null,
     source_ref_hash: null,
     action_href: null,
-    metadata: {
-      rationale: 'ควรวิเคราะห์หาสาเหตุหลักของความคลาดเคลื่อนของสต็อก เพื่อป้องกันซ้ำ',
-    },
+    metadata: null,
     completed_at: null,
     completed_by: null,
     snoozed_until: null,
@@ -42,24 +40,5 @@ describe('resolveSecretaryTaskDetailText', () => {
 
   test('returns null when description is empty', () => {
     expect(resolveSecretaryTaskDetailText(task())).toBeNull();
-  });
-
-  test('falls back to stored description for non-bridge tasks when snapshot is provided', () => {
-    expect(
-      resolveSecretaryTaskDetailText(task({ description: 'รายละเอียดจาก description' }), {
-        operational: {
-          dateIso: '2026-08-29',
-          dateDisplay: '29/08/2026',
-          locale: 'th',
-          headcount: 0,
-          leaveCount: 0,
-          offCount: 0,
-          weeklyDays: [],
-          pendingBeanOrders: [],
-          upcomingHoliday: null,
-        },
-        itemsToOrder: [],
-      }),
-    ).toBe('รายละเอียดจาก description');
   });
 });

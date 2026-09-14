@@ -1,4 +1,7 @@
 {
+  "terminal.integrated.env.windows": {
+    "Path": "C:\\Program Files\\GitHub CLI;${env:Path}"
+  },
   "markdownlint.configFile": ".markdownlint-cli2.jsonc",
   "css.lint.unknownAtRules": "ignore",
   "files.watcherExclude": {

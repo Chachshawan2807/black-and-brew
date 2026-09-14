@@ -72,19 +72,6 @@ export type SecretarySnapshot = {
   countSession?: SecretaryCountSessionSlice;
 };
 
-export type DerivedTaskDraft = {
-  taskType: SecretaryTaskType;
-  title: string;
-  description?: string;
-  priority: SecretaryTaskPriority;
-  module: SecretaryModule;
-  sourceRef: Record<string, unknown>;
-  sourceRefHash: string;
-  actionHref?: string;
-  estimatedMinutes?: number;
-  metadata?: Record<string, unknown>;
-};
-
 export type SecretaryTask = {
   id: string;
   task_type: SecretaryTaskType;

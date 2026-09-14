@@ -93,6 +93,10 @@ describe('consolidateSecretaryBoardTasks', () => {
     expect(consolidated[0]?.consolidatedSections).toEqual([
       { title: 'วันที่คนน้อย', description: 'พ. ที่ 2 (4 คน)' },
       { title: 'ลาหลายคน', description: 'ศ. ที่ 24 (เอ, บี)' },
+      {
+        title: 'ทบทวนตารางงานและการจัดคน',
+        description: 'มีวันที่คนน้อย · มีความเสี่ยงลาหลายคน',
+      },
     ]);
   });
 

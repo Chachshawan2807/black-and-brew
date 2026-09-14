@@ -17,17 +17,17 @@ describe('secretary board sync scope', () => {
     });
   });
 
-  test('resolves scoped sync for single data domain', () => {
+  test('resolves light sync for single data domain (manual board only)', () => {
     expect(resolveSecretaryBoardSyncPlan(['bean_orders'])).toEqual({
-      kind: 'scoped',
-      scopes: ['bean_orders'],
+      kind: 'light',
+      scopes: ['tasks'],
     });
   });
 
-  test('resolves full sync when multiple domains change', () => {
+  test('resolves light sync when multiple data domains change', () => {
     expect(resolveSecretaryBoardSyncPlan(['inventory_items', 'bean_orders'])).toEqual({
-      kind: 'scoped',
-      scopes: ['inventory', 'bean_orders'],
+      kind: 'light',
+      scopes: ['tasks'],
     });
   });
 

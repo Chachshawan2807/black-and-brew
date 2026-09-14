@@ -21,7 +21,6 @@ export function buildAutoSkippedMetadata(
   };
 }
 
-/** Legacy autoCompleted rows or new autoSkipped rows were retired by sync, not by the user. */
 export function isSystemRetiredMetadata(
   metadata: Record<string, unknown> | null | undefined,
 ): boolean {

@@ -57,16 +57,7 @@ describe('secretary mobile task overlays', () => {
     expect(code).not.toContain('items-end');
   });
 
-  test('BeanOrdersOverlay keeps sub-window scroll path', () => {
-    const code = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/BeanOrdersOverlay.tsx'),
-      'utf-8',
-    );
-    expect(code).toContain('SecretaryTaskSubwindow');
-    expect(code).toMatch(/overflow-y-auto bb-smooth-scroll|FadeModalScaffold|SecretaryTaskSubwindow/);
-  });
-
-  test('purchase orders modal from secretary uses scrollable centered shell', () => {
+  test('purchase orders modal from inventory uses scrollable centered shell', () => {
     const modal = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/inventory/_components/PurchaseOrdersModal.tsx'),
       'utf-8',
@@ -88,11 +79,4 @@ describe('secretary mobile task overlays', () => {
     expect(modal).toContain('px-2.5 py-1.5 sm:px-4 sm:py-2');
   });
 
-  test('branch withdraw overlay delegates to shared sub-window shell', () => {
-    const overlay = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/BranchWithdrawOverlay.tsx'),
-      'utf-8',
-    );
-    expect(overlay).toContain('SecretaryTaskSubwindow');
-  });
 });

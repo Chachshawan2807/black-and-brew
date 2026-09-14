@@ -17,14 +17,12 @@ import {
   type SecretaryBoardSyncKind,
   type SecretaryRealtimeTable,
 } from '@/lib/secretary/board-sync-scope';
-import type { SecretarySnapshotPatch } from '@/lib/secretary/snapshot-patch';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 import { watchBangkokWorkDate } from '@/lib/secretary/watch-bangkok-work-date';
 
 export type BoardSyncPayload = {
   tasks: SecretaryTask[];
   snapshot?: SecretarySnapshot;
-  snapshotPatch?: SecretarySnapshotPatch;
   syncKind?: SecretaryBoardSyncKind;
 };
 
@@ -34,7 +32,6 @@ type SyncRegistration = {
   listener: Listener;
   getDateIso: () => string;
   getLocale: () => string;
-  getBaseSnapshot: () => SecretarySnapshot | undefined;
 };
 
 const registrations = new Set<SyncRegistration>();
@@ -174,14 +171,12 @@ async function runAllBoardSyncs() {
           dateIso,
           locale,
           plan,
-          baseSnapshot: registration.getBaseSnapshot(),
         });
         if (!result.success || !result.tasks) return;
 
         registration.listener({
           tasks: result.tasks,
           snapshot: result.snapshot,
-          snapshotPatch: result.snapshotPatch,
           syncKind: plan.kind,
         });
       }),
@@ -214,7 +209,6 @@ export function useSecretaryBoardSync(options: {
   locale: string;
   onSync: (payload: BoardSyncPayload) => void;
   onWorkDateChange?: (dateIso: string) => void;
-  getBaseSnapshot?: () => SecretarySnapshot;
   /** Skip the mount full-sync when SSR already hydrated the board. */
   skipInitialFullSync?: boolean;
 }) {
@@ -222,7 +216,6 @@ export function useSecretaryBoardSync(options: {
   const onWorkDateChangeRef = useRef(options.onWorkDateChange);
   const dateIsoRef = useRef(options.dateIso);
   const localeRef = useRef(options.locale);
-  const getBaseSnapshotRef = useRef(options.getBaseSnapshot);
   const skipInitialFullSyncRef = useRef(options.skipInitialFullSync ?? false);
   const skipNextDateLocaleSyncRef = useRef(options.skipInitialFullSync ?? false);
 
@@ -231,7 +224,6 @@ export function useSecretaryBoardSync(options: {
     onWorkDateChangeRef.current = options.onWorkDateChange;
     dateIsoRef.current = options.dateIso;
     localeRef.current = options.locale;
-    getBaseSnapshotRef.current = options.getBaseSnapshot;
     skipInitialFullSyncRef.current = options.skipInitialFullSync ?? false;
   });
 
@@ -244,7 +236,6 @@ export function useSecretaryBoardSync(options: {
       listener,
       getDateIso: () => dateIsoRef.current,
       getLocale: () => localeRef.current,
-      getBaseSnapshot: () => getBaseSnapshotRef.current?.(),
     };
 
     registrations.add(registration);

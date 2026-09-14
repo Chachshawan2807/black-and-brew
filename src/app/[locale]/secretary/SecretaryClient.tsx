@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import dynamic from 'next/dynamic';
 import { CheckCircle2, Plus } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -12,7 +12,7 @@ import {
   BB_CHIP_SELECTED,
 } from '@/lib/ui-outlined-tokens';
 import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
-import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
+import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import {
   completeSecretaryTasks,
   createManualSecretaryTask,
@@ -24,14 +24,12 @@ import {
   filterConsolidatedSecretaryBoardTasks,
   type SecretaryBoardDisplayTask,
 } from '@/lib/secretary/consolidate-board-tasks';
-import { mergeSecretarySnapshot } from '@/lib/secretary/snapshot-patch';
 import {
   requestSecretaryBoardFullSync,
   useSecretaryBoardSync,
   type BoardSyncPayload,
 } from '@/hooks/use-secretary-board-sync';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
-import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
 import {
   preloadSecretaryOverlayForTask,
   preloadSecretaryTaskOverlayShell,
@@ -91,37 +89,21 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
   const [overlayTask, setOverlayTask] = useState<SecretaryBoardDisplayTask | null>(null);
 
   const applyBoardSync = useCallback((payload: BoardSyncPayload) => {
-    setBoard((prev) => {
-      const nextSnapshot = payload.snapshot
-        ? payload.snapshot
-        : payload.snapshotPatch
-          ? mergeSecretarySnapshot(prev.snapshot, payload.snapshotPatch)
-          : prev.snapshot;
-
-      return {
-        ...prev,
-        tasks: payload.tasks,
-        snapshot: nextSnapshot,
-      };
-    });
+    setBoard((prev) => ({
+      ...prev,
+      tasks: payload.tasks,
+      snapshot: payload.snapshot ?? prev.snapshot,
+    }));
     if (payload.snapshot?.dateIso) {
       setWorkDateIso(payload.snapshot.dateIso);
-    } else if (payload.snapshotPatch?.dateIso) {
-      setWorkDateIso(payload.snapshotPatch.dateIso);
     }
   }, []);
-
-  const boardRef = useRef(board);
-  useEffect(() => {
-    boardRef.current = board;
-  });
 
   useSecretaryBoardSync({
     dateIso: workDateIso,
     locale,
     onSync: applyBoardSync,
     onWorkDateChange: setWorkDateIso,
-    getBaseSnapshot: () => boardRef.current.snapshot,
     skipInitialFullSync: true,
   });
 
@@ -139,27 +121,23 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     [board.tasks, moduleFilter, workDateIso],
   );
 
-  const openableOverlayKinds = useMemo(() => {
-    const kinds = new Set<NonNullable<ReturnType<typeof resolveSecretaryTaskOverlayKind>>>();
-    for (const task of visibleTasks) {
-      if (!canOpenSecretaryTaskDetail(task)) continue;
-      const kind = resolveSecretaryTaskOverlayKind(task);
-      if (kind) kinds.add(kind);
-    }
-    return kinds;
-  }, [visibleTasks]);
+  const hasManualTasks = useMemo(
+    () => visibleTasks.some((task) => isManualSecretaryTask(task)),
+    [visibleTasks],
+  );
 
   useEffect(() => {
-    if (openableOverlayKinds.size === 0) return;
+    if (!hasManualTasks) return;
 
     return scheduleIdleWork(() => {
       preloadSecretaryTaskOverlayShell();
       for (const task of visibleTasks) {
-        if (!canOpenSecretaryTaskDetail(task)) continue;
-        preloadSecretaryOverlayForTask(task);
+        if (isManualSecretaryTask(task)) {
+          preloadSecretaryOverlayForTask(task);
+        }
       }
     }, { timeout: 2000 });
-  }, [openableOverlayKinds, visibleTasks]);
+  }, [hasManualTasks, visibleTasks]);
 
   const visibleTaskCount = useMemo(
     () => countConsolidatedSecretaryBoardTasks(board.tasks, 'all', visibility),
@@ -216,7 +194,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
 
   return (
     <div className="mx-auto w-full max-w-3xl px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-5">
-      <p className="bb-page-subtitle">รวมงานจากทุกโมดูล · อัปเดตอัตโนมัติ</p>
+      <p className="bb-page-subtitle">งานที่เพิ่มเอง · อัปเดตเมื่อมีการเปลี่ยนแปลง</p>
 
       <div className="flex flex-wrap gap-2 items-center">
         <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
@@ -287,7 +265,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
               isDone={task.status === 'done'}
               isPending={isPending}
               onPreloadOpen={
-                canOpenSecretaryTaskDetail(task)
+                isManualSecretaryTask(task)
                   ? () => preloadSecretaryOverlayForTask(task)
                   : undefined
               }
@@ -300,7 +278,6 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
 
       <SecretaryTaskOverlay
         task={overlayTask}
-        snapshot={board.snapshot}
         locale={locale}
         onClose={() => setOverlayTask(null)}
         onTaskUpdated={handleTaskUpdated}
@@ -328,7 +305,7 @@ function TaskCard({
 }) {
   const titleLines = splitSecretaryCardTitle(task.title);
   const titleFontClass = resolveSecretaryCardTitleFontClass(titleLines.length);
-  const canOpenDetail = canOpenSecretaryTaskDetail(task);
+  const canOpenDetail = isManualSecretaryTask(task);
   const cardClassName = cn(
     'relative flex aspect-square min-h-0 rounded-2xl border p-2.5 bb-transition',
     isDone ? SECRETARY_TASK_COLORS.done : SECRETARY_TASK_COLORS.card,

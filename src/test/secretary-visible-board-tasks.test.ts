@@ -101,54 +101,30 @@ describe('filterVisibleSecretaryBoardTasks', () => {
     expect(countSecretaryBoardTasksByModule(tasks, 'inventory', visibility)).toBe(2);
   });
 
-  test('hides legacy split bean-order task types from the board', () => {
+  test('hides derived tasks from the manual-only board', () => {
     const visible = filterVisibleSecretaryBoardTasks(
       [
-        task({ id: 'unified', status: 'pending', module: 'bean_orders', task_type: 'bean_orders_pending' }),
-        task({ id: 'legacy-payment', status: 'pending', module: 'bean_orders', task_type: 'bean_payment_pending' }),
-        task({ id: 'legacy-ship', status: 'done', module: 'bean_orders', task_type: 'bean_ship_pending' }),
+        task({ id: 'manual', status: 'pending', source_kind: 'manual' }),
+        task({
+          id: 'derived-bean',
+          status: 'pending',
+          source_kind: 'derived',
+          module: 'bean_orders',
+          task_type: 'bean_orders_pending',
+        }),
+        task({
+          id: 'derived-inventory',
+          status: 'pending',
+          source_kind: 'derived',
+          module: 'inventory',
+          task_type: 'inventory_reorder',
+        }),
       ],
       'all',
       visibility,
     );
 
-    expect(visible.map((entry) => entry.id)).toEqual(['unified']);
-  });
-
-  test('always hides retired inventory count tasks from the board', () => {
-    const countTask = task({
-      id: 'count',
-      status: 'pending',
-      module: 'inventory_count',
-      task_type: 'inventory_count_due',
-      title: 'ตรวจนับสต็อกวันนี้',
-    });
-
-    const visible = filterVisibleSecretaryBoardTasks(
-      [countTask, task({ id: 'inventory', status: 'pending', module: 'inventory' })],
-      'all',
-      visibility,
-    );
-
-    expect(visible.map((entry) => entry.id)).toEqual(['inventory']);
-  });
-
-  test('always hides retired branch2 roast tasks from the board', () => {
-    const roastTask = task({
-      id: 'roast',
-      status: 'pending',
-      module: 'branch2',
-      task_type: 'roast_carry',
-      title: 'คั่วกาแฟ',
-    });
-
-    const visible = filterVisibleSecretaryBoardTasks(
-      [roastTask, task({ id: 'inventory', status: 'pending', module: 'inventory' })],
-      'all',
-      visibility,
-    );
-
-    expect(visible.map((entry) => entry.id)).toEqual(['inventory']);
+    expect(visible.map((entry) => entry.id)).toEqual(['manual']);
   });
 });
 

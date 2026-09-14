@@ -31,21 +31,6 @@ describe('inventory branch withdraw overlay', () => {
     });
   });
 
-  test('overlay renders client immediately with snapshot seed and delegates mobile shell', () => {
-    const overlay = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/BranchWithdrawOverlay.tsx'),
-      'utf-8',
-    );
-    expect(overlay).toContain('seedItems');
-    expect(overlay).toContain('catalogSeedItems');
-    expect(overlay).toContain('hasCatalogSeed');
-    expect(overlay).toContain('mapSecretaryReorderItemsToInventoryRealtime');
-    expect(overlay).not.toContain('dynamic(');
-    expect(overlay).toContain('SecretaryTaskSubwindow');
-    expect(overlay).toContain('subtitle=');
-    expect(overlay).toContain('embedded');
-  });
-
   test('branch withdraw uses scroll body with fixed add bar and in-scroll action bar', () => {
     const client = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/inventory/branch-withdraw/BranchWithdrawClient.tsx'),

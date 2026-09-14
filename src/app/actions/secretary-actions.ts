@@ -2,21 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { fetchSecretarySnapshot } from '@/lib/secretary/adapters';
-import {
-  buildSnapshotForDerive,
-  fetchSecretarySnapshotSlices,
-  type SecretarySnapshotPatch,
-} from '@/lib/secretary/adapters/snapshot-slices';
-import { mergeSecretarySnapshot } from '@/lib/secretary/snapshot-patch';
-import { applyDerivedTaskDrafts } from '@/lib/secretary/apply-derived-task-drafts';
-import {
-  modulesForSyncScopes,
-  type SecretaryBoardSyncPlan,
-  type SecretarySyncScope,
-} from '@/lib/secretary/board-sync-scope';
+import type { SecretaryBoardSyncPlan } from '@/lib/secretary/board-sync-scope';
+import { buildMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
+import { retirePendingDerivedSecretaryTasks } from '@/lib/secretary/retire-pending-derived-secretary-tasks';
 import { nextScheduledDateIso } from '@/lib/secretary/defer-tasks';
-import { deriveTasksFromSnapshot, deriveTasksFromSnapshotByScopes } from '@/lib/secretary/module-registry';
 import type {
   SecretarySnapshot,
   SecretaryTask,
@@ -88,7 +77,15 @@ export async function fetchSecretaryTasks(dateIso: string): Promise<{
       return { success: false, error: error.message };
     }
 
-    return { success: true, tasks: (data ?? []).filter((row) => String(row.source_kind) !== 'ai_suggested').map(mapRow) };
+    return {
+      success: true,
+      tasks: (data ?? [])
+        .filter(
+          (row) =>
+            String(row.source_kind) !== 'ai_suggested' && String(row.source_kind) !== 'derived',
+        )
+        .map(mapRow),
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[fetchSecretaryTasks]', message);
@@ -106,6 +103,7 @@ export async function countPendingSecretaryTasks(dateIso: string): Promise<numbe
       .from('operational_tasks')
       .select('id', { count: 'exact', head: true })
       .eq('scheduled_date', dateIso)
+      .eq('source_kind', 'manual')
       .eq('status', 'pending')
       .or(`snoozed_until.is.null,snoozed_until.lte.${now}`);
 
@@ -121,60 +119,16 @@ export async function countPendingSecretaryTasks(dateIso: string): Promise<numbe
   }
 }
 
-export async function syncDerivedSecretaryTasks(opts?: {
+/** Privileged cleanup: skip pending derived rows for the work day (manual board only). */
+export async function retireDerivedSecretaryTasksForDay(opts?: {
   dateIso?: string;
   locale?: string;
-  scopes?: readonly Exclude<SecretarySyncScope, 'tasks'>[];
-  baseSnapshot?: SecretarySnapshot;
-  /** Pre-fetched full snapshot skips a second `fetchSecretarySnapshot` on full sync. */
-  snapshot?: SecretarySnapshot;
-}): Promise<{
-  success: boolean;
-  upserted?: number;
-  autoSkipped?: number;
-  snapshotPatch?: SecretarySnapshotPatch;
-  error?: string;
-}> {
-  try {
-    const dateIso =
-      opts?.dateIso ??
-      opts?.snapshot?.dateIso ??
-      opts?.baseSnapshot?.dateIso ??
-      (await fetchSecretarySnapshot(opts)).dateIso;
-    const locale = opts?.locale ?? opts?.snapshot?.locale ?? opts?.baseSnapshot?.locale ?? 'th';
-
-    let drafts;
-    if (opts?.scopes?.length) {
-      const patch = await fetchSecretarySnapshotSlices({ dateIso, locale }, opts.scopes);
-      const snapshot = opts.baseSnapshot
-        ? mergeSecretarySnapshot(opts.baseSnapshot, patch)
-        : buildSnapshotForDerive(dateIso, locale, patch);
-      drafts = deriveTasksFromSnapshotByScopes(snapshot, opts.scopes);
-      const result = await applyDerivedTaskDrafts(drafts, dateIso, {
-        limitModules: modulesForSyncScopes(opts.scopes),
-      });
-      return { ...result, snapshotPatch: patch };
-    }
-
-    const snapshot = opts?.snapshot ?? (await fetchSecretarySnapshot(opts));
-    drafts = deriveTasksFromSnapshot(snapshot);
-    const derivedResult = await applyDerivedTaskDrafts(drafts, snapshot.dateIso);
-    return derivedResult;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[syncDerivedSecretaryTasks]', message);
-    return { success: false, error: message };
-  }
-}
-
-export async function refreshDerivedSecretaryTasks(opts?: {
-  dateIso?: string;
-  locale?: string;
-}): Promise<{ success: boolean; upserted?: number; autoSkipped?: number; error?: string }> {
+}): Promise<{ success: boolean; retired?: number; error?: string }> {
   const gate = await gateMutation();
   if (!gate.success) return gate;
 
-  const result = await syncDerivedSecretaryTasks(opts);
+  const dateIso = opts?.dateIso ?? todayIsoBkk();
+  const result = await retirePendingDerivedSecretaryTasks(dateIso);
   if (result.success) {
     const locale = opts?.locale ?? 'th';
     revalidatePath(`/${locale}/secretary`);
@@ -383,12 +337,10 @@ export async function syncAndFetchSecretaryBoard(opts?: {
   dateIso?: string;
   locale?: string;
   plan?: SecretaryBoardSyncPlan;
-  baseSnapshot?: SecretarySnapshot;
 }): Promise<{
   success: boolean;
   tasks?: SecretaryTask[];
   snapshot?: SecretarySnapshot;
-  snapshotPatch?: SecretarySnapshotPatch;
   error?: string;
 }> {
   const authError = await requireReadAccess();
@@ -396,10 +348,10 @@ export async function syncAndFetchSecretaryBoard(opts?: {
 
   const plan = opts?.plan ?? { kind: 'full' as const, scopes: [] };
   const locale = opts?.locale ?? 'th';
+  const dateIso = opts?.dateIso ?? todayIsoBkk();
 
   try {
-    if (plan.kind === 'light') {
-      const dateIso = opts?.dateIso ?? (await fetchSecretarySnapshot({ locale })).dateIso;
+    if (plan.kind === 'light' || plan.kind === 'scoped') {
       const tasksResult = await fetchSecretaryTasks(dateIso);
 
       if (!tasksResult.success || !tasksResult.tasks) {
@@ -412,52 +364,17 @@ export async function syncAndFetchSecretaryBoard(opts?: {
       };
     }
 
-    if (plan.kind === 'scoped') {
-      const dateIso = opts?.dateIso ?? opts?.baseSnapshot?.dateIso ?? (await fetchSecretarySnapshot({ locale })).dateIso;
-      const dataScopes = plan.scopes.filter(
-        (scope): scope is Exclude<typeof scope, 'tasks'> => scope !== 'tasks',
-      );
-
-      const syncResult = await syncDerivedSecretaryTasks({
-        dateIso,
-        locale,
-        scopes: dataScopes,
-        baseSnapshot: opts?.baseSnapshot,
-      });
-      if (!syncResult.success) {
-        return { success: false, error: syncResult.error };
-      }
-
-      const tasksResult = await fetchSecretaryTasks(dateIso);
-
-      if (!tasksResult.success || !tasksResult.tasks) {
-        return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
-      }
-
-      return {
-        success: true,
-        tasks: tasksResult.tasks,
-        snapshotPatch: syncResult.snapshotPatch,
-      };
-    }
-
-    const dateIso = opts?.dateIso ?? todayIsoBkk();
-    const [snapshot, tasksBeforeSync] = await Promise.all([
-      fetchSecretarySnapshot({ dateIso, locale }),
+    const [tasksBeforeRetire, retireResult] = await Promise.all([
       fetchSecretaryTasks(dateIso),
+      retirePendingDerivedSecretaryTasks(dateIso),
     ]);
-    const syncResult = await syncDerivedSecretaryTasks({
-      ...opts,
-      snapshot,
-    });
-    if (!syncResult.success) {
-      return { success: false, error: syncResult.error };
+
+    if (!retireResult.success) {
+      return { success: false, error: retireResult.error };
     }
 
     const tasksResult =
-      (syncResult.upserted ?? 0) > 0 || (syncResult.autoSkipped ?? 0) > 0
-        ? await fetchSecretaryTasks(snapshot.dateIso)
-        : tasksBeforeSync;
+      (retireResult.retired ?? 0) > 0 ? await fetchSecretaryTasks(dateIso) : tasksBeforeRetire;
 
     if (!tasksResult.success || !tasksResult.tasks) {
       return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
@@ -466,7 +383,7 @@ export async function syncAndFetchSecretaryBoard(opts?: {
     return {
       success: true,
       tasks: tasksResult.tasks,
-      snapshot,
+      snapshot: buildMinimalSecretaryBoardSnapshot(dateIso, locale),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -567,20 +484,33 @@ export async function loadSecretaryBoard(opts?: {
   const dateIso = opts?.dateIso ?? todayIsoBkk();
 
   try {
-    const [snapshot, tasksResult] = await Promise.all([
-      fetchSecretarySnapshot({ dateIso, locale }),
+    const [tasksResult, retireResult] = await Promise.all([
       fetchSecretaryTasks(dateIso),
+      retirePendingDerivedSecretaryTasks(dateIso),
     ]);
+
+    if (!retireResult.success) {
+      return { success: false, error: retireResult.error };
+    }
 
     if (!tasksResult.success || !tasksResult.tasks) {
       return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
     }
 
+    let tasks = tasksResult.tasks;
+    if ((retireResult.retired ?? 0) > 0) {
+      const refetch = await fetchSecretaryTasks(dateIso);
+      if (!refetch.success || !refetch.tasks) {
+        return { success: false, error: refetch.error ?? 'Failed to load tasks' };
+      }
+      tasks = refetch.tasks;
+    }
+
     return {
       success: true,
       board: {
-        snapshot,
-        tasks: tasksResult.tasks,
+        snapshot: buildMinimalSecretaryBoardSnapshot(dateIso, locale),
+        tasks,
       },
     };
   } catch (error) {
