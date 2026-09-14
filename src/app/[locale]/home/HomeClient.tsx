@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { CheckCircle2, Plus } from '@/lib/icons';
+import { Plus } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
@@ -13,10 +13,7 @@ import {
 import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
 import { mergeSecretarySnapshot } from '@/lib/secretary/snapshot-patch';
 import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
-import {
-  completeSecretaryTasks,
-  createManualSecretaryTask,
-} from '@/app/actions/home-actions';
+import { createManualSecretaryTask } from '@/app/actions/home-actions';
 import { resolveSecretaryCardTitleFontClass, splitSecretaryCardTitle } from '@/lib/secretary/format-card-title';
 import {
   countConsolidatedSecretaryBoardTasks,
@@ -136,19 +133,6 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
     [board.tasks, workDateIso],
   );
 
-  const handleComplete = (taskIds: string[]) => {
-    startTransition(async () => {
-      const result = await completeSecretaryTasks(taskIds);
-      if (!result.success || !result.tasks) return;
-
-      const completedById = new Map(result.tasks.map((task) => [task.id, task]));
-      setBoard((prev) => ({
-        ...prev,
-        tasks: prev.tasks.map((task) => completedById.get(task.id) ?? task),
-      }));
-    });
-  };
-
   const handleAddTask = () => {
     const title = newTitle.trim();
     if (!title) return;
@@ -253,10 +237,8 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
               key={task.id}
               task={task}
               isDone={task.status === 'done'}
-              isPending={isPending}
               onPreloadOpen={() => preloadSecretaryOverlayForTask(task)}
               onOpen={() => setOverlayTask(task)}
-              onComplete={() => handleComplete(task.consolidatedTaskIds)}
             />
           ))
         )}
@@ -278,55 +260,21 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
 function TaskCard({
   task,
   isDone,
-  isPending,
   onPreloadOpen,
   onOpen,
-  onComplete,
 }: {
   task: SecretaryBoardDisplayTask;
   isDone: boolean;
-  isPending: boolean;
   onPreloadOpen?: () => void;
   onOpen: () => void;
-  onComplete: () => void;
 }) {
   const titleLines = splitSecretaryCardTitle(task.title);
   const titleFontClass = resolveSecretaryCardTitleFontClass(titleLines.length);
   const canOpenDetail = canOpenSecretaryTaskDetail(task);
   const cardClassName = cn(
-    'relative flex aspect-square min-h-0 rounded-2xl border p-2.5 bb-transition',
+    'flex aspect-square min-h-0 rounded-2xl border p-2.5 bb-transition',
     isDone ? SECRETARY_TASK_COLORS.done : SECRETARY_TASK_COLORS.card,
     canOpenDetail ? 'hover:brightness-[0.98] cursor-pointer' : 'cursor-default',
-  );
-
-  const actionButton = isDone ? (
-    <HintTooltip tip="งานนี้เสร็จแล้ว">
-      <span
-        className={cn(
-          'inline-flex h-8 w-8 items-center justify-center rounded-xl border-2 border-foreground/30 text-black/70',
-          SECRETARY_TASK_COLORS.doneAction,
-        )}
-        aria-hidden
-      >
-        <CheckCircle2 size={14} />
-      </span>
-    </HintTooltip>
-  ) : (
-    <HintTooltip tip="ยืนยันเสร็จสิ้น">
-      <button
-        type="button"
-        aria-label={`ยืนยันเสร็จสิ้น ${task.title}`}
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          onComplete();
-        }}
-        disabled={isPending}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-border/80 bg-card text-foreground hover:bg-muted/50 disabled:opacity-60"
-      >
-        <CheckCircle2 size={14} />
-      </button>
-    </HintTooltip>
   );
 
   const openTip = !canOpenDetail
@@ -337,7 +285,7 @@ function TaskCard({
 
   const body = (
     <>
-      <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain bb-smooth-scroll px-0.5 pb-8 pt-0.5">
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain bb-smooth-scroll px-0.5 py-0.5">
         <div className="my-auto flex w-full flex-col items-center gap-1">
           <p
             className={cn(
@@ -353,9 +301,6 @@ function TaskCard({
             ))}
           </p>
         </div>
-      </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-end p-2">
-        <div className="pointer-events-auto">{actionButton}</div>
       </div>
     </>
   );
