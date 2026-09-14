@@ -1,12 +1,12 @@
-import dynamic from 'next/dynamic';
 import { connection } from 'next/server';
-import { RouteLoadingSkeleton } from '@/components/ui/route-loading-skeleton';
-
-const HomePageClient = dynamic(() => import('./_components/HomePageClient'), {
-  loading: () => <RouteLoadingSkeleton label="กำลังโหลดหน้าแรก..." />,
-});
 
 export default async function IndexPage() {
   await connection();
-  return <HomePageClient />;
+  return (
+    <div
+      className="min-h-[calc(100vh-2rem)] bg-inherit flex flex-col"
+      data-testid="home-page-shell"
+      aria-label="หน้าหลัก"
+    />
+  );
 }

@@ -9,11 +9,12 @@ function readFile(relativePath: string): string {
 }
 
 describe('Home page empty shell', () => {
-  test('HomePageClient renders a minimal empty container', () => {
-    const client = readFile('app/[locale]/_components/HomePageClient.tsx');
-    expect(client).toMatch(/data-testid="home-page-shell"/);
-    expect(client).not.toMatch(/LiveStatusTracker/);
-    expect(client).not.toMatch(/HomeOpsPanels/);
+  test('index page renders a minimal empty container only', () => {
+    const page = readFile('app/[locale]/page.tsx');
+    expect(page).toMatch(/data-testid="home-page-shell"/);
+    expect(page).not.toMatch(/LiveStatusTracker/);
+    expect(page).not.toMatch(/HomeOpsPanels/);
+    expect(page).not.toMatch(/HomePageClient/);
   });
 });
 
