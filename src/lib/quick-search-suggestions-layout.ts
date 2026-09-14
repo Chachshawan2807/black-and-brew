@@ -44,7 +44,9 @@ export function shouldPortalQuickSearchSuggestions(
 export function getQuickSearchSuggestionsPlacement(
   spaceBelow: number,
   spaceAbove: number,
+  forceBelow = false,
 ): QuickSearchSuggestionsPlacement {
+  if (forceBelow) return 'below';
   if (spaceBelow >= MIN_SUGGESTIONS_HEIGHT && spaceBelow >= spaceAbove) {
     return 'below';
   }
@@ -56,6 +58,7 @@ export function getAnchoredSuggestionsOverlayStyle(
   anchorRect: AnchorRect,
   viewport: SuggestionsViewport,
   gap = 8,
+  forceBelow = false,
 ): {
   position: 'fixed';
   left: number;
@@ -69,7 +72,7 @@ export function getAnchoredSuggestionsOverlayStyle(
   const viewportBottom = viewport.offsetTop + viewport.visibleHeight;
   const spaceBelow = viewportBottom - anchorRect.bottom - gap;
   const spaceAbove = anchorRect.top - viewport.offsetTop - gap;
-  const placement = getQuickSearchSuggestionsPlacement(spaceBelow, spaceAbove);
+  const placement = getQuickSearchSuggestionsPlacement(spaceBelow, spaceAbove, forceBelow);
   const horizontal = clampSuggestionsHorizontal(anchorRect, viewport);
 
   if (placement === 'below') {

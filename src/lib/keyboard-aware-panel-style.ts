@@ -139,8 +139,9 @@ export function getMobileQuickActionKeyboardSheetBackdropStyle(
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'stretch',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     padding: margin,
+    paddingTop: `max(${margin}px, env(safe-area-inset-top, 0px))`,
     overflow: 'hidden',
     boxSizing: 'border-box',
   };
@@ -157,6 +158,6 @@ export function getMobileQuickActionKeyboardSheetPanelStyle(
     maxHeight: Math.max(120, insets.visibleHeight - margin * 2),
     minHeight: 0,
     flex: '0 1 auto',
-    alignSelf: 'flex-start',
+    alignSelf: 'stretch',
   };
 }

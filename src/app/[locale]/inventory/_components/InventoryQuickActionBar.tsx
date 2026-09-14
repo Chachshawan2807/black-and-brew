@@ -803,14 +803,20 @@ export function InventoryQuickActionBar({
     const viewportHeight = viewportInsets.visibleHeight || window.innerHeight;
     const viewportWidth = viewportInsets.visibleWidth || window.innerWidth;
     setPortaledSuggestionsStyle(
-      getAnchoredSuggestionsOverlayStyle(rect, {
-        offsetTop: viewportInsets.offsetTop,
-        offsetLeft: viewportInsets.offsetLeft,
-        visibleHeight: viewportHeight,
-        visibleWidth: viewportWidth,
-      }),
+      getAnchoredSuggestionsOverlayStyle(
+        rect,
+        {
+          offsetTop: viewportInsets.offsetTop,
+          offsetLeft: viewportInsets.offsetLeft,
+          visibleHeight: viewportHeight,
+          visibleWidth: viewportWidth,
+        },
+        8,
+        isFabPanel,
+      ),
     );
   }, [
+    isFabPanel,
     viewportInsets.offsetLeft,
     viewportInsets.offsetTop,
     viewportInsets.visibleHeight,

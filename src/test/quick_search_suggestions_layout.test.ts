@@ -52,6 +52,20 @@ describe('quick search suggestions layout', () => {
     expect(style.maxHeight).toBe(172);
   });
 
+  test('FAB quick search always anchors suggestions below the input', () => {
+    const style = getAnchoredSuggestionsOverlayStyle(
+      { top: 180, bottom: 220, left: 16, width: 320 },
+      { offsetTop: 0, visibleHeight: 220 },
+      8,
+      true,
+    );
+
+    expect(style.placement).toBe('below');
+    expect(style.top).toBe(228);
+    expect(style.bottom).toBeUndefined();
+    expect(style.maxHeight).toBe(80);
+  });
+
   test('clamps portaled suggestions within the visible viewport band on iOS keyboard pan', () => {
     const style = getAnchoredSuggestionsOverlayStyle(
       { top: 120, bottom: 160, left: 0, width: 390 },
