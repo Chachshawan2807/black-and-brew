@@ -1,4 +1,6 @@
 import { normalizeSuggestionTitle } from '@/lib/secretary/normalize-suggestion-title';
+import { filterScheduleTaskDescription } from '@/lib/proactive-insights/filter-schedule-alert-display';
+import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import {
   formatWorkSessionSubLabel,
   resolveWorkSession,
@@ -26,6 +28,15 @@ export function boardTaskConsolidationKey(task: SecretaryTask): string {
   return `custom:${task.module}:${normalizeSuggestionTitle(task.title)}`;
 }
 
+function filteredScheduleDescription(task: SecretaryTask): string | null {
+  return filterScheduleTaskDescription(
+    task.task_type,
+    task.description,
+    task.source_ref,
+    todayIsoBkk(),
+  );
+}
+
 function appendConsolidatedCount(title: string, count: number): string {
   if (count <= 1) return title;
   if (/\(\d+\s*รายการ\)\s*$/.test(title) || /\(\d+\)\s*$/.test(title)) {
@@ -49,7 +60,7 @@ function buildConsolidatedDisplayTask(
       consolidatedTaskIds,
       consolidatedSections: sorted.map((task) => ({
         title: formatWorkSessionSubLabel(task, session),
-        description: task.description,
+        description: filteredScheduleDescription(task),
       })),
     };
   }
@@ -57,6 +68,7 @@ function buildConsolidatedDisplayTask(
   return {
     ...primary,
     title: appendConsolidatedCount(primary.title, consolidatedTaskIds.length),
+    description: filteredScheduleDescription(primary),
     consolidatedTaskIds,
   };
 }

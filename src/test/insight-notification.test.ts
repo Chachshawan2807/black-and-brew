@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import type { Insight } from '@/lib/proactive-insights/types';
 import {
@@ -6,6 +6,10 @@ import {
   insightNotificationLogId,
   isEligibleInsightNotification,
 } from '@/lib/insight-notification';
+
+vi.mock('@/lib/proactive-insights/compile-operational-snapshot', () => ({
+  resolveInsightTargetDateIso: () => '2026-07-24',
+}));
 
 function sampleInsight(overrides: Partial<Insight> = {}): Insight {
   return {
@@ -93,5 +97,32 @@ describe('insight-notification', () => {
   test('sample insight produces matching log id for dedup', () => {
     const insight = sampleInsight();
     expect(insightNotificationLogId(insight.ruleId, '2026-07-24')).toContain(insight.ruleId);
+  });
+
+  test('isEligibleInsightNotification hides digest when schedule alerts are only today or past', () => {
+    const row = sampleInsightRow({
+      entity_id: insightNotificationLogId('daily_digest', '2026-07-24'),
+      metadata: {
+        kind: 'proactive_insight',
+        ruleId: 'daily_digest',
+        title: 'การแจ้งเตือนที่ต้องตรวจสอบ',
+        summary: 'คนน้อย: ศ. ที่ 24 (3 คน)',
+        fieldSummary: 'คนน้อย: ศ. ที่ 24 (3 คน)',
+        matchedRuleSnapshots: [
+          {
+            ruleId: 'understaffed_low_stock',
+            title: 'คนน้อย',
+            summary: 'ศ. ที่ 24 (3 คน)',
+            urlPath: '/schedule',
+            priority: 'high',
+            modules: ['schedule'],
+            scheduleUnderstaffedDays: [{ dateIso: '2026-07-24', dayIndex: 4, headcount: 3 }],
+            scheduleLeaveEntries: null,
+          },
+        ],
+      },
+    });
+
+    expect(isEligibleInsightNotification(row)).toBe(false);
   });
 });

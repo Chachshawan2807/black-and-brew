@@ -4,6 +4,14 @@ import { sanitizeJsonValue } from '@/lib/data-change-log';
 import type { InventoryNotification, NotificationPriority } from '@/lib/notification-types';
 import type { Insight, InsightRuleId } from '@/lib/proactive-insights/types';
 import type { InsightTrigger } from '@/lib/proactive-insights/evaluate-and-dispatch';
+import { resolveInsightTargetDateIso } from '@/lib/proactive-insights/compile-operational-snapshot';
+import {
+  filterInsightForScheduleDisplay,
+  parseMatchedRuleSnapshotsFromMetadata,
+  rebuildInsightDigestDisplayCopy,
+  serializeMatchedRuleSnapshots,
+  SCHEDULE_INSIGHT_RULE_IDS,
+} from '@/lib/proactive-insights/filter-schedule-alert-display';
 import {
   resolveInsightCronOccurredAt,
   type InsightAlertWindow,
@@ -113,11 +121,125 @@ function getSupabaseAdmin() {
   });
 }
 
+export function proactiveInsightNotificationHasVisibleContent(row: DataChangeLogRow): boolean {
+  const meta = row.metadata ?? {};
+  const todayIso = resolveInsightTargetDateIso();
+  const snapshots = parseMatchedRuleSnapshotsFromMetadata(meta);
+  if (snapshots) {
+    return rebuildInsightDigestDisplayCopy(snapshots, todayIso).hasContent;
+  }
+
+  const ruleId = meta.ruleId;
+  if (typeof ruleId === 'string' && SCHEDULE_INSIGHT_RULE_IDS.has(ruleId)) {
+    const insight = insightFromNotificationMetadata(meta);
+    if (insight) {
+      return filterInsightForScheduleDisplay(insight, todayIso) !== null;
+    }
+  }
+
+  return true;
+}
+
+function insightFromNotificationMetadata(meta: Record<string, unknown>): Insight | null {
+  if (typeof meta.ruleId !== 'string' || typeof meta.summary !== 'string') return null;
+  if (typeof meta.url !== 'string') return null;
+
+  const urlPath = meta.url.replace(/^\/[^/]+/, '') || '/dashboard';
+  return {
+    ruleId: meta.ruleId as Insight['ruleId'],
+    title: typeof meta.title === 'string' ? meta.title : '',
+    summary: meta.summary,
+    urlPath,
+    priority: meta.priority === 'high' ? 'high' : 'normal',
+    modules: Array.isArray(meta.modules) ? meta.modules.map(String) : ['schedule'],
+    scheduleUnderstaffedDays: parseScheduleUnderstaffedFromMeta(meta.scheduleUnderstaffedDays),
+    scheduleLeaveEntries: parseScheduleLeaveFromMeta(meta.scheduleLeaveEntries),
+  };
+}
+
+function parseScheduleUnderstaffedFromMeta(raw: unknown): Insight['scheduleUnderstaffedDays'] {
+  if (!Array.isArray(raw)) return undefined;
+  const days: NonNullable<Insight['scheduleUnderstaffedDays']> = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const row = item as Record<string, unknown>;
+    if (typeof row.dateIso !== 'string') continue;
+    if (typeof row.dayIndex !== 'number') continue;
+    if (typeof row.headcount !== 'number') continue;
+    days.push({ dateIso: row.dateIso, dayIndex: row.dayIndex, headcount: row.headcount });
+  }
+  return days.length > 0 ? days : undefined;
+}
+
+function parseScheduleLeaveFromMeta(raw: unknown): Insight['scheduleLeaveEntries'] {
+  if (!Array.isArray(raw)) return undefined;
+  const entries: NonNullable<Insight['scheduleLeaveEntries']> = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const row = item as Record<string, unknown>;
+    if (typeof row.dateIso !== 'string') continue;
+    if (typeof row.dayIndex !== 'number') continue;
+    if (typeof row.name !== 'string') continue;
+    entries.push({ dateIso: row.dateIso, dayIndex: row.dayIndex, name: row.name });
+  }
+  return entries.length > 0 ? entries : undefined;
+}
+
+function resolveInsightDisplayCopy(
+  meta: Record<string, unknown>,
+  locale: string,
+): { title: string; summary: string; fieldSummary: string } {
+  const isTh = locale === 'th';
+  const defaultTitle = isTh ? 'การแจ้งเตือนที่ต้องตรวจสอบ' : 'Alerts to review';
+  const title = typeof meta.title === 'string' ? meta.title : defaultTitle;
+  const rawFieldSummary =
+    typeof meta.fieldSummary === 'string'
+      ? meta.fieldSummary
+      : typeof meta.summary === 'string'
+        ? meta.summary
+        : '';
+  const rawSummary =
+    typeof meta.summary === 'string'
+      ? meta.summary.split('\n').filter(Boolean)[0] ?? meta.summary
+      : rawFieldSummary.split('\n').filter(Boolean)[0] ?? '';
+
+  const todayIso = resolveInsightTargetDateIso();
+  const snapshots = parseMatchedRuleSnapshotsFromMetadata(meta);
+  if (snapshots) {
+    const rebuilt = rebuildInsightDigestDisplayCopy(snapshots, todayIso);
+    if (rebuilt.hasContent) {
+      return {
+        title: defaultTitle,
+        summary: rebuilt.summary,
+        fieldSummary: rebuilt.fieldSummary,
+      };
+    }
+  }
+
+  const ruleId = meta.ruleId;
+  if (typeof ruleId === 'string' && SCHEDULE_INSIGHT_RULE_IDS.has(ruleId)) {
+    const insight = insightFromNotificationMetadata(meta);
+    if (insight) {
+      const filtered = filterInsightForScheduleDisplay(insight, todayIso);
+      if (filtered) {
+        return {
+          title: filtered.title,
+          summary: filtered.summary,
+          fieldSummary: filtered.summary,
+        };
+      }
+    }
+  }
+
+  return { title, summary: rawSummary, fieldSummary: rawFieldSummary };
+}
+
 export function isEligibleInsightNotification(row: DataChangeLogRow): boolean {
   if (row.module !== 'insights' || row.status !== 'success') return false;
   if (row.entity_type !== 'cross_module_insight') return false;
   const meta = row.metadata ?? {};
-  return meta.kind === 'proactive_insight';
+  if (meta.kind !== 'proactive_insight') return false;
+  return proactiveInsightNotificationHasVisibleContent(row);
 }
 
 export function formatInsightNotification(
@@ -125,27 +247,11 @@ export function formatInsightNotification(
   locale: string,
 ): InventoryNotification {
   const meta = row.metadata ?? {};
-  const isTh = locale === 'th';
   const logId =
     typeof meta.notificationLogId === 'string'
       ? meta.notificationLogId
       : row.entity_id ?? row.id;
-  const title =
-    typeof meta.title === 'string'
-      ? meta.title
-      : isTh
-        ? 'การแจ้งเตือนที่ต้องตรวจสอบ'
-        : 'Alerts to review';
-  const fieldSummary =
-    typeof meta.fieldSummary === 'string'
-      ? meta.fieldSummary
-      : typeof meta.summary === 'string'
-        ? meta.summary
-        : '';
-  const summary =
-    typeof meta.summary === 'string'
-      ? meta.summary.split('\n').filter(Boolean)[0] ?? meta.summary
-      : fieldSummary.split('\n').filter(Boolean)[0] ?? '';
+  const display = resolveInsightDisplayCopy(meta, locale);
   const priority: NotificationPriority =
     meta.priority === 'high' ? 'high' : 'normal';
 
@@ -157,9 +263,9 @@ export function formatInsightNotification(
     entityLabel: row.entity_label,
     actorLabel: row.actor_label,
     occurredAt: row.occurred_at,
-    title,
-    summary,
-    fieldSummary,
+    title: display.title,
+    summary: display.summary,
+    fieldSummary: display.fieldSummary,
     priority,
     read: false,
     batchedCount: 1,
@@ -176,6 +282,7 @@ function buildInsightLogMetadata(
   logId: string,
   locale: string,
   url: string,
+  matchedRules?: Insight[],
 ): Record<string, unknown> {
   return {
     kind: 'proactive_insight',
@@ -188,6 +295,9 @@ function buildInsightLogMetadata(
     locale,
     modules: insight.modules,
     priority: insight.priority,
+    scheduleUnderstaffedDays: insight.scheduleUnderstaffedDays ?? null,
+    scheduleLeaveEntries: insight.scheduleLeaveEntries ?? null,
+    matchedRuleSnapshots: matchedRules ? serializeMatchedRuleSnapshots(matchedRules) : null,
   };
 }
 
@@ -243,7 +353,12 @@ export async function recordInsightNotificationLog(
   insight: Insight,
   dateIso: string,
   locale = 'th',
-  options?: { trigger?: InsightTrigger; force?: boolean; window?: InsightAlertWindow },
+  options?: {
+    trigger?: InsightTrigger;
+    force?: boolean;
+    window?: InsightAlertWindow;
+    matchedRules?: Insight[];
+  },
 ): Promise<{ success: boolean; skipped?: boolean; logId: string }> {
   const logId = insightNotificationLogId(insight.ruleId, dateIso);
   const supabase = getSupabaseAdmin();
@@ -251,7 +366,13 @@ export async function recordInsightNotificationLog(
 
   const isTh = locale === 'th';
   const url = `/${locale}${insight.urlPath}`;
-  const metadata = buildInsightLogMetadata(insight, logId, locale, url);
+  const metadata = buildInsightLogMetadata(
+    insight,
+    logId,
+    locale,
+    url,
+    options?.matchedRules,
+  );
 
   try {
     const { data: existing, error: lookupError } = await supabase

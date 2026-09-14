@@ -1,6 +1,9 @@
 import type { SecretaryBoardDisplayTask } from '@/lib/secretary/consolidate-board-tasks';
+import { filterScheduleTaskDescription } from '@/lib/proactive-insights/filter-schedule-alert-display';
 import { parseScheduleReviewDescription } from '@/lib/secretary/parse-schedule-review-description';
+import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryAttentionListItem } from '@/lib/secretary/task-detail-overlay';
+import type { SecretaryTask } from '@/lib/secretary/types';
 
 function formatDaySummary(description: string | null): string {
   const entries = parseScheduleReviewDescription(description ?? '');
@@ -9,6 +12,17 @@ function formatDaySummary(description: string | null): string {
   return entries
     .map((entry) => (entry.detail ? `${entry.dayLabel} · ${entry.detail}` : entry.dayLabel))
     .join(', ');
+}
+
+function resolveScheduleReviewDescription(
+  task: Pick<SecretaryTask, 'task_type' | 'description' | 'source_ref'>,
+): string | null {
+  return filterScheduleTaskDescription(
+    task.task_type,
+    task.description,
+    task.source_ref,
+    todayIsoBkk(),
+  );
 }
 
 function dayEntriesFromDescription(
@@ -24,7 +38,10 @@ function dayEntriesFromDescription(
 
 /** Read-only schedule review rows for secretary task detail overlay. */
 export function buildScheduleReviewListItems(
-  task: Pick<SecretaryBoardDisplayTask, 'id' | 'description' | 'consolidatedSections'>,
+  task: Pick<
+    SecretaryBoardDisplayTask,
+    'id' | 'description' | 'consolidatedSections' | 'task_type' | 'source_ref'
+  >,
 ): SecretaryAttentionListItem[] {
   if (task.consolidatedSections?.length) {
     return task.consolidatedSections.flatMap((section, sectionIndex) => {
@@ -55,9 +72,10 @@ export function buildScheduleReviewListItems(
     });
   }
 
-  const dayItems = dayEntriesFromDescription(task.description, task.id);
+  const filteredDescription = resolveScheduleReviewDescription(task);
+  const dayItems = dayEntriesFromDescription(filteredDescription, task.id);
   if (dayItems.length > 0) return dayItems;
 
-  const summary = task.description?.trim();
+  const summary = filteredDescription?.trim();
   return summary ? [{ id: `${task.id}-summary`, primary: summary }] : [];
 }

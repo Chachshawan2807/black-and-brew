@@ -47,5 +47,16 @@ export interface Insight {
   urlPath: string;
   priority: NotificationPriority;
   modules: string[];
+  /** Structured schedule dates for display-time filtering in notifications. */
+  scheduleUnderstaffedDays?: Array<{
+    dateIso: string;
+    dayIndex: number;
+    headcount: number;
+  }>;
+  scheduleLeaveEntries?: Array<{
+    dateIso: string;
+    dayIndex: number;
+    name: string;
+  }>;
 }
 

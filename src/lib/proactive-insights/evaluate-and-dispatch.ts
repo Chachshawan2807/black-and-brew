@@ -67,6 +67,7 @@ async function recordAndPushDigest(
     trigger: trigger === 'cron' ? 'cron' : undefined,
     force: recordForce,
     window: options.window,
+    matchedRules,
   });
   const recorded = {
     ruleId: digest.ruleId,

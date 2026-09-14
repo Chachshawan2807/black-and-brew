@@ -26,6 +26,11 @@ function ruleUnderstaffedWeekly(snapshot: OperationalSnapshot): Insight | null {
     urlPath: '/schedule',
     priority: 'high',
     modules: ['schedule'],
+    scheduleUnderstaffedDays: understaffed.map((day) => ({
+      dateIso: day.dateIso,
+      dayIndex: day.dayIndex,
+      headcount: day.headcount,
+    })),
   };
 }
 
@@ -45,6 +50,11 @@ function ruleLeaveCoverageRisk(snapshot: OperationalSnapshot): Insight | null {
     urlPath: '/schedule',
     priority: 'high',
     modules: ['schedule'],
+    scheduleLeaveEntries: leaveEntries.map((entry) => ({
+      dateIso: entry.dateIso,
+      dayIndex: entry.dayIndex,
+      name: entry.name,
+    })),
   };
 }
 

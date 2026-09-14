@@ -1,4 +1,5 @@
 import { getBangkokCalendarIso } from '@/lib/date-utils';
+import { filterScheduleTaskDescription } from '@/lib/proactive-insights/filter-schedule-alert-display';
 import { isLegacyBeanOrderTaskType } from '@/lib/secretary/bean-order-task-consolidation';
 import { compareSecretaryTaskOrder } from '@/lib/secretary/task-order-compare';
 import type { SecretaryTask } from '@/lib/secretary/types';
@@ -53,6 +54,17 @@ export function isSecretaryBoardTaskVisible(
   }
   if (moduleFilter !== 'all' && task.module !== moduleFilter) {
     return false;
+  }
+  if (task.task_type === 'schedule_understaffed' || task.task_type === 'schedule_leave_risk') {
+    const filtered = filterScheduleTaskDescription(
+      task.task_type,
+      task.description,
+      task.source_ref,
+      workDateIso,
+    );
+    if (!filtered && task.status !== 'done') {
+      return false;
+    }
   }
   return true;
 }
