@@ -197,8 +197,6 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-5">
-      <p className="bb-page-subtitle">งานประจำวัน · อัปเดตเมื่อมีการเปลี่ยนแปลง</p>
-
       <div className="flex flex-wrap gap-2 items-center">
         <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
           <button
