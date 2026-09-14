@@ -138,8 +138,7 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 
 | Module | Path |
 | --- | --- |
-| Command Center | `src/app/[locale]/page.tsx`, `_components/HomePageClient.tsx`, `LiveStatusTracker.tsx`, `HomeOpsPanels.tsx`, `HomePurchaseOrdersSection.tsx`, `HomeMaintenanceDueSection.tsx` |
-| Secretary (งาน) | `src/app/[locale]/secretary/SecretaryClient.tsx`, `_components/*`, `src/lib/secretary/`, `secretary-actions.ts` |
+| Home (บอร์ดงาน) | `src/app/[locale]/home/HomeClient.tsx`, `home/_components/*`, `src/lib/secretary/`, `home-actions.ts` |
 | Dashboard | `src/app/[locale]/dashboard/`, `_components/LiveShiftList.tsx`, `MonthlyRoster.tsx` |
 | Schedule | `src/app/[locale]/schedule/ScheduleClient.tsx`, `_components/` |
 | Inventory | `src/app/[locale]/inventory/InventoryClient.tsx`, `_components/`, `count/`, `accuracy/`, `branch-withdraw/` |
@@ -176,7 +175,7 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | Sidebar menu order | `sidebar-menu-order.ts`, `app-preferences-actions.ts`, `app_preferences` table cross-device sync |
 | Bean orders | `bean-order-actions.ts`, `lib/bean-orders/`, manual delivery confirm |
 | Proactive insights | `src/lib/proactive-insights/`, `GET /api/insight-alerts`, Web Push + NotificationBell; prefs `proactiveInsights` |
-| Secretary task board | `operational_tasks`, `operational_task_sessions`, `src/lib/secretary/`, sidebar badge via `countPendingSecretaryTasks()` |
+| Home task board | `operational_tasks`, `operational_task_sessions`, `src/lib/secretary/`, sidebar badge via `countPendingSecretaryTasks()` on หน้าหลัก |
 | Navigation perf | `route-chunk-preload.ts`, `warm-route-navigation.ts`, `ViewTransitionNavigation.tsx` idle/touch prefetch + view transitions |
 | Inventory ledger date | `inventory_transactions.transaction_at` + `p_transaction_at` on `record_inventory_transaction` RPC |
 | SQL blueprint | `sql/record_inventory_transaction.sql` |

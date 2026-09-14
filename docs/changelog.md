@@ -2,6 +2,12 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-09-15 (Retire standalone Secretary route keepers)
+
+- Operational task board lives on `/[locale]/home` (`HomeClient.tsx`); `/[locale]/secretary` is a permanent redirect only.
+- Removed dead `retire-pending-derived-secretary-tasks.ts`; refresh API documented as `POST /api/home/refresh` (not `/api/secretary/refresh`).
+- Updated `AGENTS.md`, `PROJECT_MAP.md`, architecture, PRD, API, context, blueprint, tasks, skills, domain keepers; **DEC-092** in `docs/memory.md`.
+
 ## 2026-09-04 (AI chat/tools legacy fully removed + ADR)
 
 - Confirmed on disk: no `src/app/actions/tools/`, `src/lib/ai-data-gateway.ts`, `src/lib/agents/`, or `POST /api/chat` route.

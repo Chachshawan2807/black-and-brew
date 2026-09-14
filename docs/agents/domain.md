@@ -53,7 +53,7 @@ Use the graph to find qualified names; these are fixed entry points when the top
 | Topic | Hub |
 | ----- | --- |
 | In-app + OS notifications, badge, push | `src/hooks/use-inventory-notifications.ts` |
-| Secretary / operational tasks | `src/lib/secretary/` + `secretary-actions.ts` |
+| Home operational tasks | `src/lib/secretary/` + `home-actions.ts` (`src/app/[locale]/home/`) |
 | Inventory stock truth | `src/lib/inventory-stock.ts` + `inventory-actions.ts` |
 | Schedule / shifts | `src/lib/schedule/` + `shift-actions.ts` |
 

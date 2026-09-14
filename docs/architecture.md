@@ -101,8 +101,8 @@ src/app/
 │   ├── push-actions.ts                # Web Push subscription register/sync/unregister
 │   ├── app-preferences-actions.ts     # Branch-scoped UI prefs (sidebar menu order)
 │   ├── schedule-sheets-sync-actions.ts # Schedule → Google Sheets sync
-│   ├── secretary-actions.ts           # Operational task board (derive, sync, complete)
-│   ├── secretary-overlay-actions.ts   # Schedule overlay fetch for task context
+│   ├── home-actions.ts                # Home operational task board (derive, sync, complete)
+│   ├── secretary-overlay-actions.ts   # Schedule overlay fetch for task detail overlays
 │   ├── data-change-log-actions.ts     # Mutation audit + dispatchInventoryWebPush hook
 │   └── migrate-inventory-sort-order.ts # One-shot inventory sort-order helper
 ├── api/
@@ -110,13 +110,13 @@ src/app/
 │   ├── insight-alerts/route.ts          # cron-job.org → proactive insights
 │   ├── data-change-log-retention/route.ts # cron-job.org → purge old data_change_logs
 │   ├── push/webhook/route.ts            # Optional Supabase DB webhook → Web Push dispatch
-│   ├── secretary/refresh/route.ts       # Privileged refresh of derived secretary tasks
+│   ├── home/refresh/route.ts            # Privileged refresh of derived operational tasks
 │   └── inventory/offline-mutation/route.ts  # Service worker background sync replay
 └── [locale]/
     ├── layout.tsx               # PinGateway, sidebar, DeferredOverlays, PWA
-    ├── page.tsx                 # Command Center
-    ├── _components/             # HomePageClient, LiveStatusTracker, HomeOpsPanels, …
-    ├── secretary/               # SecretaryClient + _components/ (task board, overlays)
+    ├── page.tsx                 # Re-export → home/page.tsx
+    ├── home/                    # HomeClient + _components/ (operational task board, overlays)
+    ├── _components/             # Legacy ops panels (unused by home route; tests only)
     ├── dashboard/               # page.tsx + _components/ (LiveShiftList, MonthlyRoster)
     ├── schedule/                # ScheduleClient + _components/
     ├── inventory/               # InventoryClient + _components/ (FAB, modals)

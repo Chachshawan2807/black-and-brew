@@ -73,8 +73,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 
 | Module | Route | Status |
 | --- | --- | --- |
-| Command Center | `/[locale]` | Active |
-| Secretary (งาน) | `/[locale]/secretary` | Active derived + manual operational tasks |
+| Home (บอร์ดงาน) | `/[locale]`, `/[locale]/home` | Active derived + manual operational tasks |
 | Inventory | `/[locale]/inventory` | Active DnD + Stock RPC + count policy |
 | Stock Count | `/[locale]/inventory/count` | Active |
 | Inventory Accuracy | `/[locale]/inventory/accuracy` | Active exact-count only + gauge |

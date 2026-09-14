@@ -8,7 +8,7 @@
 
 ### Data and Integration
 
-- **Secretary task board:** `src/lib/secretary/` + `secretary-actions.ts` + `operational_tasks`; derived tasks from schedule/inventory/maintenance/bean orders; sidebar badge via `countPendingSecretaryTasks()`.
+- **Home task board:** `src/lib/secretary/` + `home-actions.ts` + `operational_tasks`; derived tasks from schedule/inventory/maintenance/bean orders; sidebar badge via `countPendingSecretaryTasks()` on หน้าหลัก.
 - **Proactive cross-module insights:** `src/lib/proactive-insights/` + `GET /api/insight-alerts` deterministic rules correlating schedule/inventory/maintenance/bean-orders/accuracy; Web Push + NotificationBell; prefs `proactiveInsights`.
 - Inventory Truth Layer: `inventory-stock.ts`, `mergeInventoryRealtimeUpdate`, `computeItemsToOrder`, `updateInventoryStock`, RPC `set_inventory_stock`.
 - Supabase Session Bridge: `ensureSupabaseSession()` after PIN → anonymous `authenticated` RLS.

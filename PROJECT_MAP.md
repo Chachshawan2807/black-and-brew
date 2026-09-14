@@ -10,8 +10,7 @@ Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) 
 
 | Module | Path | Status |
 | --- | :--- | --- |
-| Command Center | `src/app/[locale]/page.tsx` | Active |
-| Secretary (งาน) | `src/app/[locale]/secretary/` | Active |
+| Home (บอร์ดงาน) | `src/app/[locale]/home/` (`page.tsx` re-export at `[locale]/page.tsx`) | Active |
 | Dashboard | `src/app/[locale]/dashboard/` | Active |
 | Schedule | `src/app/[locale]/schedule/` | Active |
 | Inventory | `src/app/[locale]/inventory/` | Active |
@@ -31,8 +30,7 @@ Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) 
 | Route | Shell | Client / feature UI |
 | --- | :--- | --- |
 | `/` | `src/app/page.tsx` | redirect → `/th` |
-| `/[locale]` | `src/app/[locale]/page.tsx` | `HomePageClient.tsx`, `_components/LiveStatusTracker.tsx`, `HomeOpsPanels.tsx`, … |
-| `/[locale]/secretary` | `secretary/page.tsx` | `SecretaryClient.tsx`, `_components/*` (task board, overlays) |
+| `/[locale]`, `/[locale]/home` | `page.tsx` → `home/page.tsx` | `HomeClient.tsx`, `home/_components/*` (operational task board, overlays) |
 | `/[locale]/dashboard` | `dashboard/page.tsx` | `_components/LiveShiftList.tsx`, `MonthlyRoster.tsx` |
 | `/[locale]/schedule` | `schedule/page.tsx` | `ScheduleClient.tsx`, `_components/ScheduleToolbar.tsx`, `ShiftSettingsModal.tsx` |
 | `/[locale]/inventory` | `inventory/page.tsx` | `InventoryClient.tsx`, `_components/*` |
@@ -57,7 +55,7 @@ Locales: `th`, `en`
 | `/api/data-change-log-retention` | `src/app/api/data-change-log-retention/route.ts` |
 | `/api/push/webhook` | `src/app/api/push/webhook/route.ts` |
 | `/api/inventory/offline-mutation` | `src/app/api/inventory/offline-mutation/route.ts` |
-| `POST /api/secretary/refresh` | `src/app/api/secretary/refresh/route.ts` |
+| `POST /api/home/refresh` | `src/app/api/home/refresh/route.ts` |
 
 Cron schedules: **cron-job.org** (Asia/Bangkok) not Vercel Cron. See `.env.example` § CRON.
 
@@ -104,8 +102,8 @@ black-and-brew/
 | File | Purpose |
 | --- | :--- |
 | `auth.ts` | PIN verify, session revocation, read-only guard |
-| `secretary-actions.ts` | Operational task board: derive/sync/complete manual + derived tasks |
-| `secretary-overlay-actions.ts` | Schedule overlay data for secretary task context |
+| `home-actions.ts` | Home operational task board: derive/sync/complete manual + derived tasks |
+| `secretary-overlay-actions.ts` | Schedule overlay data for home task detail overlays |
 | `passkey-actions.ts` | WebAuthn trusted-device passkeys |
 | `login-history-actions.ts` | Login audit + active sessions |
 | `inventory-actions.ts` | Stock RPC, count policy, transactions, CRUD |
@@ -125,7 +123,7 @@ black-and-brew/
 
 ## Tests (`src/test/`)
 
-Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `inventory-grid-a11y.test.ts`, `inventory-grid-cell-blur.test.ts`, `schedule-grid-a11y.test.ts`, `maintenance-form-a11y.test.ts`, `ui-motion-focus-audit.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `branch-withdraw-dialog.test.ts`, `inventory_quick_action_fab.test.ts`, `notification-fab-sync.test.ts`, `offline-mutation-route.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `schedule-clear-all-removed.test.ts`, `live_shift_list.test.ts`, `bean-orders-*.test.ts`, `rounded-select.test.ts`, `sidebar-menu-order.test.ts`, `pwa-sidebar-navigation.test.ts`, `proactive-insights-*.test.ts`, `insight-alerts-route.test.ts`, `insight-web-push.test.ts`, `home-ops-panels.test.tsx`, `view-transition-navigation-race.test.ts`, `warm-route-navigation.test.ts`, `inventory-transaction-result.test.ts`, `inventory-in-out-theoretical.test.ts`, `secretary-*.test.ts`, `use-secretary-task-order.test.ts`
+Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `inventory-grid-a11y.test.ts`, `inventory-grid-cell-blur.test.ts`, `schedule-grid-a11y.test.ts`, `maintenance-form-a11y.test.ts`, `ui-motion-focus-audit.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `branch-withdraw-dialog.test.ts`, `inventory_quick_action_fab.test.ts`, `notification-fab-sync.test.ts`, `offline-mutation-route.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `schedule-clear-all-removed.test.ts`, `live_shift_list.test.ts`, `bean-orders-*.test.ts`, `rounded-select.test.ts`, `sidebar-menu-order.test.ts`, `pwa-sidebar-navigation.test.ts`, `proactive-insights-*.test.ts`, `insight-alerts-route.test.ts`, `insight-web-push.test.ts`, `home-ops-panels.test.tsx`, `view-transition-navigation-race.test.ts`, `warm-route-navigation.test.ts`, `inventory-transaction-result.test.ts`, `inventory-in-out-theoretical.test.ts`, `secretary-*.test.ts`, `home-page-maintenance-fetch.test.ts`
 
 ---
 

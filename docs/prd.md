@@ -30,20 +30,15 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 
 ## 3. Core Modules
 
-### 3.1 Command Center
+### 3.1 Home (บอร์ดงาน)
 
-- Route: `/[locale]`
-- Purpose: ภาพรวมกะงานวันนี้/พรุ่งนี้แบบเรียลไทม์ + ops panels (PO / maintenance due / insights)
-- Components: `HomePageClient.tsx`, `LiveStatusTracker.tsx`, `HomeOpsPanels.tsx`, `HomePurchaseOrdersSection.tsx`, `HomeMaintenanceDueSection.tsx`
-
-### 3.2 Secretary (งาน)
-
-- Route: `/[locale]/secretary`
+- Route: `/[locale]` (alias `/[locale]/home`)
 - Purpose: บอร์ดงานประจำวัน รวมงานที่ derive จาก schedule, inventory, maintenance, bean orders และงาน manual
-- Components: `SecretaryClient.tsx`, `secretary/_components/*` (task board, overlays, manual task dialog)
-- Features: derived task sync, manual tasks, defer/complete, schedule overlay context, sidebar pending badge
+- Components: `HomeClient.tsx`, `home/_components/*` (task board, overlays, manual task dialog)
+- Features: derived task sync, manual tasks, defer/complete, schedule overlay context, sidebar pending badge (`countPendingSecretaryTasks`)
+- Legacy: `/[locale]/secretary` redirects to `/[locale]/home`
 
-### 3.3 Staff Dashboard
+### 3.2 Staff Dashboard
 
 - Route: `/[locale]/dashboard`
 - Purpose: ลงเวลา รายชื่อกะ ตารางรายเดือน

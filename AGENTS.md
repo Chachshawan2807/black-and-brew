@@ -57,12 +57,10 @@ This is a **Next.js App Router** ERP not a Vite/CRA SPA. Do **not** introduce to
 ### Feature examples in this repo
 
 ```text
-home/       → app/[locale]/page.tsx
-              app/[locale]/_components/LiveStatusTracker.tsx
-
-secretary/  → app/[locale]/secretary/SecretaryClient.tsx
-              app/[locale]/secretary/_components/*
-              app/actions/secretary-actions.ts
+home/       → app/[locale]/page.tsx (re-export)
+              app/[locale]/home/page.tsx, HomeClient.tsx
+              app/[locale]/home/_components/* (task board, overlays)
+              app/actions/home-actions.ts
               lib/secretary/*
 
 inventory/  → app/[locale]/inventory/InventoryClient.tsx

@@ -6,7 +6,7 @@
 
 ## Completed (summary)
 
-Core ERP modules are shipped: Command Center, Secretary (งาน), Dashboard, Schedule (DnD), Inventory (spreadsheet + count + accuracy), Maintenance, Bean Orders, Settings, PWA, PIN auth + passkeys, Web Push (inventory + daily report).
+Core ERP modules are shipped: Home (บอร์ดงาน), Dashboard, Schedule (DnD), Inventory (spreadsheet + count + accuracy), Maintenance, Bean Orders, Settings, PWA, PIN auth + passkeys, Web Push (inventory + daily report).
 
 Notable completed work:
 
@@ -20,7 +20,7 @@ Notable completed work:
 - [x] Notification unread badge counter (IDB + cross-tab sync)
 - [x] Inventory accuracy gauge on `/inventory/accuracy`
 - [x] Bean orders module (`/bean-orders`, `bean_*` tables, manual delivery confirm, slip upload)
-- [x] Secretary task board (`/secretary`, `operational_tasks`, derived + manual tasks, sidebar badge)
+- [x] Home task board (`/home`, `operational_tasks`, derived + manual tasks, sidebar badge; retired `/secretary` route)
 - [x] Retired: in-app AI chat (`POST /api/chat`, agents stack); Gemini remains for bean-order customer parse only
 - [x] Sidebar menu drag-reorder (`sidebar-menu-order.ts`) + cross-device sync (`app_preferences`)
 - [x] Proactive cross-module insights (`/api/insight-alerts`, Web Push, Command Center ops panels)

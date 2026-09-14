@@ -21,17 +21,28 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 - Impact: `docs/architecture.md`, `docs/skills.md`, `docs/changelog.md`, `docs/MASTER_BLUEPRINT.md`.
 - Evidence: no `src/app/actions/tools/` on disk; `npx tsc --noEmit` clean.
 
+### DEC-092: Secretary route retired; board on Home (v9.4+)
+
+- Date: September 2026
+- Context: The standalone `/[locale]/secretary` page duplicated navigation; staff use หน้าหลัก for the same operational task board.
+- Decision:
+  1. UI: `src/app/[locale]/home/` (`HomeClient.tsx`, `home/_components/*`); `[locale]/page.tsx` re-exports `home/page.tsx`.
+  2. Mutations: `home-actions.ts` (removed `secretary-actions.ts`); overlay fetch stays in `secretary-overlay-actions.ts`.
+  3. Redirect: `/:locale/secretary` → `/:locale/home` in `next.config.ts`; no `src/app/[locale]/secretary/` or `POST /api/secretary/refresh`.
+  4. Domain hub unchanged: `src/lib/secretary/`, `operational_tasks`, `countPendingSecretaryTasks()` for sidebar badge.
+- Impact: Keeper docs point at Home; legacy URL redirect only. DB table names and `lib/secretary/` module id stay for compatibility.
+- Evidence: `home-actions.ts`, `src/app/api/home/refresh/route.ts`, `secretary-*.test.ts`, migration `20260828120000_operational_tasks.sql`
+
 ### DEC-090: Secretary operational task board (v9.4)
 
 - Date: August 2026
 - Context: Staff need a single daily task board that derives actionable items from schedule, inventory, maintenance, and bean orders without opening every module.
 - Decision:
-  1. Route: `src/app/[locale]/secretary/` with `SecretaryClient.tsx` and overlay components.
-  2. Persistence: `operational_tasks` + `operational_task_sessions` (`20260828120000`, `20260828130000`); Realtime on domain tables (`20260829120000`).
-  3. Domain hub: `src/lib/secretary/` + `secretary-actions.ts`; sidebar badge via `countPendingSecretaryTasks()`.
-  4. Refresh: privileged `POST /api/secretary/refresh` calls `refreshDerivedSecretaryTasks()`.
+  1. Persistence: `operational_tasks` + `operational_task_sessions` (`20260828120000`, `20260828130000`); Realtime on domain tables (`20260829120000`).
+  2. Domain hub: `src/lib/secretary/`; derive rules in `module-registry.ts`.
+  3. Superseded for routing by **DEC-092** (board UI on Home, not a separate Secretary route).
 - Impact: Document in README, `PROJECT_MAP.md`, architecture, PRD, API, database keepers.
-- Evidence: `secretary-*.test.ts`, `use-secretary-task-order.test.ts`, migration `20260828120000_operational_tasks.sql`
+- Evidence: `secretary-*.test.ts`, migration `20260828120000_operational_tasks.sql`
 
 ### DEC-088: Retire Sales Report module (v9.4)
 

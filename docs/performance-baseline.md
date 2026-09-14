@@ -28,7 +28,7 @@ DevTools → Network → filter RSC/flight for payload size.
 
 **13** `loading.tsx` files under `src/app/[locale]/`:
 
-- locale root, dashboard, schedule, maintenance, settings, secretary, bean-orders (+ `[id]`)
+- locale root, home, dashboard, schedule, maintenance, settings, bean-orders (+ `[id]`)
 - inventory (+ count, accuracy, branch-withdraw)
 
 ## Post-optimization (2026-07-18 → ongoing)

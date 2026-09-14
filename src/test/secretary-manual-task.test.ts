@@ -68,7 +68,7 @@ describe('secretary manual task UI', () => {
     expect(dialog).not.toContain('border-[#f5c6cb]');
   });
 
-  test('SecretaryClient opens manual task dialog for create with description', () => {
+  test('HomeClient opens manual task dialog for create with description', () => {
     const client = fs.readFileSync(path.resolve(ROOT, 'app/[locale]/home/HomeClient.tsx'), 'utf-8');
     expect(client).toContain('SecretaryManualTaskDialog');
     expect(client).toContain('createManualSecretaryTask');
