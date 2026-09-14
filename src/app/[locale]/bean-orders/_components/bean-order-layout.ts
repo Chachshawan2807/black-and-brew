@@ -113,13 +113,13 @@ export const BEAN_ORDER_PAYMENT_COLUMN =
   'min-w-0 space-y-3 lg:pr-8';
 
 export const BEAN_ORDER_DETAIL_PAYMENT_COLUMN =
-  'flex min-h-0 w-full min-w-0 flex-col space-y-3 lg:order-2 lg:border-l-2 lg:border-border lg:pl-6 lg:pt-0';
+  'order-2 flex min-h-0 w-full min-w-0 flex-col space-y-3 border-t-2 border-border pt-6 lg:order-2 lg:border-t-0 lg:border-l-2 lg:border-border lg:pl-6 lg:pt-0';
 
 export const BEAN_ORDER_SHIPPING_COLUMN =
   'min-w-0 space-y-3 border-t-2 border-border pt-6 lg:border-l-2 lg:border-t-0 lg:pl-8 lg:pt-0';
 
 export const BEAN_ORDER_DETAIL_SHIPPING_COLUMN =
-  'flex min-h-0 w-full min-w-0 flex-col space-y-3 border-t-2 border-border pt-6 lg:order-1 lg:pr-6 lg:border-t-0 lg:pt-0';
+  'order-1 flex min-h-0 w-full min-w-0 flex-col space-y-3 lg:order-1 lg:pr-6';
 
 export const BEAN_ORDER_PAYMENT_ACTIONS_WIDTH = 'w-[11rem]';
 

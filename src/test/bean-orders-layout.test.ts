@@ -33,7 +33,11 @@ describe('bean order detail desktop layout', () => {
     expect(BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT).not.toContain('flex-1');
   });
 
-  test('splits shipping and payment evenly on detail fulfillment desktop', () => {
+  test('shows shipping above payment on mobile and splits evenly on desktop', () => {
+    expect(BEAN_ORDER_DETAIL_SHIPPING_COLUMN).toContain('order-1');
+    expect(BEAN_ORDER_DETAIL_PAYMENT_COLUMN).toContain('order-2');
+    expect(BEAN_ORDER_DETAIL_SHIPPING_COLUMN).not.toContain('border-t-2');
+    expect(BEAN_ORDER_DETAIL_PAYMENT_COLUMN).toContain('border-t-2');
     expect(BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID).toContain('lg:grid-cols-2');
     expect(BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID).toContain('lg:gap-0');
     expect(BEAN_ORDER_DETAIL_SHIPPING_COLUMN).toContain('lg:pr-6');
