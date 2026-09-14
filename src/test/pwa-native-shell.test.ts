@@ -10,6 +10,7 @@ import {
   PWA_THEME_COLORS,
   isAndroidWebKit,
   isIosWebKit,
+  mergeViewportContentForIosStandalone,
   resolvePwaThemeColor,
   resolveThemePreferenceFromStorage,
 } from '@/lib/pwa-standalone';
@@ -37,6 +38,22 @@ describe('PWA native shell', () => {
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('bb-theme');
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('display-mode: standalone');
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('navigator.standalone');
+    expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('maximum-scale=1, user-scalable=no');
+    expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('gesturestart');
+  });
+
+  test('mergeViewportContentForIosStandalone locks zoom without dropping existing viewport tokens', () => {
+    expect(
+      mergeViewportContentForIosStandalone(
+        'width=device-width, initial-scale=1, viewport-fit=cover',
+      ),
+    ).toBe('width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no');
+
+    expect(
+      mergeViewportContentForIosStandalone(
+        'width=device-width, maximum-scale=5, user-scalable=yes',
+      ),
+    ).toBe('width=device-width, maximum-scale=1, user-scalable=no');
   });
 
   test('isIosWebKit detects iPhone and iPad user agents', () => {

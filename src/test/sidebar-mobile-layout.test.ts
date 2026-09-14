@@ -9,11 +9,15 @@ function readFile(relativePath: string): string {
 }
 
 describe('Mobile sidebar layout Modern Web Guidance alignment', () => {
-  test('viewport must not block pinch-zoom (no maximumScale lock)', () => {
-    const code = readFile('app/[locale]/layout.tsx');
-    expect(code).not.toMatch(/maximumScale:\s*1/);
-    expect(code).toMatch(/width:\s*['"]device-width['"]/);
-    expect(code).toMatch(/initialScale:\s*1/);
+  test('browser-tab viewport must not block pinch-zoom globally', () => {
+    const layout = readFile('app/[locale]/layout.tsx');
+    expect(layout).not.toMatch(/maximumScale:\s*1/);
+    expect(layout).toMatch(/width:\s*['"]device-width['"]/);
+    expect(layout).toMatch(/initialScale:\s*1/);
+
+    const pwa = readFile('lib/pwa-standalone.ts');
+    expect(pwa).toContain('mergeViewportContentForIosStandalone');
+    expect(pwa).toMatch(/maximum-scale=1, user-scalable=no/);
   });
 
   test('mobile nav uses dedicated MobileNavDrawer with popover manual + scroll-snap', () => {
