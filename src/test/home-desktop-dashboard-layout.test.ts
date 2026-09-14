@@ -8,18 +8,16 @@ function readFile(relativePath: string): string {
   return fs.readFileSync(path.resolve(ROOT, relativePath), 'utf-8');
 }
 
-describe('Home desktop dashboard layout collapsed sidebar', () => {
-  test('HomePageClient enables viewport-fit dashboard when sidebar is collapsed on desktop', () => {
+describe('Home page empty shell', () => {
+  test('HomePageClient renders a minimal empty container', () => {
     const client = readFile('app/[locale]/_components/HomePageClient.tsx');
-    expect(client).toMatch(/useSidebarToggle/);
-    expect(client).toMatch(/useMaxMd/);
-    expect(client).toMatch(/dashboardLayout/);
-    expect(client).toMatch(/layout=\{sectionLayout\}/);
-    expect(client).toMatch(/md:h-\[100svh\]/);
-    expect(client).toMatch(/md:overflow-hidden/);
-    expect(client).toMatch(/HomeOpsPanels/);
+    expect(client).toMatch(/data-testid="home-page-shell"/);
+    expect(client).not.toMatch(/LiveStatusTracker/);
+    expect(client).not.toMatch(/HomeOpsPanels/);
   });
+});
 
+describe('Home desktop dashboard layout collapsed sidebar', () => {
   test('HomeOpsPanels keeps mobile tab panels hidden on desktop', () => {
     const panels = readFile('app/[locale]/_components/HomeOpsPanels.tsx');
     expect(panels).toMatch(/<div className="md:hidden">/);
@@ -32,12 +30,6 @@ describe('Home desktop dashboard layout collapsed sidebar', () => {
     expect(panels).toMatch(/:\s*'md:grid-cols-1'/);
     expect(panels).toMatch(/SegmentTabBar/);
     expect(panels).toMatch(/md:flex-\[9\]/);
-  });
-
-  test('HomePageClient keeps compact width when sidebar is expanded on desktop', () => {
-    const client = readFile('app/[locale]/_components/HomePageClient.tsx');
-    expect(client).toMatch(/:\s*'max-w-3xl'/);
-    expect(client).not.toMatch(/calc\(100vw-20rem\)/);
   });
 
   test('LiveStatusTracker fills dashboard panels with stretchable employee card grid', () => {
