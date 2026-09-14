@@ -196,6 +196,13 @@
 - ✅ **SELF-VALIDATION:** ห้ามหยุดรอกดอนุมัติระหว่างขั้นตอนการแก้ไขเล็กน้อย (เช่น ปิด Tag, แก้ Lint)
 - ✅ **ZERO-STUTTER:** รายงานผลเฉพาะเมื่อบรรลุ Milestone หรือพบ Error ระดับ R2 ที่ต้องตัดสินใจร่วมกันเท่านั้น
 
+### Agent engineering workflow (Mandatory)
+
+- ✅ **Skill routing:** ตามตารางใน [`AGENTS.md`](../AGENTS.md) (engineering-workflow-standard) คู่ hub-first ใน `.cursorrules`
+- ✅ **Explore:** codebase-memory-mcp ก่อน grep/glob · domain consumption: [`docs/agents/domain.md`](agents/domain.md)
+- ✅ **Tracker:** GitHub Issues + `gh` · [`docs/agents/issue-tracker.md`](agents/issue-tracker.md)
+- ❌ **ห้าม** refactor กว้างโดยไม่ผ่าน `improve-codebase-architecture` (ยกเว้น R0/hotfix ตาม exceptions ใน AGENTS.md)
+
 ---
 
 ## 4. Build & Deploy Rules

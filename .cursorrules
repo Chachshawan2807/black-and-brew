@@ -50,3 +50,15 @@ This project uses **codebase-memory-mcp** as the primary backend knowledge graph
 - เปลี่ยนโครงสร้าง `src/types/index.ts` อย่างมีนัยสำคัญ
 
 **ทางเลือก local (script):** `npm run graph:sync` หรือ `npm run graph:sync -- --if-changed` (ใช้ใน `.githooks/post-commit` ได้หลัง `git config core.hooksPath .githooks`)
+
+## Engineering workflow (Matt Pocock skills, IRON RULE)
+
+งานแก้โค้ด/สถาปัตย์: ผูก skill ตามเป้าหมาย (รายละเอียด + exceptions ใน `AGENTS.md` engineering-workflow-standard)
+
+- ฟีเจอร์/บั๊กมี scope → `to-spec` แล้ว `implement-spec` (GitHub issue)
+- ศัพท์/decision → `domain-modeling`
+- refactor กว้าง → `improve-codebase-architecture` ก่อนแตะโค้ด
+- บั๊กยาก → `diagnosing-bugs` หลัง hub + graph
+- ก่อน merge → `code-review`
+
+ทุกเส้นทาง: hub-first + MCP graph ก่อน · config ใน `docs/agents/domain.md`

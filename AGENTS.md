@@ -428,6 +428,41 @@ GitHub Issues on `Chachshawan2807/black-and-brew` (`gh` CLI). See `docs/agents/i
 
 Single-context; human glossary in `docs/context.md`, code exploration graph-first via codebase-memory-mcp (hub-first per `.cursorrules`). See `docs/agents/domain.md`.
 
+<!-- BEGIN:engineering-workflow-standard -->
+
+## ENGINEERING WORKFLOW (IRON RULE)
+
+งานที่มีการ **แก้/เพิ่ม/ลบโค้ด** หรือ **ตัดสินใจสถาปัตย์** ต้องผูกกับ hub-first (`.cursorrules`) และเลือก skill ตาม **เป้าหมายงาน** ด้านล่าง ห้ามข้ามลำดับโดยไม่มีเหตุ (ยกเว้นในตาราง Exceptions)
+
+Skills อยู่ที่ `.agents/skills/<name>/SKILL.md` อ่านและทำตาม skill ก่อนลงมือ
+
+| เป้าหมาย | Skill (ลำดับ) | บังคับเมื่อ |
+| -------- | ------------- | ----------- |
+| ฟีเจอร์ใหม่ / บั๊กมีขอบเขต | `to-spec` → `implement-spec` | ยังไม่มี GitHub issue ที่เป็น spec ชัด หรือ user ขอ implement จาก ticket |
+| ศัพท์โดเมนสับสน / บันทึก decision | `domain-modeling` | ตั้งชื่อ module ใหม่, ขัด glossary, หรือต้อง ADR |
+| Refactor กว้าง / deepen module | `improve-codebase-architecture` (+ `codebase-design` ตาม skill) | ก่อนแตะโครงสร้างหลายไฟล์หรือย้าย domain |
+| บั๊กยาก / sync / performance | `diagnosing-bugs` | หลัง locate hub ด้วย `search_graph` / `trace_path` แล้วยังไม่รู้ root cause |
+| ก่อน merge / ปิดงาน | `code-review` | Branch มี diff ที่จะ merge หรือ user ขอ review |
+| ขอบเขต import TS ระยะยาว | `setup-ts-deep-modules` | User สั่งชัด หรือ epic refactor package boundaries |
+
+**ทุกเส้นทางด้านบน:**
+
+1. Explore: codebase-memory-mcp (`search_graph`, `trace_path`) ก่อน grep/glob
+2. Mutations: `src/app/actions/` · logic: `src/lib/` · รายละเอียด: `docs/agents/domain.md`
+3. เปลี่ยนสถาปัตย์: MCP `index_repository` → `get_architecture` → `manage_adr(mode='store')` ก่อนจบงาน
+
+**Issue tracker:** spec และ ticket อยู่ที่ GitHub Issues (`docs/agents/issue-tracker.md`)
+
+### Exceptions (ไม่บังคับ skill เต็ม chain)
+
+| กรณี | อนุญาต |
+| ---- | ------ |
+| R0 แก้ copy/UI เล็กน้อย ไม่แตะ domain logic | ทำตรงๆ ไม่ต้อง `to-spec` ถ้า user ไม่ขอ issue |
+| Hotfix production ที่ user ระบุชัด | ข้าม `to-spec` ได้ แต่หลัง merge ควรมี issue สรุปย้อนหลัง |
+| Spike / คำถาม architecture only | `search_graph` + อ่าน `docs/context.md` ไม่ต้อง `implement-spec` |
+
+<!-- END:engineering-workflow-standard -->
+
 <!-- BEGIN:codebase-memory-mcp-standard -->
 
 ## CODEBASE MEMORY (codebase-memory-mcp)

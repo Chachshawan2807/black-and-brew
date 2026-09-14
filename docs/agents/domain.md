@@ -2,6 +2,8 @@
 
 How Matt Pocock engineering skills (and all agents) should consume domain documentation in **BLACKANDBREW ERP**, aligned with **hub-first** fixes and **codebase-memory-mcp**.
 
+**Mandatory skill routing by task type:** `AGENTS.md` (engineering-workflow-standard) and `.cursorrules` (Engineering workflow). This file covers *what to read*; that section covers *which skill to run when*.
+
 ## Exploration order (code changes)
 
 This repo's iron rule (see `.cursorrules` and `AGENTS.md`) overrides generic "read the whole tree" exploration:
