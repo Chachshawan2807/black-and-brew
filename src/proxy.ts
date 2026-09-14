@@ -32,13 +32,18 @@ export function rewriteLocalePrefixedPublicAsset(
   return NextResponse.rewrite(url);
 }
 
-function redirectEnglishPathToThai(request: NextRequest): NextResponse | null {
+function redirectLocaleIndexToHome(request: NextRequest): NextResponse | null {
   const { pathname } = request.nextUrl;
-  if (pathname === '/en') {
+  if (pathname === '/th' || pathname === '/en') {
     const url = request.nextUrl.clone();
-    url.pathname = '/th';
+    url.pathname = '/th/home';
     return NextResponse.redirect(url);
   }
+  return null;
+}
+
+function redirectEnglishPathToThai(request: NextRequest): NextResponse | null {
+  const { pathname } = request.nextUrl;
   if (pathname.startsWith('/en/')) {
     const url = request.nextUrl.clone();
     url.pathname = `/th${pathname.slice(3)}`;
@@ -50,6 +55,9 @@ function redirectEnglishPathToThai(request: NextRequest): NextResponse | null {
 export default function proxy(request: NextRequest) {
   const assetRewrite = rewriteLocalePrefixedPublicAsset(request);
   if (assetRewrite) return assetRewrite;
+
+  const homeRedirect = redirectLocaleIndexToHome(request);
+  if (homeRedirect) return homeRedirect;
 
   const thaiRedirect = redirectEnglishPathToThai(request);
   if (thaiRedirect) return thaiRedirect;

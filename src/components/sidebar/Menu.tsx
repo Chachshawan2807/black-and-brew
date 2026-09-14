@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useParams, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useMemo } from 'react';
+import { Suspense, useState, useEffect, useMemo } from 'react';
 import { NavPreloadLink } from '@/components/sidebar/NavPreloadLink';
 import { GripVertical, LogOut, Settings2 } from '@/lib/icons';
 
@@ -203,9 +203,40 @@ function SortableMenuItem({
   );
 }
 
+function MenuSearchParamsFallback({ isOpen }: MenuProps) {
+  return (
+    <nav className="h-full w-full flex flex-col justify-between overflow-hidden" aria-hidden>
+      <ul
+        className={cn(
+          'flex flex-col gap-1 px-2',
+          isOpen === false ? 'items-center' : 'items-start',
+        )}
+      >
+        {Array.from({ length: 6 }, (_, index) => (
+          <li
+            key={index}
+            className={cn(
+              'h-10 rounded-lg bg-muted/25 animate-pulse',
+              isOpen === false ? 'w-10' : 'w-full',
+            )}
+          />
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
 // ─── Main Menu component ──────────────────────────────────────────────────────
 
 export default function Menu({ isOpen }: MenuProps) {
+  return (
+    <Suspense fallback={<MenuSearchParamsFallback isOpen={isOpen} />}>
+      <MenuWithSearchParams isOpen={isOpen} />
+    </Suspense>
+  );
+}
+
+function MenuWithSearchParams({ isOpen }: MenuProps) {
   const pathname = usePathname();
   const params = useParams();
   const searchParams = useSearchParams();

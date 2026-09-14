@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
-import dynamic from 'next/dynamic';
 import { CheckCircle2, Plus } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -39,11 +38,7 @@ import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/home-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
 import SecretaryTaskOverlay from './_components/SecretaryTaskOverlay';
-
-const SecretaryManualTaskDialog = dynamic(
-  () => import('./_components/SecretaryManualTaskDialog'),
-  { ssr: false },
-);
+import SecretaryManualTaskDialog from './_components/SecretaryManualTaskDialog';
 
 type HomeClientProps = {
   initialBoard: SecretaryBoard;

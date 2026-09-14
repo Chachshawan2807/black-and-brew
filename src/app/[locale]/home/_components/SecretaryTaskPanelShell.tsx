@@ -14,7 +14,7 @@ import {
   SECRETARY_MODAL_OVERLAY_CLASS,
   SECRETARY_MODAL_SCAFFOLD_PROPS,
   SECRETARY_PANEL_MAX_HEIGHT,
-} from './home-modal-layout';
+} from './secretary-modal-layout';
 
 type SecretaryTaskPanelShellProps = {
   open?: boolean;

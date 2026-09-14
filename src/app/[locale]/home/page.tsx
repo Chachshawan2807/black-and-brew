@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
 import { loadSecretaryBoard } from '@/app/actions/home-actions';
+import { HomeAuthRefresh } from './_components/HomeAuthRefresh';
 import HomeClient from './HomeClient';
 
 export default async function HomePage({
@@ -10,7 +10,14 @@ export default async function HomePage({
 }) {
   const [{ locale }, authed] = await Promise.all([params, checkAuth()]);
   if (!authed) {
-    redirect(`/${locale}`);
+    return (
+      <>
+        <HomeAuthRefresh />
+        <div className="mx-auto w-full max-w-3xl px-4 py-8 text-[14px] text-muted-foreground">
+          กำลังตรวจสอบสิทธิ์...
+        </div>
+      </>
+    );
   }
 
   const boardResult = await loadSecretaryBoard({ locale });

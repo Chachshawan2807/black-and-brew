@@ -18,8 +18,19 @@ describe('locale routing (Thai-first ERP)', () => {
       'utf-8',
     );
     expect(code).toContain("pathname === '/en'");
+    expect(code).toContain("pathname === '/th'");
     expect(code).toContain("pathname.startsWith('/en/')");
     expect(code).toMatch(/\/th\$\{pathname\.slice\(3\)\}/);
+  });
+
+  test('proxy HTTP-redirects locale index to /th/home so App Router never hydrates a React redirect', () => {
+    const code = fs.readFileSync(
+      path.resolve(__dirname, '../proxy.ts'),
+      'utf-8',
+    );
+    expect(code).toContain("pathname === '/th'");
+    expect(code).toContain("url.pathname = '/th/home'");
+    expect(code).toContain('redirectLocaleIndexToHome');
   });
 
   test('proxy uses Next.js 16 proxyConfig matcher', () => {

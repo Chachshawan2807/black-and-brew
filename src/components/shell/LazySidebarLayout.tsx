@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react';
+import { PageTransition } from '@/components/ui/page-transition';
 
 /**
  * Loads sidebar chrome in a separate chunk. Route content renders in a minimal main
@@ -28,7 +29,7 @@ export function LazySidebarLayout({ children }: { children: ReactNode }) {
   if (!Layout) {
     return (
       <main id="app-main" className="bb-main-container flex flex-col flex-1 min-h-0 bg-transparent">
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
     );
   }
