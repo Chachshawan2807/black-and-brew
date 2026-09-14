@@ -86,9 +86,9 @@ describe('bean order save performance', () => {
     expect(body).toMatch(/fulfillmentStatus === 'pending'[\s\S]*upsert/);
   });
 
-  test('detail client clears busy before background refresh', () => {
-    expect(detailClient).toMatch(/void\s+reload\(\)/);
-    expect(detailClient).not.toMatch(/await\s+reload\(\)/);
+  test('detail client avoids router.refresh after inline mutations', () => {
+    expect(detailClient).not.toMatch(/router\.refresh\(\)/);
+    expect(detailClient).not.toMatch(/function reload\(/);
   });
 
   test('uploadBeanOrderSlip defers audit log and revalidation off the critical path', () => {
@@ -108,7 +108,7 @@ describe('bean order save performance', () => {
     expect(body).toMatch(/Promise\.all/);
   });
 
-  test('detail slip upload uses instant preview and skips redundant signed-url fetch', () => {
+  test('detail slip upload uses instant preview and stays on the detail page', () => {
     expect(detailClient).toContain('pendingSlipPreview');
     expect(detailClient).toContain('URL.createObjectURL');
     expect(detailClient).not.toContain('getBeanOrderSlipSignedUrl');
@@ -117,6 +117,33 @@ describe('bean order save performance', () => {
     const uploadHandler = detailClient.slice(uploadHandlerStart, uploadHandlerEnd);
     expect(uploadHandler).not.toContain('reload(');
     expect(uploadHandler).not.toContain('getBeanOrderSlipSignedUrl');
+    expect(uploadHandler).toContain("setMessage('อัปโหลดสลิปแล้ว')");
+    expect(uploadHandler).not.toMatch(
+      /navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
+    );
+  });
+
+  test('confirmBeanOrderPayment defers audit log and revalidation off the critical path', () => {
+    const critical = criticalPathBeforeAfter('confirmBeanOrderPayment', beanOrderActions);
+    expect(critical).not.toContain('revalidateBeanOrders');
+    expect(critical).not.toMatch(/await recordDataChange/);
+    const deferred = functionBody('confirmBeanOrderPayment', beanOrderActions);
+    expect(deferred).toContain('after(async () => {');
+    expect(deferred).toContain('revalidateBeanOrders');
+  });
+
+  test('saveBeanOrderShipmentPlan defers revalidation off the critical path', () => {
+    const critical = criticalPathBeforeAfter('saveBeanOrderShipmentPlan', beanOrderActions);
+    expect(critical).not.toContain('revalidateBeanOrders');
+    const deferred = functionBody('saveBeanOrderShipmentPlan', beanOrderActions);
+    expect(deferred).toContain('after(async () => {');
+    expect(deferred).toContain('revalidateBeanOrders');
+  });
+
+  test('shipBeanOrder does not revalidate on the critical path', () => {
+    const critical = criticalPathBeforeAfter('shipBeanOrder', beanOrderActions);
+    expect(critical).not.toContain('revalidateBeanOrders');
+    expect(critical).not.toMatch(/await recordDataChange/);
   });
 
   test('shipBeanOrder no longer returns trackingWarning', () => {

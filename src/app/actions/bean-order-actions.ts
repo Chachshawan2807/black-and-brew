@@ -1333,15 +1333,6 @@ export async function confirmBeanOrderPayment(
       console.error('Supabase Error (confirmBeanOrderPayment slip):', payError.message, payError.details);
     }
 
-    void recordDataChange({
-      action: 'UPDATE',
-      module: 'bean_orders',
-      entityType: 'bean_order',
-      entityId: orderId,
-      entityLabel: order.order_no as string,
-      fieldChanges: [{ field: 'payment_status', old_value: 'unpaid', new_value: 'paid' }],
-    });
-
     scheduleBeanOrderPaymentNotification(orderId, {
       order_no: order.order_no as string,
       recipient_name: (order.recipient_name as string | null) ?? null,
@@ -1349,7 +1340,22 @@ export async function confirmBeanOrderPayment(
       bean_customers: order.bean_customers as BeanOrderPaymentNotificationOrder['bean_customers'],
     }, locale);
 
-    revalidateBeanOrders(locale, orderId);
+    after(async () => {
+      try {
+        await recordDataChange({
+          action: 'UPDATE',
+          module: 'bean_orders',
+          entityType: 'bean_order',
+          entityId: orderId,
+          entityLabel: order.order_no as string,
+          fieldChanges: [{ field: 'payment_status', old_value: 'unpaid', new_value: 'paid' }],
+        });
+        revalidateBeanOrders(locale, orderId);
+      } catch (error) {
+        console.error('[confirmBeanOrderPayment] Deferred side-effect error:', error);
+      }
+    });
+
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'ยืนยันชำระไม่สำเร็จ';
@@ -1409,16 +1415,22 @@ export async function revertBeanOrderPayment(
       console.error('Supabase Error (revertBeanOrderPayment slip):', payError.message, payError.details);
     }
 
-    void recordDataChange({
-      action: 'UPDATE',
-      module: 'bean_orders',
-      entityType: 'bean_order',
-      entityId: orderId,
-      entityLabel: order.order_no as string,
-      fieldChanges: [{ field: 'payment_status', old_value: 'paid', new_value: 'unpaid' }],
+    after(async () => {
+      try {
+        await recordDataChange({
+          action: 'UPDATE',
+          module: 'bean_orders',
+          entityType: 'bean_order',
+          entityId: orderId,
+          entityLabel: order.order_no as string,
+          fieldChanges: [{ field: 'payment_status', old_value: 'paid', new_value: 'unpaid' }],
+        });
+        revalidateBeanOrders(locale, orderId);
+      } catch (error) {
+        console.error('[revertBeanOrderPayment] Deferred side-effect error:', error);
+      }
     });
 
-    revalidateBeanOrders(locale, orderId);
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'เปลี่ยนสถานะชำระไม่สำเร็จ';
@@ -1492,7 +1504,14 @@ export async function saveBeanOrderShipmentPlan(
       return { success: false, error: shipError.message };
     }
 
-    revalidateBeanOrders(locale, orderId);
+    after(async () => {
+      try {
+        revalidateBeanOrders(locale, orderId);
+      } catch (error) {
+        console.error('[saveBeanOrderShipmentPlan] Deferred side-effect error:', error);
+      }
+    });
+
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'บันทึกช่องทางจัดส่งไม่สำเร็จ';
@@ -1628,6 +1647,18 @@ export async function shipBeanOrder(
 
     after(async () => {
       try {
+        await recordDataChange({
+          action: 'UPDATE',
+          module: 'bean_orders',
+          entityType: 'bean_order',
+          entityId: orderId,
+          entityLabel: order.order_no as string,
+          fieldChanges: isNewShipment
+            ? [{ field: 'fulfillment_status', old_value: 'pending', new_value: 'shipped' }]
+            : [{ field: 'shipment', old_value: null, new_value: 'updated' }],
+          metadata: { trackingNumber: trackingNumber || null },
+        });
+
         if (isNewShipment && !options?.suppressShippedNotification) {
           const { notifyBeanOrderShipped } = await import('@/lib/bean-orders/shipment-web-push');
           const { getBeanOrderCustomerDisplayName } = await import('@/lib/bean-orders/customer-display');
@@ -1652,19 +1683,6 @@ export async function shipBeanOrder(
       }
     });
 
-    void recordDataChange({
-      action: 'UPDATE',
-      module: 'bean_orders',
-      entityType: 'bean_order',
-      entityId: orderId,
-      entityLabel: order.order_no as string,
-      fieldChanges: isNewShipment
-        ? [{ field: 'fulfillment_status', old_value: 'pending', new_value: 'shipped' }]
-        : [{ field: 'shipment', old_value: null, new_value: 'updated' }],
-      metadata: { trackingNumber: trackingNumber || null },
-    });
-
-    revalidateBeanOrders(locale, orderId);
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'บันทึกจัดส่งไม่สำเร็จ';

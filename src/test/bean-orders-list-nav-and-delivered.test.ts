@@ -28,7 +28,7 @@ describe('bean order navigation after save/delete', () => {
     );
     expect(source).toContain("sessionStorage.getItem('bb-bean-order-flash')");
     expect(source).toContain('usePathname');
-    expect(source).toMatch(/useEffect\([\s\S]*bb-bean-order-flash[\s\S]*\[pathname\]/);
+    expect(source).toMatch(/if \(pathname !== prevPathname\)[\s\S]*bb-bean-order-flash[\s\S]*setMessage\(flash\)/);
   });
 
   test('detail page clears stale message when pathname changes without flash', () => {
@@ -36,11 +36,9 @@ describe('bean order navigation after save/delete', () => {
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
       'utf8',
     );
-    const flashEffect = source.match(
-      /useEffect\(\(\) => \{[\s\S]*?bb-bean-order-flash[\s\S]*?\}, \[pathname\]\)/,
+    expect(source).toMatch(
+      /if \(pathname !== prevPathname\)[\s\S]*if \(flash\) \{[\s\S]*setMessage\(flash\)[\s\S]*\} else \{[\s\S]*setMessage\(null\)/,
     );
-    expect(flashEffect?.[0]).toBeTruthy();
-    expect(flashEffect![0]).toMatch(/if \(flash\) \{[\s\S]*setMessage\(flash\)[\s\S]*\} else \{[\s\S]*setMessage\(null\)/);
   });
 
   test('detail delete success redirects to bean-orders list', () => {
@@ -56,18 +54,17 @@ describe('bean order navigation after save/delete', () => {
     );
   });
 
-  test('slip upload success redirects to bean-orders list with flash message', () => {
+  test('slip upload success updates detail state in place without list redirect', () => {
     const detailSource = readFileSync(
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
       'utf8',
     );
     const uploadFnStart = detailSource.indexOf('async function handleUploadSlip');
     expect(uploadFnStart).toBeGreaterThan(-1);
-    const uploadFnBody = detailSource.slice(uploadFnStart, uploadFnStart + 900);
-    expect(uploadFnBody).toMatch(
-      /sessionStorage\.setItem\('bb-bean-order-flash',\s*'อัปโหลดสลิปแล้ว'\)/,
-    );
-    expect(uploadFnBody).toMatch(
+    const uploadFnBody = detailSource.slice(uploadFnStart, uploadFnStart + 1100);
+    expect(uploadFnBody).toContain("setMessage('อัปโหลดสลิปแล้ว')");
+    expect(uploadFnBody).toContain('setOrder((prev)');
+    expect(uploadFnBody).not.toMatch(
       /navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
     );
     expect(uploadFnBody).not.toContain('void reload()');
@@ -97,7 +94,8 @@ describe('bean order navigation after save/delete', () => {
     expect(listSource).toContain("sessionStorage.getItem('bb-bean-order-flash')");
     expect(listSource).toContain('consumeBeanOrderDeliveredPatch');
     expect(listSource).toContain('applyBeanOrderDeliveredPatch');
-    expect(listSource).toMatch(/\[initialOrders,\s*pathname\]/);
+    expect(listSource).toContain('prevOrdersSync');
+    expect(listSource).toMatch(/initialOrders !== prevOrdersSync\.initialOrders \|\| pathname !== prevOrdersSync\.pathname/);
   });
 
   test('deliver uses single confirmBeanOrderDelivered call with optional shipment', () => {

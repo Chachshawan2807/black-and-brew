@@ -145,10 +145,6 @@ export default function BeanOrderDetailClient({
     trackingNumber,
   });
 
-  function reload() {
-    router.refresh();
-  }
-
   async function handleUploadSlip(file: File) {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
 
@@ -170,8 +166,18 @@ export default function BeanOrderDetailClient({
       return;
     }
 
-    sessionStorage.setItem('bb-bean-order-flash', 'อัปโหลดสลิปแล้ว');
-    navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
+    const uploadedAt = result.uploadedAt ?? new Date().toISOString();
+    setOrder((prev) => ({
+      ...prev,
+      slipUploadedAt: uploadedAt,
+      payment: {
+        slipUrl: result.slipUrl ?? prev.payment?.slipUrl ?? null,
+        uploadedAt,
+        confirmedAt: prev.payment?.confirmedAt ?? null,
+        confirmedBy: prev.payment?.confirmedBy ?? null,
+      },
+    }));
+    setMessage('อัปโหลดสลิปแล้ว');
   }
 
   async function handleConfirmPayment() {
@@ -184,9 +190,15 @@ export default function BeanOrderDetailClient({
     const result = await confirmBeanOrderPayment(order.id, locale);
     setBusy(false);
     if (!result.success) { setError(result.error ?? 'ยืนยันไม่สำเร็จ'); return; }
-    setOrder((prev) => ({ ...prev, paymentStatus: 'paid' }));
+    const confirmedAt = new Date().toISOString();
+    setOrder((prev) => ({
+      ...prev,
+      paymentStatus: 'paid',
+      payment: prev.payment
+        ? { ...prev.payment, confirmedAt, confirmedBy: prev.payment.confirmedBy }
+        : { slipUrl: null, uploadedAt: null, confirmedAt, confirmedBy: null },
+    }));
     setMessage('ยืนยันชำระเงินแล้ว');
-    void reload();
   }
 
   async function handleRevertPayment() {
@@ -196,9 +208,14 @@ export default function BeanOrderDetailClient({
     const result = await revertBeanOrderPayment(order.id, locale);
     setBusy(false);
     if (!result.success) { setError(result.error ?? 'เปลี่ยนสถานะไม่สำเร็จ'); return; }
-    setOrder((prev) => ({ ...prev, paymentStatus: 'unpaid' }));
+    setOrder((prev) => ({
+      ...prev,
+      paymentStatus: 'unpaid',
+      payment: prev.payment
+        ? { ...prev.payment, confirmedAt: null, confirmedBy: null }
+        : prev.payment,
+    }));
     setMessage('เปลี่ยนเป็นรอชำระแล้ว');
-    void reload();
   }
 
   async function persistShipmentFromForm(
@@ -259,7 +276,6 @@ export default function BeanOrderDetailClient({
         ? successMessage(previousCarrierCode, resolvedCarrierCode)
         : successMessage;
     setMessage(messageText);
-    void reload();
   }
 
   async function autoSaveCarrierChannel(code: string, customLabel: string) {
