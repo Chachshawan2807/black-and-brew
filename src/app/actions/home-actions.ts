@@ -453,8 +453,10 @@ export async function syncAndFetchSecretaryBoard(opts?: {
     }
 
     const dateIso = opts?.dateIso ?? todayIsoBkk();
-    const snapshot = await fetchSecretarySnapshot({ dateIso, locale });
-    const tasksBeforeSync = await fetchSecretaryTasks(dateIso);
+    const [snapshot, tasksBeforeSync] = await Promise.all([
+      fetchSecretarySnapshot({ dateIso, locale }),
+      fetchSecretaryTasks(dateIso),
+    ]);
     const syncResult = await syncDerivedSecretaryTasks({
       ...opts,
       snapshot,
@@ -576,13 +578,21 @@ export async function loadSecretaryBoard(opts?: {
   const dateIso = opts?.dateIso ?? todayIsoBkk();
 
   try {
-    const snapshot = await fetchSecretarySnapshot({ dateIso, locale });
+    const [snapshot, tasksBeforeSync] = await Promise.all([
+      fetchSecretarySnapshot({ dateIso, locale }),
+      fetchSecretaryTasks(dateIso),
+    ]);
+
     const syncResult = await syncDerivedSecretaryTasks({ snapshot, dateIso, locale });
     if (!syncResult.success) {
       return { success: false, error: syncResult.error };
     }
 
-    const tasksResult = await fetchSecretaryTasks(dateIso);
+    const tasksResult =
+      (syncResult.upserted ?? 0) > 0 || (syncResult.autoSkipped ?? 0) > 0
+        ? await fetchSecretaryTasks(dateIso)
+        : tasksBeforeSync;
+
     if (!tasksResult.success || !tasksResult.tasks) {
       return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
     }

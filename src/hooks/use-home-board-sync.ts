@@ -11,8 +11,8 @@ import {
   scheduleSupabaseChannelTeardown,
 } from '@/lib/supabase-realtime-channel';
 import {
+  resolveSecretaryBoardSyncDebounceMs,
   resolveSecretaryBoardSyncPlan,
-  SECRETARY_BOARD_SYNC_DEBOUNCE_MS,
   SECRETARY_REALTIME_TABLES,
   type SecretaryBoardSyncKind,
   type SecretaryRealtimeTable,
@@ -73,13 +73,14 @@ export function subscribeHomeBoardInvalidation(listener: () => void): () => void
 }
 
 function scheduleDebouncedBoardSync() {
+  const delayMs = resolveSecretaryBoardSyncDebounceMs([...pendingTables]);
   if (debounceTimer) {
     clearTimeout(debounceTimer);
   }
   debounceTimer = setTimeout(() => {
     debounceTimer = null;
     void runAllBoardSyncs();
-  }, SECRETARY_BOARD_SYNC_DEBOUNCE_MS);
+  }, delayMs);
 }
 
 async function ensureSharedSecretaryChannel() {

@@ -27,7 +27,26 @@ export type SecretaryBoardSyncPlan = {
   scopes: SecretarySyncScope[];
 };
 
-export const SECRETARY_BOARD_SYNC_DEBOUNCE_MS = 3_000;
+/** Full-board resync after multi-table or unknown realtime bursts. */
+export const SECRETARY_BOARD_SYNC_DEBOUNCE_MS = 1_200;
+
+/** Task-list-only realtime (operational_tasks) should feel immediate. */
+export const SECRETARY_BOARD_SYNC_DEBOUNCE_LIGHT_MS = 200;
+
+/** Single-domain snapshot slice + derive. */
+export const SECRETARY_BOARD_SYNC_DEBOUNCE_SCOPED_MS = 600;
+
+export function resolveSecretaryBoardSyncDebounceMs(
+  changedTables: readonly SecretaryRealtimeTable[],
+): number {
+  if (changedTables.length === 0) {
+    return SECRETARY_BOARD_SYNC_DEBOUNCE_MS;
+  }
+  const plan = resolveSecretaryBoardSyncPlan(changedTables);
+  if (plan.kind === 'light') return SECRETARY_BOARD_SYNC_DEBOUNCE_LIGHT_MS;
+  if (plan.kind === 'scoped') return SECRETARY_BOARD_SYNC_DEBOUNCE_SCOPED_MS;
+  return SECRETARY_BOARD_SYNC_DEBOUNCE_MS;
+}
 
 export const SCOPE_MODULES: Record<Exclude<SecretarySyncScope, 'tasks'>, SecretaryModule[]> =
   {

@@ -24,11 +24,7 @@ import {
   filterConsolidatedSecretaryBoardTasks,
   type SecretaryBoardDisplayTask,
 } from '@/lib/secretary/consolidate-board-tasks';
-import {
-  requestHomeBoardFullSync,
-  useHomeBoardSync,
-  type BoardSyncPayload,
-} from '@/hooks/use-home-board-sync';
+import { useHomeBoardSync, type BoardSyncPayload } from '@/hooks/use-home-board-sync';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import {
   preloadSecretaryOverlayForTask,
@@ -116,13 +112,6 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
     getBaseSnapshot: () => boardRef.current.snapshot,
     skipInitialFullSync: true,
   });
-
-  useEffect(() => {
-    const rafId = requestAnimationFrame(() => {
-      requestHomeBoardFullSync();
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, []);
 
   const visibility = { workDateIso };
 

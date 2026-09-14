@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import {
+  resolveSecretaryBoardSyncDebounceMs,
   resolveSecretaryBoardSyncPlan,
+  SECRETARY_BOARD_SYNC_DEBOUNCE_LIGHT_MS,
+  SECRETARY_BOARD_SYNC_DEBOUNCE_MS,
+  SECRETARY_BOARD_SYNC_DEBOUNCE_SCOPED_MS,
   tablesToSyncScopes,
 } from '@/lib/secretary/board-sync-scope';
 
@@ -47,5 +51,17 @@ describe('secretary board sync scope', () => {
       kind: 'full',
       scopes: [],
     });
+  });
+
+  test('uses shorter debounce for light and scoped realtime plans', () => {
+    expect(resolveSecretaryBoardSyncDebounceMs(['operational_tasks'])).toBe(
+      SECRETARY_BOARD_SYNC_DEBOUNCE_LIGHT_MS,
+    );
+    expect(resolveSecretaryBoardSyncDebounceMs(['bean_orders'])).toBe(
+      SECRETARY_BOARD_SYNC_DEBOUNCE_SCOPED_MS,
+    );
+    expect(resolveSecretaryBoardSyncDebounceMs(['inventory_items', 'operational_tasks'])).toBe(
+      SECRETARY_BOARD_SYNC_DEBOUNCE_MS,
+    );
   });
 });
