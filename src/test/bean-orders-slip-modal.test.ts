@@ -19,6 +19,11 @@ const beanOrderUiPrimitivesSource = readFileSync(
   'utf8',
 );
 
+const fadeModalScaffoldSource = readFileSync(
+  resolve(__dirname, '../components/ui/fade-modal-scaffold.tsx'),
+  'utf8',
+);
+
 describe('bean order slip modal layout', () => {
   test('keeps compact modal for form and other pages', () => {
     expect(SLIP_MODAL_PANEL_CLASS).toContain('max-w-[min(92vw,360px)]');
@@ -42,5 +47,12 @@ describe('bean order slip modal layout', () => {
   test('bean order dialog portals above FAB stack for true viewport centering', () => {
     expect(beanOrderUiPrimitivesSource).toContain('ModalPortal');
     expect(beanOrderUiPrimitivesSource).toContain('APP_MODAL_ABOVE_FAB_Z_INDEX');
+  });
+
+  test('scrollable slip modal closes when tapping the empty scrim area', () => {
+    expect(paymentSlipViewerSource).toContain('onClose={handleClose}');
+    expect(fadeModalScaffoldSource).toContain('handleScrollableScrimClick');
+    expect(fadeModalScaffoldSource).toMatch(/event\.target !== event\.currentTarget/);
+    expect(fadeModalScaffoldSource).toContain('stopPropagation');
   });
 });

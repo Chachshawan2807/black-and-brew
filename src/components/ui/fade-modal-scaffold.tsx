@@ -1,6 +1,6 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fadeOverlay, modalContent, modalSheetBottom, withReducedMotion } from '@/lib/motion-presets';
@@ -72,6 +72,18 @@ export function FadeModalScaffold({
     ...keyboardPanelStyle,
   };
 
+  function handleScrollableScrimClick(event: MouseEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget) return;
+    onClose?.();
+  }
+
+  function handlePanelClick(event: MouseEvent<HTMLDivElement>) {
+    if (centerScrollable) {
+      event.stopPropagation();
+    }
+    panelOnClick?.(event);
+  }
+
   const defaultLayoutClass =
     'items-end justify-center md:items-center p-0 md:p-4';
   const layoutShellClassName = centerScrollable
@@ -80,7 +92,8 @@ export function FadeModalScaffold({
 
   const layoutInnerClassName = centerScrollable
     ? cn(
-        'flex min-h-full min-w-0 w-full pointer-events-none',
+        'flex min-h-full min-w-0 w-full',
+        onClose ? 'pointer-events-auto' : 'pointer-events-none',
         layoutClassName ?? 'items-center justify-center p-4',
       )
     : undefined;
@@ -111,7 +124,10 @@ export function FadeModalScaffold({
           />
           <div className={layoutShellClassName} style={resolvedLayoutStyle}>
             {centerScrollable ? (
-              <div className={layoutInnerClassName}>
+              <div
+                className={layoutInnerClassName}
+                onClick={onClose ? handleScrollableScrimClick : undefined}
+              >
                 <motion.div
                   key="fade-modal-panel"
                   className={panelClass}
@@ -120,7 +136,7 @@ export function FadeModalScaffold({
                   animate={panel.animate}
                   exit={panel.exit}
                   transition={panel.transition}
-                  onClick={panelOnClick}
+                  onClick={handlePanelClick}
                   role="dialog"
                   aria-label={ariaLabel}
                   aria-modal="true"
@@ -137,7 +153,7 @@ export function FadeModalScaffold({
                 animate={panel.animate}
                 exit={panel.exit}
                 transition={panel.transition}
-                onClick={panelOnClick}
+                onClick={handlePanelClick}
                 role="dialog"
                 aria-label={ariaLabel}
                 aria-modal="true"
