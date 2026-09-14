@@ -11,6 +11,7 @@ import {
   shouldShowPreparingState,
 } from '@/lib/pwa-install-flow';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
+import type { PwaInstallMode } from '@/lib/pwa-install';
 import { cn } from '@/lib/utils';
 import { BB_BTN_CLOSE, BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
 
@@ -44,9 +45,17 @@ const COPY = {
 type PwaInstallButtonProps = {
   locale?: 'th' | 'en';
   className?: string;
+  variant?: 'floating' | 'settings';
+  /** Limit where the affordance appears (e.g. iOS guide on login, Chromium install in settings). */
+  modeFilter?: PwaInstallMode;
 };
 
-export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallButtonProps) {
+export function PwaInstallButton({
+  locale = 'th',
+  className = '',
+  variant = 'floating',
+  modeFilter,
+}: PwaInstallButtonProps) {
   const t = COPY[locale];
   const { visible, mode, promptInstall } = usePwaInstall();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -71,7 +80,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
     return () => dialog.removeEventListener('cancel', onCancel);
   }, []);
 
-  if (!visible) return null;
+  if (!visible || (modeFilter != null && mode !== modeFilter)) return null;
 
   const handleInstall = async () => {
     if (isPreparing) return;
@@ -98,6 +107,14 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
 
   const showPreparing = isPreparing && shouldShowPreparingState(mode);
 
+  const installButtonClass =
+    variant === 'settings'
+      ? cn(
+          BB_BTN_OUTLINE_PRIMARY,
+          'inline-flex w-full items-center justify-center gap-2 text-[13px] py-2.5 h-auto min-h-[44px] font-normal',
+        )
+      : 'pointer-events-auto inline-flex items-center gap-1.5 rounded-2xl border border-border/80 bg-card/80 px-3.5 py-2 text-xs font-normal text-muted-foreground backdrop-blur-sm transition-colors hover:border-foreground/20 hover:text-foreground disabled:opacity-70';
+
   return (
     <>
       <div className={className}>
@@ -105,7 +122,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
           type="button"
           onClick={() => void handleInstall()}
           disabled={showPreparing}
-          className="pointer-events-auto inline-flex items-center gap-1.5 rounded-2xl border border-border/80 bg-card/80 px-3.5 py-2 text-xs font-normal text-muted-foreground backdrop-blur-sm transition-colors hover:border-foreground/20 hover:text-foreground disabled:opacity-70"
+          className={installButtonClass}
           aria-busy={showPreparing}
           aria-label={showPreparing ? t.preparing : t.install}
         >

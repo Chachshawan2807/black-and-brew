@@ -13,6 +13,7 @@ import { preloadSettingsSectionsOnIdle } from '@/lib/settings-chunk-preload';
 import NotificationPreferencesSection from './NotificationPreferencesSection';
 import SettingsLazyCollapsibleSection from './SettingsLazyCollapsibleSection';
 import { SETTINGS_SECTION, SETTINGS_SECTION_BODY, SettingsIconBadge } from './settings-ui-primitives';
+import { SettingsPwaInstallSection } from './SettingsPwaInstallSection';
 
 interface SettingsPageSectionsProps {
   locale: string;
@@ -81,6 +82,8 @@ export default function SettingsPageSections({ locale, isTh }: SettingsPageSecti
         loadingLabel={loadingLabel}
         load={() => import('./PasskeyDeviceSection')}
       />
+
+      <SettingsPwaInstallSection locale={isTh ? 'th' : 'en'} isTh={isTh} />
     </div>
   );
 }

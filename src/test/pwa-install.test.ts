@@ -58,15 +58,25 @@ describe('pwa-install', () => {
     expect(isIosPwaInstallable('Mozilla/5.0 (Linux; Android 14)')).toBe(false);
   });
 
-  test('PWA install affordance is mounted only on the PIN entry screen', () => {
+  test('PWA install affordance lives only in settings (native and iOS manual)', () => {
     const layout = readFileSync(resolve(ROOT, 'src/app/[locale]/layout.tsx'), 'utf-8');
     const pinGateway = readFileSync(
       resolve(ROOT, 'src/components/auth/PinGateway.tsx'),
       'utf-8',
     );
+    const settingsSections = readFileSync(
+      resolve(ROOT, 'src/app/[locale]/settings/_components/SettingsPageSections.tsx'),
+      'utf-8',
+    );
+    const settingsInstall = readFileSync(
+      resolve(ROOT, 'src/app/[locale]/settings/_components/SettingsPwaInstallSection.tsx'),
+      'utf-8',
+    );
 
     expect(layout).not.toContain('PwaInstallShell');
-    expect(pinGateway).toContain('PwaInstallShell');
+    expect(pinGateway).not.toContain('PwaInstallShell');
+    expect(settingsSections).toContain('SettingsPwaInstallSection');
+    expect(settingsInstall).not.toContain('modeFilter');
   });
 
   test('usePwaInstall caches useSyncExternalStore snapshot to avoid infinite re-renders', () => {
