@@ -414,7 +414,20 @@ Domain capability triggers (mobile UX, AI context, inventory integrity, token ec
 
 **อัปเดต skills:** `npx skills add <owner/repo@skill> -y` (เช่น `pedronauck/skills@next-best-practices`, `GoogleChrome/modern-web-guidance@modern-web-guidance`, `nutlope/hallmark@hallmark`, `vercel-labs/agent-skills@web-design-guidelines`, `pbakaus/impeccable@impeccable`). ห้ามใช้ `vercel-labs/next-skills` (repo ถูกลบแล้ว). Overlay ที่ดูแลเอง: `.cursor/skills/chrome-modern-web-guidance/`, `.cursor/skills/hallmark-erp/` (อ่านหลังอัปเดต upstream ทุกครั้ง)
 
+Matt Pocock engineering (`.agents/skills/`): `domain-modeling`, `codebase-design`, `improve-codebase-architecture`, `setup-ts-deep-modules`, `diagnosing-bugs`, `code-review`, `to-spec`, `implement-spec`.
+
 <!-- END:skills-registry -->
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `Chachshawan2807/black-and-brew` (`gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context; human glossary in `docs/context.md`, code exploration graph-first via codebase-memory-mcp (hub-first per `.cursorrules`). See `docs/agents/domain.md`.
+
 <!-- BEGIN:codebase-memory-mcp-standard -->
 
 ## CODEBASE MEMORY (codebase-memory-mcp)
