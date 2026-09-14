@@ -56,10 +56,10 @@ export function collectWeeklyLeaveEntries(days: WeeklyDaySchedule[]): WeeklyLeav
   return entries;
 }
 
-/** Keep leave entries on or after fromDateIso past leave days are omitted from alerts. */
+/** Keep leave entries strictly after fromDateIso; today and past leave days are omitted from alerts. */
 export function filterUpcomingLeaveEntries(
   entries: WeeklyLeaveEntry[],
   fromDateIso: string,
 ): WeeklyLeaveEntry[] {
-  return entries.filter((entry) => entry.dateIso >= fromDateIso);
+  return entries.filter((entry) => entry.dateIso > fromDateIso);
 }

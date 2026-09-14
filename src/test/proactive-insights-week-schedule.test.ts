@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import type { WeeklyDaySchedule } from '@/lib/proactive-insights/types';
 import {
+  collectWeeklyLeaveEntries,
   filterFutureUnderstaffedDays,
+  filterUpcomingLeaveEntries,
   findUnderstaffedDays,
   isDayUnderstaffed,
 } from '@/lib/proactive-insights/week-schedule';
@@ -56,6 +58,22 @@ describe('filterFutureUnderstaffedDays', () => {
     const future = filterFutureUnderstaffedDays(days, '2026-07-24');
 
     expect(future).toHaveLength(1);
+    expect(future[0]?.dateIso).toBe('2026-07-25');
+  });
+});
+
+describe('filterUpcomingLeaveEntries', () => {
+  test('keeps only leave on days strictly after fromDateIso', () => {
+    const days = [
+      day({ dayIndex: 0, headcount: 5, leaveStaff: [{ name: 'เอ' }] }),
+      day({ dayIndex: 4, headcount: 5, leaveStaff: [{ name: 'บี' }] }),
+      day({ dayIndex: 5, headcount: 5, leaveStaff: [{ name: 'ซี' }] }),
+    ];
+    const entries = collectWeeklyLeaveEntries(days);
+    const future = filterUpcomingLeaveEntries(entries, '2026-07-24');
+
+    expect(future).toHaveLength(1);
+    expect(future[0]?.name).toBe('ซี');
     expect(future[0]?.dateIso).toBe('2026-07-25');
   });
 });

@@ -94,7 +94,7 @@ describe('evaluateInsightRules', () => {
   test('leave_coverage_risk groups upcoming leave by date with names', () => {
     const leaveStaffByDay = Array(7).fill([]) as string[][];
     leaveStaffByDay[4] = ['เอ'];
-    leaveStaffByDay[5] = ['บี'];
+    leaveStaffByDay[5] = ['บี', 'ซี'];
 
     const insights = evaluateInsightRules(
       sampleSnapshot({
@@ -103,13 +103,14 @@ describe('evaluateInsightRules', () => {
     );
     const hit = insights.find((i) => i.ruleId === 'leave_coverage_risk');
     expect(hit).toBeDefined();
-    expect(hit!.summary).toBe('ศ. ที่ 24 (เอ), ส. ที่ 25 (บี)');
+    expect(hit!.summary).toBe('ส. ที่ 25 (บี, ซี)');
+    expect(hit!.summary).not.toContain('ศ. ที่ 24');
   });
 
   test('leave_coverage_risk groups multiple names on the same day', () => {
     const leaveStaffByDay = Array(7).fill([]) as string[][];
-    leaveStaffByDay[4] = ['เอ', 'บี'];
-    leaveStaffByDay[5] = ['ซี'];
+    leaveStaffByDay[5] = ['เอ', 'บี'];
+    leaveStaffByDay[6] = ['ซี'];
 
     const insights = evaluateInsightRules(
       sampleSnapshot({
@@ -118,13 +119,14 @@ describe('evaluateInsightRules', () => {
     );
     const hit = insights.find((i) => i.ruleId === 'leave_coverage_risk');
     expect(hit).toBeDefined();
-    expect(hit!.summary).toBe('ศ. ที่ 24 (เอ, บี), ส. ที่ 25 (ซี)');
+    expect(hit!.summary).toBe('ส. ที่ 25 (เอ, บี), อา. ที่ 26 (ซี)');
   });
 
-  test('leave_coverage_risk excludes leave on past dates', () => {
+  test('leave_coverage_risk excludes leave on today past and today dates', () => {
     const leaveStaffByDay = Array(7).fill([]) as string[][];
     leaveStaffByDay[0] = ['เอ'];
     leaveStaffByDay[1] = ['บี'];
+    leaveStaffByDay[4] = ['วันนี้'];
     leaveStaffByDay[5] = ['ซี'];
 
     const insights = evaluateInsightRules(
@@ -132,16 +134,14 @@ describe('evaluateInsightRules', () => {
         weeklyDays: makeWeekDays([5, 5, 5, 5, 5, 5, 5], leaveStaffByDay),
       }),
     );
-    const hit = insights.find((i) => i.ruleId === 'leave_coverage_risk');
-    expect(hit).toBeUndefined();
-    expect(INSIGHT_THRESHOLDS.leaveCoverageMinLeave).toBe(2);
+    expect(insights.find((i) => i.ruleId === 'leave_coverage_risk')).toBeUndefined();
   });
 
-  test('leave_coverage_risk includes leave on today and future dates only', () => {
+  test('leave_coverage_risk includes only future leave dates', () => {
     const leaveStaffByDay = Array(7).fill([]) as string[][];
     leaveStaffByDay[0] = ['เอ'];
     leaveStaffByDay[4] = ['บี'];
-    leaveStaffByDay[5] = ['ซี'];
+    leaveStaffByDay[5] = ['ซี', 'ดี'];
 
     const insights = evaluateInsightRules(
       sampleSnapshot({
@@ -150,7 +150,8 @@ describe('evaluateInsightRules', () => {
     );
     const hit = insights.find((i) => i.ruleId === 'leave_coverage_risk');
     expect(hit).toBeDefined();
-    expect(hit!.summary).toBe('ศ. ที่ 24 (บี), ส. ที่ 25 (ซี)');
+    expect(hit!.summary).toBe('ส. ที่ 25 (ซี, ดี)');
+    expect(hit!.summary).not.toContain('ศ. ที่ 24');
     expect(hit!.summary).not.toContain('เอ');
   });
 
@@ -191,8 +192,7 @@ describe('evaluateInsightRules', () => {
 
   test('buildDailyInsightDigest merges matched rules into one notification', () => {
     const leaveStaffByDay = Array(7).fill([]) as string[][];
-    leaveStaffByDay[4] = ['เอ'];
-    leaveStaffByDay[5] = ['บี'];
+    leaveStaffByDay[5] = ['บี', 'ซี'];
 
     const insights = evaluateInsightRules(
       sampleSnapshot({
