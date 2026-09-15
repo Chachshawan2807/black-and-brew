@@ -115,7 +115,7 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
     onSync: applyBoardSync,
     onWorkDateChange: setWorkDateIso,
     getBaseSnapshot: () => boardRef.current.snapshot,
-    skipInitialFullSync: true,
+    skipInitialFullSync: false,
   });
 
   const visibility = { workDateIso };

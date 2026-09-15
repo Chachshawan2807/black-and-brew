@@ -570,28 +570,48 @@ export type SecretaryBoard = {
 export async function loadSecretaryBoard(opts?: {
   dateIso?: string;
   locale?: string;
+  /**
+   * When true (default), return snapshot + DB tasks without blocking on derived sync.
+   * HomeClient runs a background full sync after hydrate.
+   */
+  deferDerivedSync?: boolean;
 }): Promise<{ success: boolean; board?: SecretaryBoard; error?: string }> {
   const authError = await requireReadAccess();
   if (authError) return { success: false, error: authError };
 
   const locale = opts?.locale ?? 'th';
   const dateIso = opts?.dateIso ?? todayIsoBkk();
+  const deferDerivedSync = opts?.deferDerivedSync ?? true;
 
   try {
-    const [snapshot, tasksBeforeSync] = await Promise.all([
+    const [snapshot, tasksResult] = await Promise.all([
       fetchSecretarySnapshot({ dateIso, locale }),
       fetchSecretaryTasks(dateIso),
     ]);
 
-    const syncResult = await syncDerivedSecretaryTasks({ snapshot, dateIso, locale });
-    if (!syncResult.success) {
-      return { success: false, error: syncResult.error };
-    }
+    if (!deferDerivedSync) {
+      const syncResult = await syncDerivedSecretaryTasks({ snapshot, dateIso, locale });
+      if (!syncResult.success) {
+        return { success: false, error: syncResult.error };
+      }
 
-    const tasksResult =
-      (syncResult.upserted ?? 0) > 0 || (syncResult.autoSkipped ?? 0) > 0
-        ? await fetchSecretaryTasks(dateIso)
-        : tasksBeforeSync;
+      const tasksAfterSync =
+        (syncResult.upserted ?? 0) > 0 || (syncResult.autoSkipped ?? 0) > 0
+          ? await fetchSecretaryTasks(dateIso)
+          : tasksResult;
+
+      if (!tasksAfterSync.success || !tasksAfterSync.tasks) {
+        return { success: false, error: tasksAfterSync.error ?? 'Failed to load tasks' };
+      }
+
+      return {
+        success: true,
+        board: {
+          snapshot,
+          tasks: tasksAfterSync.tasks,
+        },
+      };
+    }
 
     if (!tasksResult.success || !tasksResult.tasks) {
       return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };

@@ -3,12 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAuthSessionInfo } from '@/app/actions/auth';
 import { loadSecretaryBoard, type SecretaryBoard } from '@/app/actions/home-actions';
-import { isClientAuthVerified } from '@/lib/client-auth-storage';
 import HomeClient from '../HomeClient';
 import { HomePageLoadingSkeleton } from './HomePageLoadingSkeleton';
 
-const SESSION_POLL_MS = 400;
-const SESSION_POLL_MAX_ATTEMPTS = 12;
+const SESSION_POLL_MS = 150;
+const SESSION_POLL_MAX_ATTEMPTS = 20;
 
 type HomeClientAuthBootstrapProps = {
   locale: string;
@@ -27,10 +26,6 @@ export function HomeClientAuthBootstrap({ locale }: HomeClientAuthBootstrapProps
 
     try {
       for (let attempt = 0; attempt < SESSION_POLL_MAX_ATTEMPTS; attempt += 1) {
-        if (!isClientAuthVerified() && attempt > 0) {
-          break;
-        }
-
         const session = await getAuthSessionInfo();
         if (session.verified) {
           const result = await loadSecretaryBoard({ locale });
@@ -64,6 +59,15 @@ export function HomeClientAuthBootstrap({ locale }: HomeClientAuthBootstrapProps
     };
     window.addEventListener('bb-pin-authenticated', onAuthenticated);
     return () => window.removeEventListener('bb-pin-authenticated', onAuthenticated);
+  }, [tryLoadBoard]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      void tryLoadBoard();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, [tryLoadBoard]);
 
   if (board) {

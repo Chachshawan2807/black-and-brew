@@ -17,7 +17,6 @@ export function HomePageLoadingSkeleton() {
           />
         ))}
       </div>
-      <p className="text-center text-[13px] text-muted-foreground">กำลังโหลดงาน...</p>
     </div>
   );
 }
