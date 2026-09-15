@@ -9,6 +9,7 @@ import {
   urlBase64ToUint8Array,
   vapidApplicationServerKeyCandidates,
   vapidPublicKeyToApplicationServerKey,
+  toPushSubscribeOptions,
 } from '@/lib/vapid-public-key';
 
 const VALID_VAPID =
@@ -85,8 +86,15 @@ describe('vapidPublicKeyToApplicationServerKey', () => {
     const [bytes, buffer] = vapidApplicationServerKeyCandidates(VALID_VAPID);
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect(bytes.byteLength).toBe(65);
+    expect(bytes.buffer).toBeInstanceOf(ArrayBuffer);
     expect(buffer).toBeInstanceOf(ArrayBuffer);
     expect(buffer.byteLength).toBe(65);
+  });
+
+  test('VAPID candidates can be passed to PushManager.subscribe options', () => {
+    const [bytes, buffer] = vapidApplicationServerKeyCandidates(VALID_VAPID);
+    expect(toPushSubscribeOptions(bytes).applicationServerKey).toBe(bytes);
+    expect(toPushSubscribeOptions(buffer).applicationServerKey).toBe(buffer);
   });
 
   test('rejects keys that are not uncompressed P-256', () => {

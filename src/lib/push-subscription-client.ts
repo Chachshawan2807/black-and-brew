@@ -29,6 +29,7 @@ import {
 } from '@/lib/push-registration-errors';
 import {
   applicationServerKeysMatch,
+  toPushSubscribeOptions,
   vapidApplicationServerKeyCandidates,
   vapidPublicKeyToApplicationServerKey,
 } from '@/lib/vapid-public-key';
@@ -553,10 +554,7 @@ async function subscribePushManager(
   let firstError: unknown;
   for (const applicationServerKey of keys) {
     try {
-      return await active.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey,
-      });
+      return await active.pushManager.subscribe(toPushSubscribeOptions(applicationServerKey));
     } catch (error) {
       firstError = error;
       const recovered = await recoverLocalPushSubscription(active);

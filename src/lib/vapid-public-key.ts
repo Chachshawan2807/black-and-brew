@@ -2,7 +2,12 @@
 
 const UNCOMPRESSED_P256_LENGTH = 65;
 
-export function urlBase64ToUint8Array(base64String: string): Uint8Array {
+/** DOM PushManager.subscribe() key type (ArrayBuffer-backed, not ArrayBufferLike). */
+export type PushApplicationServerKey = NonNullable<
+  PushSubscriptionOptionsInit['applicationServerKey']
+>;
+
+export function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const normalized = base64String.trim().replace(/^"+|"+$/g, '');
   const padding = '='.repeat((4 - (normalized.length % 4)) % 4);
   const base64 = (normalized + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -14,7 +19,7 @@ export function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
-export function bufferSourceToUint8Array(key: BufferSource): Uint8Array {
+export function bufferSourceToUint8Array(key: BufferSource): Uint8Array<ArrayBuffer> {
   if (key instanceof ArrayBuffer) {
     return new Uint8Array(key);
   }
@@ -25,7 +30,7 @@ export function bufferSourceToUint8Array(key: BufferSource): Uint8Array {
  * Chrome Android expects a Uint8Array of exactly 65 bytes (uncompressed P-256).
  * Copy so the view is not a slice of a larger buffer.
  */
-export function vapidPublicKeyToApplicationServerKey(raw: string): Uint8Array {
+export function vapidPublicKeyToApplicationServerKey(raw: string): Uint8Array<ArrayBuffer> {
   const bytes = urlBase64ToUint8Array(raw);
   if (bytes.byteLength !== UNCOMPRESSED_P256_LENGTH) {
     throw new Error('vapid_key_invalid');
@@ -37,13 +42,24 @@ export function vapidPublicKeyToApplicationServerKey(raw: string): Uint8Array {
  * Chrome Android historically rejected ArrayBuffer, then some builds rejected Uint8Array.
  * Try a copied Uint8Array first, then a detached ArrayBuffer of the same 65 bytes.
  */
-export function vapidApplicationServerKeyCandidates(raw: string): [Uint8Array, ArrayBuffer] {
+export function vapidApplicationServerKeyCandidates(
+  raw: string,
+): [Uint8Array<ArrayBuffer>, ArrayBuffer] {
   const bytes = vapidPublicKeyToApplicationServerKey(raw);
   const buffer = bytes.buffer.slice(
     bytes.byteOffset,
     bytes.byteOffset + bytes.byteLength,
   );
   return [bytes, buffer];
+}
+
+export function toPushSubscribeOptions(
+  applicationServerKey: PushApplicationServerKey,
+): PushSubscriptionOptionsInit {
+  return {
+    userVisibleOnly: true,
+    applicationServerKey,
+  };
 }
 
 export function applicationServerKeysMatch(
@@ -61,3 +77,14 @@ export function applicationServerKeysMatch(
   }
   return true;
 }
+
+/**
+ * TS 5.7+ default Uint8Array is Uint8Array<ArrayBufferLike>, which is not a
+ * BufferSource. This constraint keeps next build failing if VAPID helpers
+ * widen back to ArrayBufferLike.
+ */
+type AssertAssignableToPushApplicationServerKey<T extends PushApplicationServerKey> = T;
+
+export type VapidPushApplicationServerKey = AssertAssignableToPushApplicationServerKey<
+  ReturnType<typeof vapidApplicationServerKeyCandidates>[number]
+>;
