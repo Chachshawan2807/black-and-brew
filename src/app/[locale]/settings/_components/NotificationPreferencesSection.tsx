@@ -20,8 +20,8 @@ import {
   getLastPushRegistrationError,
   hasLocalPushSubscription,
   hasServerPushRegistration,
+  reconcileDevicePushRegistration,
   refreshLocalPushSubscriptionState,
-  refreshPushSubscriptionState,
   requiresUserGestureForPushSubscribe,
   PUSH_REGISTRATION_UPDATED_EVENT,
   schedulePushSubscriptionMaintenance,
@@ -107,18 +107,14 @@ export default function NotificationPreferencesSection({
     setPermission(permissionState);
 
     if (wantsPushRegistration(prefs) && permissionState === 'granted') {
-      if (hasServerPushRegistration()) {
-        await refreshLocalPushSubscriptionState();
-      } else {
-        await refreshPushSubscriptionState(locale);
-      }
+      setDevicePushState(await reconcileDevicePushRegistration(locale));
     } else {
       await refreshLocalPushSubscriptionState();
+      const hasLocal = hasLocalPushSubscription();
+      const hasServer = hasServerPushRegistration();
+      setDevicePushState(hasServer ? 'server' : hasLocal ? 'local_only' : 'none');
     }
 
-    const hasLocal = hasLocalPushSubscription();
-    const hasServer = hasServerPushRegistration();
-    setDevicePushState(hasServer ? 'server' : hasLocal ? 'local_only' : 'none');
     const err = getLastPushRegistrationError();
     setRegisterError(err ? formatPushRegistrationError(err, isTh) : null);
   }, [isTh, locale, prefs]);
@@ -129,7 +125,12 @@ export default function NotificationPreferencesSection({
       warmPushRegistrationStack();
       schedulePushSubscriptionMaintenance(locale, { immediate: true });
       void refreshDeviceState();
-      return;
+      const cancelRetry = scheduleIdleWork(() => {
+        void refreshDeviceState();
+      }, { timeout: 900 });
+      return () => {
+        cancelRetry();
+      };
     }
 
     saveNotificationPreferences(prefs);
@@ -145,8 +146,10 @@ export default function NotificationPreferencesSection({
       void refreshDeviceState();
     };
     window.addEventListener(PUSH_REGISTRATION_UPDATED_EVENT, onRegistrationUpdated);
+    window.addEventListener('bb-pin-authenticated', onRegistrationUpdated);
     return () => {
       window.removeEventListener(PUSH_REGISTRATION_UPDATED_EVENT, onRegistrationUpdated);
+      window.removeEventListener('bb-pin-authenticated', onRegistrationUpdated);
     };
   }, [refreshDeviceState]);
 

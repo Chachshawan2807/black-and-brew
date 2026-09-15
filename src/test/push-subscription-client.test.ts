@@ -191,12 +191,18 @@ describe('push-subscription-client', () => {
     expect(source).toMatch(/warmPushRegistrationStack[\s\S]*ensureSupabaseSession/);
   });
 
-  test('refresh skips server verify when registration is already confirmed', () => {
+  test('reconcile verifies Supabase endpoint before re-registering', () => {
     const source = readFileSync(
       resolve(__dirname, '../lib/push-subscription-client.ts'),
       'utf8',
     );
-    expect(source).toContain('if (!serverPushRegistrationConfirmed)');
+    expect(source).toContain('export async function reconcileDevicePushRegistration');
+    expect(source).toMatch(
+      /reconcileDevicePushRegistration[\s\S]*verifyServerPushRegistration\(subscription\.endpoint\)/,
+    );
+    expect(source).toMatch(
+      /reconcileDevicePushRegistration[\s\S]*waitForAuthenticatedPushPrerequisites/,
+    );
   });
 
   test('settings auto-reconciles push with server on load not local-only refresh', () => {
@@ -204,7 +210,7 @@ describe('push-subscription-client', () => {
       resolve(__dirname, '../app/[locale]/settings/_components/NotificationPreferencesSection.tsx'),
       'utf8',
     );
-    expect(source).toContain('refreshPushSubscriptionState(locale)');
+    expect(source).toContain('reconcileDevicePushRegistration(locale)');
     expect(source).toContain('schedulePushSubscriptionMaintenance(locale, { immediate: true })');
     expect(source).toContain('warmPushRegistrationStack');
     expect(source).toContain('skipNextAutomaticPrefsSyncRef');

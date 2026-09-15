@@ -14,7 +14,7 @@ import {
   formatPushRegistrationError,
   getLastPushRegistrationError,
   hasServerPushRegistration,
-  refreshPushSubscriptionState,
+  reconcileDevicePushRegistration,
   requiresUserGestureForPushSubscribe,
   PUSH_REGISTRATION_UPDATED_EVENT,
   schedulePushSubscriptionMaintenance,
@@ -51,7 +51,7 @@ export function PushSubscriptionManager() {
       return;
     }
 
-    await refreshPushSubscriptionState(locale);
+    await reconcileDevicePushRegistration(locale);
     const permission = getNotificationPermissionState();
     setShowIosBanner(
       permission !== 'denied' && !hasServerPushRegistration(),

@@ -124,10 +124,13 @@ export async function registerPushAfterAuthentication(
   const ok = await ensurePushSubscription(locale, {
     fromUserGesture: options.fromUserGesture === true,
   });
-  if (!ok) {
+  const reconciled = await reconcileDevicePushRegistration(locale, {
+    fromUserGesture: options.fromUserGesture === true,
+  });
+  if (!ok && reconciled !== 'server') {
     schedulePushSubscriptionMaintenance(locale, { immediate: true });
   }
-  return ok;
+  return ok || reconciled === 'server';
 }
 
 function queuePushSubscriptionMaintenance(locale: string): void {
@@ -553,36 +556,93 @@ export async function syncPushPrefsToServer(
   }
 }
 
-export async function refreshPushSubscriptionState(locale: string): Promise<void> {
-  if (typeof window === 'undefined') return;
+export type DevicePushRegistrationState = 'server' | 'local_only' | 'none';
+
+/**
+ * Single source of truth for Settings / iOS banner status.
+ * 1) Wait for PIN + Supabase (server actions need bb_auth_pin_verified).
+ * 2) Read the browser PushSubscription endpoint.
+ * 3) Verify endpoint on Supabase before attempting a heavy re-register.
+ */
+export async function reconcileDevicePushRegistration(
+  locale: string,
+  options: { fromUserGesture?: boolean } = {},
+): Promise<DevicePushRegistrationState> {
+  if (typeof window === 'undefined') return 'none';
 
   const prefs = loadNotificationPreferences();
   if (!wantsPushRegistration(prefs)) {
     localPushSubscription = null;
     serverPushRegistrationConfirmed = false;
-    return;
+    setPushRegistrationError(null);
+    return 'none';
   }
+
+  if (!isPushManagerSupported()) {
+    setPushRegistrationError('push_unavailable');
+    return 'none';
+  }
+
+  await waitForAuthenticatedPushPrerequisites();
 
   try {
     const registration = await ensurePushServiceWorkerReady();
     const subscription = await registration.pushManager.getSubscription();
     localPushSubscription = subscription;
+
     if (subscription) {
       if (serverPushRegistrationConfirmed) {
         setPushRegistrationError(null);
-        return;
+        return 'server';
       }
-      await syncExistingSubscriptionToServer(subscription, prefs, locale);
-    } else if (!requiresUserGestureForPushSubscribe()) {
-      await ensurePushSubscription(locale);
-    } else {
-      serverPushRegistrationConfirmed = false;
-      setPushRegistrationError('gesture_required');
+
+      const verified = await verifyServerPushRegistration(subscription.endpoint);
+      if (verified) {
+        setPushRegistrationError(null);
+        return 'server';
+      }
+
+      const synced = await syncExistingSubscriptionToServer(subscription, prefs, locale);
+      if (synced) {
+        setPushRegistrationError(null);
+        return 'server';
+      }
+
+      setPushRegistrationError('server_not_registered');
+      return 'local_only';
     }
-  } catch {
+
+    serverPushRegistrationConfirmed = false;
+
+    if (getNotificationPermissionState() !== 'granted') {
+      setPushRegistrationError('permission_denied');
+      return 'none';
+    }
+
+    if (requiresUserGestureForPushSubscribe() && !options.fromUserGesture) {
+      setPushRegistrationError('gesture_required');
+      return 'none';
+    }
+
+    const ok = await ensurePushSubscription(locale, {
+      fromUserGesture: options.fromUserGesture === true,
+    });
+    if (ok) {
+      setPushRegistrationError(null);
+      return 'server';
+    }
+
+    return 'none';
+  } catch (error) {
+    logPushClientIssue('reconcile failed', error);
     localPushSubscription = null;
     serverPushRegistrationConfirmed = false;
+    return 'none';
   }
+}
+
+export async function refreshPushSubscriptionState(locale: string): Promise<void> {
+  await reconcileDevicePushRegistration(locale);
 }
 
 export async function refreshLocalPushSubscriptionState(): Promise<boolean> {
@@ -596,19 +656,22 @@ export async function refreshLocalPushSubscriptionState(): Promise<boolean> {
     const registration = await ensurePushServiceWorkerReady();
     const subscription = await registration.pushManager.getSubscription();
     localPushSubscription = subscription;
-    if (subscription) {
-      if (!serverPushRegistrationConfirmed) {
-        const registered = await verifyServerPushRegistration(subscription.endpoint);
-        if (!registered) {
-          setPushRegistrationError('server_not_registered');
-        } else {
-          setPushRegistrationError(null);
-        }
-      }
-    } else {
+    if (!subscription) {
       serverPushRegistrationConfirmed = false;
+      return false;
     }
-    return subscription !== null;
+
+    if (!serverPushRegistrationConfirmed) {
+      await waitForAuthenticatedPushPrerequisites();
+      const registered = await verifyServerPushRegistration(subscription.endpoint);
+      if (!registered) {
+        setPushRegistrationError('server_not_registered');
+      } else {
+        setPushRegistrationError(null);
+      }
+    }
+
+    return true;
   } catch {
     localPushSubscription = null;
     serverPushRegistrationConfirmed = false;
