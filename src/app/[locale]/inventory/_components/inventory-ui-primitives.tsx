@@ -16,6 +16,7 @@ import {
   modalContent,
   modalSheetBottom,
   sectionReveal,
+  toFramerPhaseVariants,
   withReducedMotion,
 } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
@@ -83,7 +84,10 @@ export function useInventoryMotion() {
     reduced,
     overlay: withReducedMotion(fadeOverlay, reduced),
     panel: withReducedMotion(modalContent, reduced),
+    overlayPhases: toFramerPhaseVariants(fadeOverlay, reduced),
+    panelPhases: toFramerPhaseVariants(modalContent, reduced),
     sheet: withReducedMotion(modalSheetBottom, reduced),
+    sheetPhases: toFramerPhaseVariants(modalSheetBottom, reduced),
     section: withReducedMotion(sectionReveal, reduced),
     micro: withReducedMotion(microPopIn, reduced),
     microFade: withReducedMotion(microFadeDown, reduced),
@@ -159,6 +163,7 @@ export function InventoryMobileSheetHandle() {
 type InventoryModalHeaderProps = {
   icon: ReactNode;
   title: string;
+  titleId?: string;
   subtitle?: string;
   tone?: InventoryIconTone;
   onClose?: () => void;
@@ -171,6 +176,7 @@ type InventoryModalHeaderProps = {
 export function InventoryModalHeader({
   icon,
   title,
+  titleId,
   subtitle,
   tone = 'inventory',
   onClose,
@@ -206,7 +212,12 @@ export function InventoryModalHeader({
           {icon}
         </InventoryIconBadge>
         <div className={cn('min-w-0 flex-1', subtitle && 'pt-0.5')}>
-          <h2 className="text-lg md:text-xl font-normal text-foreground tracking-tight">{title}</h2>
+          <h2
+            id={titleId}
+            className="text-lg md:text-xl font-normal text-foreground tracking-tight"
+          >
+            {title}
+          </h2>
           {subtitle ? (
             <p className="mt-1 text-[12px] md:text-[13px] leading-relaxed text-muted-foreground max-w-[32rem]">
               {subtitle}

@@ -162,6 +162,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
         <InventoryModalHeader
           icon={<PlusCircle className="h-5 w-5" strokeWidth={ICON_STROKE} />}
           title="เพิ่มรายการใหม่"
+          titleId="inventory-add-item-title"
           onClose={onClose}
           sheet={false}
           className="px-6 py-4 bg-card"

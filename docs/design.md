@@ -353,3 +353,11 @@ Read `.cursor/skills/supplementary-design-erp/SKILL.md` before upstream.
 | vercel-composition-patterns | `.agents/skills/vercel-composition-patterns/` | ลด prop boolean ใน modal / FAB / toolbar |
 | sleek-design-mobile-apps | `.agents/skills/sleek-design-mobile-apps/` | ต้องมี `SLEEK_API_KEY`; งาน ERP มือถือใช้ chrome-modern-web-guidance ก่อน |
 | emil-design-eng | `.agents/skills/emil-design-eng/` | motion panel/sheet + `prefers-reduced-motion` ไม่ใส่บน cell กริด |
+
+Agent token catalog (ERP extract mode): `docs/erp-design-tokens.md`
+
+Run all four under overlay:
+
+```bash
+npm run skill:run supplementary-design -- --target inventory
+```

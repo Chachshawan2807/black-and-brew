@@ -20,6 +20,13 @@ describe('supplementary-design-erp overlay', () => {
     expect(agents).toContain('emil-design-eng');
   });
 
+  test('erp-design-tokens catalog exists', () => {
+    expect(fs.existsSync(path.resolve(ROOT, 'docs/erp-design-tokens.md'))).toBe(true);
+    const doc = readRepo('docs/erp-design-tokens.md');
+    expect(doc).toContain('ui-outlined-tokens.ts');
+    expect(doc).toContain('toFramerPhaseVariants');
+  });
+
   test('overlay blocks ERP-critical conflicts', () => {
     expect(overlay).toContain('spreadsheet');
     expect(overlay).toContain('bb-pastel-surface');

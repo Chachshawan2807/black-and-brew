@@ -323,3 +323,38 @@ export function withReducedMotion(preset: MotionPreset, reduced: boolean): Motio
     transition: { duration: 0.01, ease: MODAL_EASE },
   };
 }
+
+/** Framer variants: ease-out enter, ease-in exit (emil-design-eng / ERP panels) */
+export type FramerPhaseVariants = {
+  initial: Record<string, number | string>;
+  animate: Record<string, number | string> & {
+    transition?: { duration: number; ease: [number, number, number, number] };
+  };
+  exit: Record<string, number | string> & {
+    transition?: { duration: number; ease: [number, number, number, number] };
+  };
+};
+
+export function toFramerPhaseVariants(preset: MotionPreset, reduced: boolean): FramerPhaseVariants {
+  if (reduced) {
+    const still = preset.animate;
+    return { initial: still, animate: still, exit: still };
+  }
+  return {
+    initial: preset.initial,
+    animate: {
+      ...preset.animate,
+      transition: {
+        duration: preset.transition.duration,
+        ease: MODAL_EASE,
+      },
+    },
+    exit: {
+      ...preset.exit,
+      transition: {
+        duration: MOTION_DURATION.fast,
+        ease: MODAL_EXIT_EASE,
+      },
+    },
+  };
+}

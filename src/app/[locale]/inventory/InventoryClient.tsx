@@ -3,7 +3,7 @@
 import { PageLoadingState } from '@/components/ui/page-loading-state';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ClipboardList, ICON_STROKE, Undo2, Redo2, Trash2, X, Package } from '@/lib/icons';
+import { ClipboardList, ICON_STROKE, Package, PlusCircle, Redo2, Trash2, Undo2, X } from '@/lib/icons';
 import {
   INVENTORY_BTN_PRIMARY,
   INVENTORY_BTN_SECONDARY,
@@ -11,12 +11,14 @@ import {
   INVENTORY_PASTEL_ACTION_PAIR,
   InventoryEmptyState,
   InventoryIconButton,
-  InventoryModalCloseButton,
+  InventoryModalHeader,
   InventorySyncStatus,
   DeleteConfirmDialog,
+  INVENTORY_FORM_LABEL,
+  useInventoryMotion,
 } from './_components/inventory-ui-primitives';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fadeOverlay, modalContent, pageHeadingSpring } from '@/lib/motion-presets';
+import { pageHeadingSpring } from '@/lib/motion-presets';
 import dynamic from 'next/dynamic';
 import {
   fetchFrequentItems,
@@ -963,6 +965,7 @@ export default function InventoryClient({
   initialWithdrawRequiredOrder = [],
 }: InventoryClientProps) {
   const isReadOnly = useReadOnly();
+  const { overlay: addModalOverlay, panelPhases: addModalPanelPhases } = useInventoryMotion();
   const { isOpen: isFloatingOverlayOpen } = useFloatingOverlay();
   const quickActionFabOpen = isFloatingOverlayOpen('quick-action');
   const { subscribe, refresh } = useInventoryRealtime();
@@ -1244,6 +1247,11 @@ export default function InventoryClient({
 
   const handleOpenAddItem = useCallback(() => {
     setShowAddModal(true);
+  }, []);
+
+  const closeAddItemModal = useCallback(() => {
+    setShowAddModal(false);
+    setNewItemInsertPosition('');
   }, []);
 
   function sanitizeInventoryItem(item: InventoryItem) {
@@ -2042,28 +2050,39 @@ export default function InventoryClient({
         {showAddModal && (
           <InventoryModalPortal>
           <motion.div
-            initial={fadeOverlay.initial} animate={fadeOverlay.animate} exit={fadeOverlay.exit} transition={fadeOverlay.transition}
+            initial={addModalOverlay.initial}
+            animate={addModalOverlay.animate}
+            exit={addModalOverlay.exit}
+            transition={addModalOverlay.transition}
             className={cn(
-              'fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4',
+              'fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 max-md:pb-[calc(1rem+env(safe-area-inset-bottom))]',
               INVENTORY_MODAL_Z_CLASS,
             )}
-            onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }}
+            onClick={closeAddItemModal}
           >
           <motion.div
-            initial={modalContent.initial} animate={modalContent.animate} exit={modalContent.exit} transition={modalContent.transition}
-            className="relative bg-card border border-border rounded-2xl bb-shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
+            variants={addModalPanelPhases}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="relative bg-card border border-border rounded-2xl bb-shadow-xl w-full max-w-xl max-h-[min(90vh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="inventory-inline-add-title"
           >
-            <HintTooltip tip="ปิด">
-              <InventoryModalCloseButton onClose={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} label="ปิด" />
-            </HintTooltip>
-            <div className="px-6 h-14 border-b border-border flex items-center justify-between shrink-0 pr-14">
-              <h2 className="text-lg font-normal text-foreground">เพิ่มรายการใหม่</h2>
-            </div>
-              <form onSubmit={handleAddItemSubmit} className="p-6 overflow-y-auto bb-smooth-scroll flex-1 min-h-0">
+            <InventoryModalHeader
+              icon={<PlusCircle className="h-5 w-5" strokeWidth={ICON_STROKE} />}
+              title="เพิ่มรายการใหม่"
+              titleId="inventory-inline-add-title"
+              onClose={closeAddItemModal}
+              sheet={false}
+              className="px-6 py-4 bg-card"
+            />
+              <form onSubmit={handleAddItemSubmit} className="p-6 overflow-y-auto bb-smooth-scroll flex-1 min-h-0 overscroll-y-contain">
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                   <div className="col-span-2 flex flex-col gap-1.5">
-                    <label className="text-[12px] font-normal text-muted-foreground ml-1 uppercase tracking-wider">ชื่อรายการ</label>
+                    <label className={INVENTORY_FORM_LABEL}>ชื่อรายการ</label>
                     <input
                       required
                       name="new-item-name"
@@ -2197,7 +2216,7 @@ export default function InventoryClient({
                   </div>
                 </div>
                 <div className="mt-8 flex gap-3">
-                  <button type="button" onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className={cn(INVENTORY_BTN_SECONDARY, 'flex-1 py-3')}>
+                  <button type="button" onClick={closeAddItemModal} className={cn(INVENTORY_BTN_SECONDARY, 'flex-1 py-3')}>
                     ยกเลิก
                   </button>
                   <button type="submit" className={cn(INVENTORY_BTN_PRIMARY, 'flex-1 py-3 bb-shadow-sm')}>

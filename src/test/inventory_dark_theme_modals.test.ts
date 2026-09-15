@@ -62,6 +62,8 @@ describe('inventory modals dark theme readability', () => {
     expect(addModalSection).toContain('text-muted-foreground');
     expect(addModalSection).toContain('BB_FIELD_INPUT_MUTED');
     expect(addModalSection).toContain('bg-muted');
+    expect(addModalSection).toContain('InventoryModalHeader');
+    expect(addModalSection).toContain('inventory-inline-add-title');
     expect(addModalSection).not.toContain('text-slate-600');
     expect(addModalSection).not.toContain('bg-slate-50');
   });

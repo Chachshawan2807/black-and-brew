@@ -21,6 +21,13 @@
       "script": "scripts/design-review.mjs",
       "description": "Three-pass ERP UI review pre-scan (web-design-guidelines + critique + ui-ux-pro-max)",
       "tags": ["design", "ux", "a11y"]
+    },
+    {
+      "id": "supplementary-design",
+      "path": "skills/supplementary-design",
+      "script": "scripts/supplementary-design.mjs",
+      "description": "Four supplementary design skills workflow under ERP overlay",
+      "tags": ["design", "motion", "composition"]
     }
   ]
 }

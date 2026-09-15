@@ -6,7 +6,12 @@ import { useParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Bell, CheckCheck, Trash2 } from '@/lib/icons';
 import { cn } from '@/lib/utils';
-import { notificationOverlay, notificationPanel, withReducedMotion } from '@/lib/motion-presets';
+import {
+  notificationOverlay,
+  notificationPanel,
+  toFramerPhaseVariants,
+  withReducedMotion,
+} from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { useMobileBackLayer } from '@/hooks/use-mobile-back-layer';
@@ -111,7 +116,7 @@ export function NotificationPanel() {
   const isTh = locale === 'th';
   const reduced = usePrefersReducedMotion();
   const overlayMotion = withReducedMotion(notificationOverlay, reduced);
-  const panelMotion = withReducedMotion(notificationPanel, reduced);
+  const panelPhases = toFramerPhaseVariants(notificationPanel, reduced);
 
   const {
     notifications,
@@ -166,10 +171,10 @@ export function NotificationPanel() {
             style={backdropStyle}
           >
             <motion.aside
-              initial={panelMotion.initial}
-              animate={panelMotion.animate}
-              exit={panelMotion.exit}
-              transition={panelMotion.transition}
+              variants={panelPhases}
+              initial="initial"
+              animate="animate"
+              exit="exit"
               style={panelStyle}
               className={cn(
                 'pointer-events-auto box-border flex flex-col overflow-hidden w-full max-w-md',
