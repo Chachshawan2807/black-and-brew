@@ -1,6 +1,6 @@
 import { checkAuth } from '@/app/actions/auth';
 import { loadSecretaryBoard } from '@/app/actions/home-actions';
-import { HomeAuthRefresh } from './_components/HomeAuthRefresh';
+import { HomeClientAuthBootstrap } from './_components/HomeClientAuthBootstrap';
 import HomeClient from './HomeClient';
 
 export default async function HomePage({
@@ -10,14 +10,7 @@ export default async function HomePage({
 }) {
   const [{ locale }, authed] = await Promise.all([params, checkAuth()]);
   if (!authed) {
-    return (
-      <>
-        <HomeAuthRefresh />
-        <div className="mx-auto w-full max-w-3xl px-4 py-8 text-[14px] text-muted-foreground">
-          กำลังตรวจสอบสิทธิ์...
-        </div>
-      </>
-    );
+    return <HomeClientAuthBootstrap locale={locale} />;
   }
 
   const boardResult = await loadSecretaryBoard({ locale });

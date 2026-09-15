@@ -141,13 +141,11 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
       if (serverSession.verified) {
         setClientAuthSession(serverSession.readOnly, serverSession.offlineAuthSessionId);
-        await (supabaseSessionTask ?? ensureSupabaseSession());
-        if (cancelled) return;
-
         setIsReadOnly(serverSession.readOnly);
         setIsAuthenticated(true);
         setAuthCheckComplete(true);
         window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
+        void (supabaseSessionTask ?? ensureSupabaseSession());
         return;
       }
 
@@ -194,10 +192,10 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   ) => {
     setClientAuthSession(readOnly, offlineAuthSessionId);
     setIsReadOnly(readOnly);
-    await ensureSupabaseSession();
     setIsAuthenticated(true);
     setShowEnrollment(false);
     window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
+    await ensureSupabaseSession();
   }, []);
 
   const passkeySkipKey = (fingerprint: string) => `bb_passkey_skip_${fingerprint}`;
