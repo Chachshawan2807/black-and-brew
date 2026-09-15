@@ -1,3 +1,5 @@
+import type { Variants } from 'framer-motion';
+
 /** Shared framer-motion presets premium minimal, layout-neutral */
 
 /** Deceleration curve for enter / settle (matches --bb-ease-out in globals.css) */
@@ -325,17 +327,9 @@ export function withReducedMotion(preset: MotionPreset, reduced: boolean): Motio
 }
 
 /** Framer variants: ease-out enter, ease-in exit (emil-design-eng / ERP panels) */
-export type FramerPhaseVariants = {
-  initial: Record<string, number | string>;
-  animate: Record<string, number | string> & {
-    transition?: { duration: number; ease: [number, number, number, number] };
-  };
-  exit: Record<string, number | string> & {
-    transition?: { duration: number; ease: [number, number, number, number] };
-  };
-};
+export type FramerPhaseVariants = Variants;
 
-export function toFramerPhaseVariants(preset: MotionPreset, reduced: boolean): FramerPhaseVariants {
+export function toFramerPhaseVariants(preset: MotionPreset, reduced: boolean): Variants {
   if (reduced) {
     const still = preset.animate;
     return { initial: still, animate: still, exit: still };
