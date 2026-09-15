@@ -63,7 +63,7 @@ describe('consolidateSecretaryBoardTasks', () => {
         id: 'under',
         task_type: 'schedule_understaffed',
         module: 'schedule',
-        title: 'ตรวจตาราง วันที่คนน้อย',
+        title: 'ตารางงาน วันที่คนน้อย',
         description: 'พ. ที่ 2 (4 คน)',
         priority: 'urgent',
       }),
@@ -71,7 +71,7 @@ describe('consolidateSecretaryBoardTasks', () => {
         id: 'leave',
         task_type: 'schedule_leave_risk',
         module: 'schedule',
-        title: 'ตรวจตาราง ลาหลายคน',
+        title: 'ตารางงาน ลาหลายคน',
         description: 'ศ. ที่ 24 (เอ, บี)',
         priority: 'urgent',
         created_at: '2026-08-29T01:00:00.000Z',
@@ -88,7 +88,7 @@ describe('consolidateSecretaryBoardTasks', () => {
     ]);
 
     expect(consolidated).toHaveLength(1);
-    expect(consolidated[0]?.title).toBe('ตรวจตารางงาน');
+    expect(consolidated[0]?.title).toBe('ตารางงาน');
     expect(consolidated[0]?.consolidatedTaskIds).toEqual(['under', 'leave', 'mgmt']);
     expect(consolidated[0]?.consolidatedSections).toEqual([
       { title: 'วันที่คนน้อย', description: 'พ. ที่ 2 (4 คน)' },

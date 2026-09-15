@@ -41,7 +41,7 @@ export function deriveScheduleTasks(snapshot: SecretarySnapshot): DerivedTaskDra
     };
     tasks.push({
       taskType: 'schedule_understaffed',
-      title: 'ตรวจตาราง วันที่คนน้อย',
+      title: 'ตารางงาน วันที่คนน้อย',
       description: summary,
       priority: 'urgent',
       module: 'schedule',
@@ -70,7 +70,7 @@ export function deriveScheduleTasks(snapshot: SecretarySnapshot): DerivedTaskDra
     };
     tasks.push({
       taskType: 'schedule_leave_risk',
-      title: 'ตรวจตาราง ลาหลายคน',
+      title: 'ตารางงาน ลาหลายคน',
       description: summary,
       priority: 'urgent',
       module: 'schedule',

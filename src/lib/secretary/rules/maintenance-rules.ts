@@ -13,7 +13,7 @@ export function deriveMaintenanceTasks(snapshot: SecretarySnapshot): DerivedTask
     };
     tasks.push({
       taskType: 'maintenance_overdue',
-      title: `ซ่อมบำรุงเลยกำหนด (${overdue.length})`,
+      title: `ซ่อมบำรุง (${overdue.length})`,
       description: overdue.map((task) => task.equipment).slice(0, 5).join(', '),
       priority: 'urgent',
       module: 'maintenance',

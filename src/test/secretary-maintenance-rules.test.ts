@@ -50,7 +50,7 @@ describe('deriveMaintenanceTasks', () => {
       'maintenance_overdue',
       'maintenance_due',
     ]);
-    expect(tasks[0]?.title).toContain('(1)');
+    expect(tasks[0]?.title).toBe('ซ่อมบำรุง (1)');
     expect(tasks[0]?.description).toContain('เครื่องบด');
     expect(tasks[1]?.description).toContain('เครื่องชง');
     expect(tasks[1]?.description).not.toContain('ตู้เย็น');

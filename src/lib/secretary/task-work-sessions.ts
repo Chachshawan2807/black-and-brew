@@ -13,10 +13,10 @@ export type SecretaryWorkSession = {
 export const SECRETARY_WORK_SESSIONS: readonly SecretaryWorkSession[] = [
   {
     id: 'schedule_review',
-    label: 'ตรวจตารางงาน',
+    label: 'ตารางงาน',
     module: 'schedule',
     taskTypes: ['schedule_understaffed', 'schedule_leave_risk', 'schedule_mgmt_review'],
-    titlePrefix: 'ตรวจตาราง ',
+    titlePrefix: 'ตารางงาน ',
     rationale: 'แสดงวันที่คนน้อยและลาหลายคนในรายละเอียดงาน ตรวจได้จากการ์ดโดยตรง',
   },
 ] as const;

@@ -21,8 +21,8 @@ describe('splitSecretaryCardTitle', () => {
   });
 
   test('splits space-separated headlines', () => {
-    expect(splitSecretaryCardTitle('ตรวจตาราง วันที่คนน้อย')).toEqual([
-      'ตรวจตาราง',
+    expect(splitSecretaryCardTitle('ตารางงาน วันที่คนน้อย')).toEqual([
+      'ตารางงาน',
       'วันที่คนน้อย',
     ]);
   });
