@@ -17,6 +17,7 @@ import {
   refreshPushSubscriptionState,
   requiresUserGestureForPushSubscribe,
   schedulePushSubscriptionMaintenance,
+  warmPushRegistrationStack,
   wantsPushRegistration,
 } from '@/lib/push-subscription-client';
 
@@ -58,7 +59,8 @@ export function PushSubscriptionManager() {
 
   useEffect(() => {
     const schedule = () => {
-      schedulePushSubscriptionMaintenance(locale);
+      warmPushRegistrationStack();
+      schedulePushSubscriptionMaintenance(locale, { immediate: true });
       void refreshBannerState();
     };
 
@@ -76,6 +78,7 @@ export function PushSubscriptionManager() {
     setRegistering(true);
     setBannerError(null);
     try {
+      warmPushRegistrationStack();
       const ok = await ensurePushSubscriptionFromUserGesture(locale);
       await refreshBannerState();
       if (!ok) {

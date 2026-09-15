@@ -213,7 +213,7 @@ describe('notification fab cross-platform sync', () => {
       /addEventListener\('bb-notification-prefs-changed',\s*onPrefsChanged\)/,
     );
     expect(pwaRegisterSource).toMatch(
-      /onPrefsChanged = \(\) => \{[\s\S]*?schedulePushSubscriptionMaintenance\(locale\);[\s\S]*?\};/,
+      /onPrefsChanged = \(\) => \{[\s\S]*?schedulePushSubscriptionMaintenance\(locale,\s*\{ immediate: true \}\);[\s\S]*?\};/,
     );
     expect(pwaRegisterSource).not.toMatch(
       /addEventListener\('bb-notification-prefs-changed',\s*onResume\)/,

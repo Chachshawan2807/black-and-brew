@@ -27,7 +27,7 @@ Manual smoke on a real phone or tablet (Android Chrome PWA and iOS Safari Home S
 | Step | UI (TH) | UI (EN) | Pass |
 | ---- | ------- | ------- | ---- |
 | 1.1 | เปิดสวิตช์ **การแจ้งเตือน** (master). อนุญาตเมื่อระบบถาม permission. | Turn on **Notifications** master switch. Allow OS prompt. | ☐ |
-| 1.2 | ข้อความสถานะเป็น **ลงทะเบียนรับการแจ้งเตือนแล้ว** (สีเขียว). | Status: **This device is registered with the server…** (green). | ☐ |
+| 1.2 | หลังอนุญาต สถานะควรเป็น **ลงทะเบียนรับการแจ้งเตือนแล้ว** (สีเขียว) ภายในไม่กี่วินาที (ไม่ต้องรอ idle นาน). | Status turns green within a few seconds after allow. | ☐ |
 | 1.3 | **iOS only:** ถ้ามีปุ่ม **ลงทะเบียนการแจ้งเตือนบนเครื่องนี้** ให้กดหลัง master เปิด (ต้องเป็น user gesture). | Tap **Register notifications on this device** if shown. | ☐ |
 | 1.4 | ใต้ **ปรับรายละเอียด** / **Fine-tune**, เปิดช่องที่จะทดสอบ: **แจ้งเตือนคลังสินค้า**, **แจ้งเตือนระบบ** (background OS). | Enable **Inventory alerts** and **System notifications** for stock + push tests. | ☐ |
 | 1.5 | (Optional) เปิด **สรุปตารางงานรายวัน**, **การแจ้งเตือนที่ต้องตรวจสอบข้ามโมดูล**, **แจ้งเตือนความปลอดภัย** ตามช่องที่ต้องการทดสอบ. | Enable other channels as needed. | ☐ |

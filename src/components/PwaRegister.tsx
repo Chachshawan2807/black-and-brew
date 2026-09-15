@@ -12,12 +12,13 @@ import {
 } from '@/lib/pwa-notification-bridge';
 import {
   schedulePushSubscriptionMaintenance,
+  warmPushRegistrationStack,
   wantsPushRegistration,
 } from '@/lib/push-subscription-client';
 import { installOfflineMutationListeners } from '@/lib/offline-mutation-client';
-import { PWA_SERVICE_WORKER_PATH } from '@/lib/pwa-config';
 import {
   checkForServiceWorkerUpdate,
+  ensurePushServiceWorkerReady,
   installServiceWorkerUpdateListener,
   unregisterOrphanedServiceWorkersInDev,
 } from '@/lib/pwa-update';
@@ -40,6 +41,10 @@ export default function PwaRegister() {
     if (!canRegisterServiceWorker()) {
       void unregisterOrphanedServiceWorkersInDev();
     } else if ('serviceWorker' in navigator) {
+      if (wantsPushRegistration(loadNotificationPreferences())) {
+        warmPushRegistrationStack();
+      }
+
       const syncBadgeFromStorage = () => {
         void readNotificationState().then(({ unreadCount }) => {
           void syncAppBadge(unreadCount);
@@ -57,14 +62,15 @@ export default function PwaRegister() {
         ensureFullNotificationPreferencesOnAuth();
         syncBadgeFromStorage();
         void checkForServiceWorkerUpdate();
-        schedulePushSubscriptionMaintenance(locale);
+        schedulePushSubscriptionMaintenance(locale, { immediate: true });
       };
 
       // Prefs-changed must NOT call ensureFull that function saves prefs and
       // re-dispatches this event (infinite recursion / Maximum call stack).
       onPrefsChanged = () => {
+        warmPushRegistrationStack();
         syncBadgeFromStorage();
-        schedulePushSubscriptionMaintenance(locale);
+        schedulePushSubscriptionMaintenance(locale, { immediate: true });
       };
 
       navigator.serviceWorker.addEventListener('message', onNotificationClick);
@@ -78,15 +84,13 @@ export default function PwaRegister() {
 
       cancelIdle = scheduleIdleWork(
         () => {
-          navigator.serviceWorker
-            .register(PWA_SERVICE_WORKER_PATH, { updateViaCache: 'none' })
-            .then(() => navigator.serviceWorker.ready)
+          void ensurePushServiceWorkerReady()
             .then(() => {
               syncBadgeFromStorage();
               const prefs = loadNotificationPreferences();
               if (wantsPushRegistration(prefs)) {
                 void requestNotificationPermission();
-                schedulePushSubscriptionMaintenance(locale);
+                schedulePushSubscriptionMaintenance(locale, { immediate: true });
               }
             })
             .catch((registrationError) => {
@@ -100,7 +104,7 @@ export default function PwaRegister() {
               console.error('SW registration failed:', registrationError);
             });
         },
-        { timeout: 500 },
+        { timeout: 150 },
       );
     }
 

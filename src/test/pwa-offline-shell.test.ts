@@ -58,9 +58,11 @@ describe('PWA offline shell + install config', () => {
     }
   });
 
-  test('PwaRegister registers SW with updateViaCache none and update listener', () => {
+  test('PwaRegister boots SW via shared ready helper and update listener', () => {
     const source = readFileSync(resolve(ROOT, 'src/components/PwaRegister.tsx'), 'utf-8');
-    expect(source).toContain('updateViaCache:');
+    const pwaUpdate = readFileSync(resolve(ROOT, 'src/lib/pwa-update.ts'), 'utf-8');
+    expect(source).toContain('ensurePushServiceWorkerReady');
+    expect(pwaUpdate).toContain('updateViaCache:');
     expect(source).toContain('installServiceWorkerUpdateListener');
     expect(source).toContain('checkForServiceWorkerUpdate');
   });

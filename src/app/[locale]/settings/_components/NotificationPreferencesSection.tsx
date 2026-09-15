@@ -25,6 +25,7 @@ import {
   requiresUserGestureForPushSubscribe,
   schedulePushSubscriptionMaintenance,
   syncPushPrefsToServer,
+  warmPushRegistrationStack,
   wantsPushRegistration } from '@/lib/push-subscription-client';
 import type { NotificationPreferences } from '@/lib/notification-types';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
@@ -97,6 +98,7 @@ export default function NotificationPreferencesSection({
     vapidConfigured: boolean;
   } | null>(null);
   const prefsHydratedRef = useRef(false);
+  const skipNextAutomaticPrefsSyncRef = useRef(false);
   const wantsPush = wantsPushRegistration(prefs);
 
   const refreshDeviceState = useCallback(async () => {
@@ -104,7 +106,11 @@ export default function NotificationPreferencesSection({
     setPermission(permissionState);
 
     if (wantsPushRegistration(prefs) && permissionState === 'granted') {
-      await refreshPushSubscriptionState(locale);
+      if (hasServerPushRegistration()) {
+        await refreshLocalPushSubscriptionState();
+      } else {
+        await refreshPushSubscriptionState(locale);
+      }
     } else {
       await refreshLocalPushSubscriptionState();
     }
@@ -119,12 +125,17 @@ export default function NotificationPreferencesSection({
   useEffect(() => {
     if (!prefsHydratedRef.current) {
       prefsHydratedRef.current = true;
-      schedulePushSubscriptionMaintenance(locale);
+      warmPushRegistrationStack();
+      schedulePushSubscriptionMaintenance(locale, { immediate: true });
       void refreshDeviceState();
       return;
     }
 
     saveNotificationPreferences(prefs);
+    if (skipNextAutomaticPrefsSyncRef.current) {
+      skipNextAutomaticPrefsSyncRef.current = false;
+      return;
+    }
     void syncPushPrefsToServer(prefs, locale).then(() => refreshDeviceState());
   }, [prefs, locale, refreshDeviceState]);
 
@@ -158,14 +169,9 @@ export default function NotificationPreferencesSection({
     setRegistering(true);
     setRegisterError(null);
     try {
-      const state = await requestNotificationPermission();
-      setPermission(state);
-      if (state !== 'granted') {
-        setRegisterError(formatPushRegistrationError('permission_denied', isTh));
-        return false;
-      }
-
+      warmPushRegistrationStack();
       const ok = await ensurePushSubscriptionFromUserGesture(locale);
+      setPermission(getNotificationPermissionState());
       await refreshDeviceState();
       if (!ok) {
         const err = getLastPushRegistrationError();
@@ -185,95 +191,93 @@ export default function NotificationPreferencesSection({
     if (!enabled) {
       setNotificationUserOptOut(true);
       const nextPrefs = { ...prefs, ...notificationMasterPatch(false) };
+      skipNextAutomaticPrefsSyncRef.current = true;
       setPrefs(nextPrefs);
       await syncPushPrefsToServer(nextPrefs, locale);
       await refreshDeviceState();
       return;
     }
 
+    warmPushRegistrationStack();
+    setNotificationUserOptOut(false);
     const state = await requestNotificationPermission();
     setPermission(state);
     const granted = state === 'granted';
-    setNotificationUserOptOut(false);
     const nextPrefs = { ...prefs, ...notificationMasterPatch(granted) };
+    skipNextAutomaticPrefsSyncRef.current = true;
     setPrefs(nextPrefs);
     if (granted) {
-      await ensurePushSubscriptionFromUserGesture(locale);
+      const ok = await ensurePushSubscriptionFromUserGesture(locale);
+      if (!ok) {
+        await syncPushPrefsToServer(nextPrefs, locale);
+      }
+    } else {
+      await syncPushPrefsToServer(nextPrefs, locale);
     }
-    await syncPushPrefsToServer(nextPrefs, locale);
+    await refreshDeviceState();
+  };
+
+  const enablePushChannel = async (key: keyof NotificationPreferences) => {
+    warmPushRegistrationStack();
+    const state = await requestNotificationPermission();
+    setPermission(state);
+    const granted = state === 'granted';
+    const resolvedPrefs = { ...prefs, [key]: granted } as NotificationPreferences;
+    skipNextAutomaticPrefsSyncRef.current = true;
+    setPrefs(resolvedPrefs);
+    if (granted) {
+      const ok = await ensurePushSubscriptionFromUserGesture(locale);
+      if (!ok) {
+        await syncPushPrefsToServer(resolvedPrefs, locale);
+      }
+    } else {
+      await syncPushPrefsToServer(resolvedPrefs, locale);
+    }
     await refreshDeviceState();
   };
 
   const handleDailyScheduleReports = async (enabled: boolean) => {
     if (!enabled) {
+      skipNextAutomaticPrefsSyncRef.current = true;
       update({ dailyScheduleReports: false });
       await syncPushPrefsToServer({ ...prefs, dailyScheduleReports: false }, locale);
       await refreshDeviceState();
       return;
     }
-    const state = await requestNotificationPermission();
-    setPermission(state);
-    const nextPrefs = { ...prefs, dailyScheduleReports: state === 'granted' };
-    update({ dailyScheduleReports: state === 'granted' });
-    if (state === 'granted') {
-      await ensurePushSubscriptionFromUserGesture(locale);
-    }
-    await syncPushPrefsToServer(nextPrefs, locale);
-    await refreshDeviceState();
+    await enablePushChannel('dailyScheduleReports');
   };
 
   const handleProactiveInsights = async (enabled: boolean) => {
     if (!enabled) {
+      skipNextAutomaticPrefsSyncRef.current = true;
       update({ proactiveInsights: false });
       await syncPushPrefsToServer({ ...prefs, proactiveInsights: false }, locale);
       await refreshDeviceState();
       return;
     }
-    const state = await requestNotificationPermission();
-    setPermission(state);
-    const nextPrefs = { ...prefs, proactiveInsights: state === 'granted' };
-    update({ proactiveInsights: state === 'granted' });
-    if (state === 'granted') {
-      await ensurePushSubscriptionFromUserGesture(locale);
-    }
-    await syncPushPrefsToServer(nextPrefs, locale);
-    await refreshDeviceState();
+    await enablePushChannel('proactiveInsights');
   };
 
   const handleSecurityAlerts = async (enabled: boolean) => {
     if (!enabled) {
+      skipNextAutomaticPrefsSyncRef.current = true;
       update({ securityAlerts: false });
       await syncPushPrefsToServer({ ...prefs, securityAlerts: false }, locale);
       await refreshDeviceState();
       return;
     }
-    const state = await requestNotificationPermission();
-    setPermission(state);
-    const nextPrefs = { ...prefs, securityAlerts: state === 'granted' };
-    update({ securityAlerts: state === 'granted' });
-    if (state === 'granted') {
-      await ensurePushSubscriptionFromUserGesture(locale);
-    }
-    await syncPushPrefsToServer(nextPrefs, locale);
-    await refreshDeviceState();
+    await enablePushChannel('securityAlerts');
   };
 
   const handleSystemNotifications = async (enabled: boolean) => {
     if (!enabled) {
+      skipNextAutomaticPrefsSyncRef.current = true;
       update({ systemNotifications: false });
       await syncPushPrefsToServer({ ...prefs, systemNotifications: false }, locale);
       await refreshDeviceState();
       return;
     }
-    const state = await requestNotificationPermission();
-    setPermission(state);
-    const nextPrefs = { ...prefs, systemNotifications: state === 'granted' };
-    update({ systemNotifications: state === 'granted' });
-    if (state === 'granted') {
-      await ensurePushSubscriptionFromUserGesture(locale);
-    }
-    await syncPushPrefsToServer(nextPrefs, locale);
-    await refreshDeviceState();
+    await enablePushChannel('systemNotifications');
   };
 
   const masterOn = isNotificationMasterEnabled(prefs);

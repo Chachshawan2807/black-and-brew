@@ -69,9 +69,9 @@ export function formatPushRegistrationError(code: string, isTh: boolean): string
 }
 
 /** Debounce window merges resume / focus / pageshow bursts on mobile. */
-const MAINTENANCE_DEBOUNCE_MS = 400;
+const MAINTENANCE_DEBOUNCE_MS = 120;
 /** Retry when Supabase session is not ready yet after PIN unlock. */
-const MAINTENANCE_RETRY_MS = [0, 800, 2_000] as const;
+const MAINTENANCE_RETRY_MS = [0, 350, 1_200] as const;
 
 let maintenanceTimer: ReturnType<typeof setTimeout> | null = null;
 let maintenanceGeneration = 0;
@@ -102,13 +102,31 @@ async function runPushSubscriptionMaintenance(locale: string): Promise<void> {
  * Call on app resume, PIN auth, and preference changes so mobile PWAs
  * recover after OS sleep or expired browser push endpoints.
  */
-export function schedulePushSubscriptionMaintenance(locale: string): void {
+export function schedulePushSubscriptionMaintenance(
+  locale: string,
+  options?: { immediate?: boolean },
+): void {
   if (typeof window === 'undefined') return;
+  if (options?.immediate) {
+    if (maintenanceTimer) clearTimeout(maintenanceTimer);
+    maintenanceTimer = null;
+    void runPushSubscriptionMaintenance(locale);
+    return;
+  }
   if (maintenanceTimer) clearTimeout(maintenanceTimer);
   maintenanceTimer = setTimeout(() => {
     maintenanceTimer = null;
     void runPushSubscriptionMaintenance(locale);
   }, MAINTENANCE_DEBOUNCE_MS);
+}
+
+/** Start SW + session work before a user-gesture subscribe (Settings, iOS banner). */
+export function warmPushRegistrationStack(): void {
+  if (typeof window === 'undefined') return;
+  const prefs = loadNotificationPreferences();
+  if (!wantsPushRegistration(prefs)) return;
+  void ensurePushServiceWorkerReady().catch(() => undefined);
+  void ensureSupabaseSession().catch(() => undefined);
 }
 
 /** True after the server acknowledged this device's push endpoint. */
@@ -339,9 +357,10 @@ export async function ensurePushSubscription(
   const fromUserGesture = options.fromUserGesture === true;
   const registrationPromise = ensurePushServiceWorkerReady();
   const sessionPromise = ensureSupabaseSession();
+  const permissionPromise = ensureNotificationPermissionGranted();
 
   try {
-    if (!(await ensureNotificationPermissionGranted())) {
+    if (!(await permissionPromise)) {
       setPushRegistrationError('permission_denied');
       return false;
     }
@@ -476,6 +495,10 @@ export async function refreshPushSubscriptionState(locale: string): Promise<void
     const subscription = await registration.pushManager.getSubscription();
     localPushSubscription = subscription;
     if (subscription) {
+      if (serverPushRegistrationConfirmed) {
+        setPushRegistrationError(null);
+        return;
+      }
       await syncExistingSubscriptionToServer(subscription, prefs, locale);
     } else if (!requiresUserGestureForPushSubscribe()) {
       await ensurePushSubscription(locale);

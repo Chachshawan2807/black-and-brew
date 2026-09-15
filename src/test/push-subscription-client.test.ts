@@ -153,8 +153,29 @@ describe('push-subscription-client', () => {
       resolve(__dirname, '../lib/push-subscription-client.ts'),
       'utf8',
     );
-    expect(source).toContain('MAINTENANCE_DEBOUNCE_MS = 400');
-    expect(source).toContain('MAINTENANCE_RETRY_MS = [0, 800, 2_000]');
+    expect(source).toContain('MAINTENANCE_DEBOUNCE_MS = 120');
+    expect(source).toContain('MAINTENANCE_RETRY_MS = [0, 350, 1_200]');
+  });
+
+  test('ensurePushSubscription requests permission in parallel with SW and session', () => {
+    const source = readFileSync(
+      resolve(__dirname, '../lib/push-subscription-client.ts'),
+      'utf8',
+    );
+    expect(source).toContain('const permissionPromise = ensureNotificationPermissionGranted()');
+    expect(source).toMatch(
+      /const registrationPromise = ensurePushServiceWorkerReady\(\)[\s\S]*const permissionPromise = ensureNotificationPermissionGranted\(\)/,
+    );
+  });
+
+  test('warmPushRegistrationStack preloads service worker and session', () => {
+    const source = readFileSync(
+      resolve(__dirname, '../lib/push-subscription-client.ts'),
+      'utf8',
+    );
+    expect(source).toContain('export function warmPushRegistrationStack');
+    expect(source).toMatch(/warmPushRegistrationStack[\s\S]*ensurePushServiceWorkerReady/);
+    expect(source).toMatch(/warmPushRegistrationStack[\s\S]*ensureSupabaseSession/);
   });
 
   test('refresh skips server verify when registration is already confirmed', () => {
@@ -171,7 +192,9 @@ describe('push-subscription-client', () => {
       'utf8',
     );
     expect(source).toContain('refreshPushSubscriptionState(locale)');
-    expect(source).toContain('schedulePushSubscriptionMaintenance(locale)');
+    expect(source).toContain('schedulePushSubscriptionMaintenance(locale, { immediate: true })');
+    expect(source).toContain('warmPushRegistrationStack');
+    expect(source).toContain('skipNextAutomaticPrefsSyncRef');
   });
 
   test('refreshPushSubscriptionState gates on wantsPushRegistration only not inventory enabled', () => {

@@ -26,9 +26,11 @@ describe('PWA navigation performance patterns', () => {
     expect(preload).toContain("COMMON_ROUTE_KEYS = ['inventory', 'schedule', 'dashboard']");
   });
 
-  test('layout mounts idle route prefetch without blocking shell', () => {
+  test('AppShell mounts idle route prefetch without blocking shell', () => {
     const layout = readFileSync(resolve(ROOT, 'src/app/[locale]/layout.tsx'), 'utf-8');
-    expect(layout).toContain('RoutePrefetchOnIdle');
+    const appShell = readFileSync(resolve(ROOT, 'src/components/shell/AppShell.tsx'), 'utf-8');
+    expect(layout).toContain('AppShellLoader');
+    expect(appShell).toContain('RoutePrefetchOnIdle');
     expect(layout).toContain('RouteLoadingSkeleton');
   });
 
@@ -49,7 +51,9 @@ describe('PWA navigation performance patterns', () => {
     const pwa = readFileSync(resolve(ROOT, 'src/components/PwaRegister.tsx'), 'utf-8');
     expect(pwa).toContain('scheduleIdleWork');
     expect(pwa).not.toContain('setTimeout(() => {');
-    expect(pwa).toContain('{ timeout: 500 }');
+    expect(pwa).toContain('{ timeout: 150 }');
+    expect(pwa).toContain('warmPushRegistrationStack');
+    expect(pwa).toContain('ensurePushServiceWorkerReady');
   });
 
   test('push registration proactively ensures service worker readiness', () => {
