@@ -86,6 +86,6 @@ Use with `AGENTS.md` + `docs/rules.md`.
 | --- | --- | --- |
 | Hallmark audit | UI ดู generic / AI-generated | `hallmark audit <file>` punch list only; read `.cursor/skills/hallmark-erp/SKILL.md` first |
 | Hallmark study | อยากดึง DNA จาก reference | `hallmark study <URL\|screenshot>` diagnosis only; ไม่ rebuild ERP core |
-| ERP UI improvements | ปรับหน้า inventory/schedule/dashboard | ใช้ `web-design-guidelines` + `impeccable critique` **ไม่ใช้** Hallmark default/redesign |
+| ERP UI improvements | ปรับหน้า inventory/schedule/dashboard | `npm run skill:run design-review` แล้วทำ 3 ขั้นใน `docs/design.md` §14 **ไม่ใช้** Hallmark default/redesign |
 
 Off-limits for Hallmark build/redesign: `inventory/`, `schedule/`, `dashboard/`, `settings/`, spreadsheet grids, pastel shift cards. Update upstream: `npx skills add nutlope/hallmark -y`.

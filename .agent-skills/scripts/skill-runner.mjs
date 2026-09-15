@@ -95,7 +95,7 @@ function cmdRun(registry, skillId, extraArgs) {
 
 const [command, skillId, ...rest] = process.argv.slice(2);
 const dashIndex = rest.indexOf('--');
-const extraArgs = dashIndex >= 0 ? rest.slice(dashIndex + 1) : [];
+const extraArgs = dashIndex >= 0 ? rest.slice(dashIndex + 1) : rest;
 
 const registry = loadRegistry();
 

@@ -179,7 +179,7 @@ export function NotificationPanel() {
               )}
               role="dialog"
               aria-modal="true"
-              aria-label={isTh ? 'การแจ้งเตือน' : 'Notifications'}
+              aria-labelledby="notification-panel-title"
             >
               <header className="flex items-center justify-between gap-3 px-4 py-3.5 border-b border-border shrink-0 bg-card/60 backdrop-blur-sm">
                 <div className="flex items-center gap-3 min-w-0">
@@ -194,7 +194,10 @@ export function NotificationPanel() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <h2 className="text-[15px] font-normal text-foreground leading-snug truncate">
+                      <h2
+                        id="notification-panel-title"
+                        className="text-[15px] font-normal text-foreground leading-snug truncate text-pretty"
+                      >
                         {isTh ? 'การแจ้งเตือน' : 'Notifications'}
                       </h2>
                       {unreadCount > 0 && (
@@ -208,27 +211,27 @@ export function NotificationPanel() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-0.5 shrink-0 rounded-2xl bg-muted/40 p-0.5">
+                <div className="flex items-center gap-1 shrink-0 rounded-2xl bg-muted/40 p-0.5">
                   {notifications.length > 0 && (
                     <>
                       <HintTooltip tip={isTh ? 'อ่านทั้งหมด' : 'Mark all read'}>
                         <button
                           type="button"
                           onClick={markAllRead}
-                          className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-background/80 bb-transition"
+                          className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-background/80 bb-transition touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
                           aria-label={isTh ? 'อ่านทั้งหมด' : 'Mark all read'}
                         >
-                          <CheckCheck size={17} strokeWidth={1.75} />
+                          <CheckCheck size={17} strokeWidth={1.75} aria-hidden />
                         </button>
                       </HintTooltip>
                       <HintTooltip tip={isTh ? 'ล้างประวัติ' : 'Clear history'}>
                         <button
                           type="button"
                           onClick={clearAll}
-                          className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-background/80 bb-transition"
+                          className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-background/80 bb-transition touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
                           aria-label={isTh ? 'ล้างประวัติ' : 'Clear history'}
                         >
-                          <Trash2 size={17} strokeWidth={1.75} />
+                          <Trash2 size={17} strokeWidth={1.75} aria-hidden />
                         </button>
                       </HintTooltip>
                     </>
@@ -237,10 +240,10 @@ export function NotificationPanel() {
                     <button
                       type="button"
                       onClick={closePanel}
-                      className="h-8 w-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-background/80 bb-transition"
+                      className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-background/80 bb-transition touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
                       aria-label={isTh ? 'ปิด' : 'Close'}
                     >
-                      <X size={18} strokeWidth={1.75} />
+                      <X size={18} strokeWidth={1.75} aria-hidden />
                     </button>
                   </HintTooltip>
                 </div>

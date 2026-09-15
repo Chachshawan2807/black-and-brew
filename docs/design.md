@@ -320,3 +320,23 @@ Design rules:
 - Editable inventory rows may use `.bb-inventory-row-containment` to isolate layout/paint work and progressively render long grids.
 - The containment class must not change spreadsheet behavior: inline inputs, blur/Enter save, realtime sync, mobile layout, and numeric display rules stay the same.
 - Modal-only inventory surfaces (`PurchaseOrdersModal`, `InventoryHistoryModal`) should stay dynamically loaded and may preload on hover/focus intent from quick-action buttons.
+
+---
+
+## 14. Agent UI review (3 skills)
+
+Use installed skills in this order before shipping UI changes. ERP rules in this file and `AGENTS.md` override upstream suggestions.
+
+| Step | Skill | Action |
+| --- | --- | --- |
+| 1 | `web-design-guidelines` | Fetch [command.md](https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md); report `file:line` |
+| 2 | `impeccable` | `critique` only (Operate mode); no `bolder` / `delight` on core routes |
+| 3 | `ui-ux-pro-max-erp` | `--domain ux` or `--stack nextjs` / `shadcn`; read overlay first |
+
+Terminal pre-scan:
+
+```bash
+npm run skill:run design-review -- --target src/path/to/Component.tsx
+```
+
+After notification UI: `npm run skill:run notification-smoke`.
