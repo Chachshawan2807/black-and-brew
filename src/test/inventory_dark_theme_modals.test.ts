@@ -9,8 +9,10 @@ describe('inventory modals dark theme readability', () => {
       'utf-8',
     );
 
-    expect(code).toContain('BB_CHIP_IDLE');
-    expect(code).toContain('BB_CHIP_SELECTED');
+    expect(code).toContain('BB_CHIP_IDLE_ON_PASTEL');
+    expect(code).toContain('BB_CHIP_SELECTED_ON_PASTEL');
+    expect(code).toContain('PO_ICON_BTN');
+    expect(code).toMatch(/PO_ICON_BTN[\s\S]*border-0[\s\S]*bg-transparent/);
   });
 
   it('purchase order export image keeps header on one line and clips rounded corners', () => {

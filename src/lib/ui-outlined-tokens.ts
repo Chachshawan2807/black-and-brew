@@ -93,6 +93,20 @@ export const BB_CHIP_SELECTED =
 export const BB_CHIP_IDLE =
   'border-border/80 bg-background/80 text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:border-border';
 
+/**
+ * Chips on bb-pastel-surface headers (e.g. purchase-order modal).
+ * Do not use theme surface tokens here: in dark mode they flip dark while text stays black.
+ */
+export const BB_CHIP_SELECTED_ON_PASTEL =
+  'border-black/80 bg-white text-black bb-shadow-sm ring-1 ring-black/10';
+
+export const BB_CHIP_IDLE_ON_PASTEL =
+  'border-black/20 bg-white/80 text-black/55 hover:bg-white hover:text-black hover:border-black/30';
+
+/** Icon-only control on bb-pastel-surface headers */
+export const BB_BTN_ICON_ON_PASTEL =
+  `inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center ${BB_RADIUS_SOFT} border border-black/20 bg-white/85 text-black/45 hover:text-black hover:bg-white hover:border-black/35 ${BB_BTN_MOTION}`;
+
 /** Count pill inside tabs/chips — readable on light and dark surfaces */
 export const BB_COUNT_BADGE_BASE =
   'inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-px text-[10px] tabular-nums leading-none';

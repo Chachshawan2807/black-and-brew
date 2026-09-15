@@ -19,7 +19,11 @@ import {
 import { formatPurchaseOrderListCopyText } from '@/lib/inventory-purchase-order-copy-text';
 import type { PurchaseOrderCandidate } from '@/lib/inventory-stock';
 import { InventoryModalPortal } from './InventoryModalPortal';
-import { BB_BTN_ICON, BB_CHIP_IDLE, BB_CHIP_SELECTED } from '@/lib/ui-outlined-tokens';
+import {
+  BB_BTN_MOTION,
+  BB_CHIP_IDLE_ON_PASTEL,
+  BB_CHIP_SELECTED_ON_PASTEL,
+} from '@/lib/ui-outlined-tokens';
 
 const PO_FILTER_CHIP =
   'shrink-0 px-2.5 py-1.5 sm:px-4 sm:py-2 text-[12px] sm:text-[14px] rounded-xl sm:rounded-2xl border bb-transition antialiased cursor-pointer font-normal whitespace-nowrap touch-manipulation';
@@ -27,9 +31,9 @@ const PO_FILTER_CHIP =
 const PO_FILTER_COUNT = 'text-muted-foreground text-[10px] sm:text-[12px] ml-1 tabular-nums font-normal';
 
 const PO_ICON_BTN = cn(
-  BB_BTN_ICON,
-  'max-sm:h-9 max-sm:w-9 max-sm:min-h-9 max-sm:min-w-9 max-sm:rounded-xl',
-  'text-black/40 hover:text-black',
+  'inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border-0 bg-transparent text-black/45 hover:text-black hover:bg-black/5',
+  BB_BTN_MOTION,
+  'max-sm:h-9 max-sm:w-9 max-sm:min-h-9 max-sm:min-w-9',
 );
 
 type CopyToast = {
@@ -163,8 +167,8 @@ export default function PurchaseOrdersModal({
                 className={cn(
                   PO_FILTER_CHIP,
                   selectedChannels.includes('all')
-                    ? BB_CHIP_SELECTED
-                    : BB_CHIP_IDLE,
+                    ? BB_CHIP_SELECTED_ON_PASTEL
+                    : BB_CHIP_IDLE_ON_PASTEL,
                 )}
               >
                 ทั้งหมด{' '}
@@ -192,8 +196,8 @@ export default function PurchaseOrdersModal({
                     className={cn(
                       PO_FILTER_CHIP,
                       isActive
-                        ? BB_CHIP_SELECTED
-                        : BB_CHIP_IDLE,
+                        ? BB_CHIP_SELECTED_ON_PASTEL
+                        : BB_CHIP_IDLE_ON_PASTEL,
                     )}
                   >
                     {source}{' '}
