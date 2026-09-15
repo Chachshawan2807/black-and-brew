@@ -52,7 +52,18 @@ function redirectEnglishPathToThai(request: NextRequest): NextResponse | null {
   return null;
 }
 
+/** Cron and webhooks must stay at `/api/*` (no `/th` prefix). */
+function passThroughApiRoutes(request: NextRequest): NextResponse | null {
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+  return null;
+}
+
 export default function proxy(request: NextRequest) {
+  const apiPassthrough = passThroughApiRoutes(request);
+  if (apiPassthrough) return apiPassthrough;
+
   const assetRewrite = rewriteLocalePrefixedPublicAsset(request);
   if (assetRewrite) return assetRewrite;
 

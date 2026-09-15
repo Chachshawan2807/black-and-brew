@@ -53,6 +53,16 @@ describe('locale routing (Thai-first ERP)', () => {
     expect(code).toContain("'/manifest.webmanifest'");
   });
 
+  test('proxy passes through /api routes without locale redirect (cron-job.org)', () => {
+    const code = fs.readFileSync(
+      path.resolve(__dirname, '../proxy.ts'),
+      'utf-8',
+    );
+    expect(code).toContain('passThroughApiRoutes');
+    expect(code).toMatch(/pathname\.startsWith\('\/api\/'\)/);
+    expect(code).toMatch(/passThroughApiRoutes\(request\)/);
+  });
+
   test('dev script uses webpack to avoid Turbopack /[locale] 404 in local dev', () => {
     const pkg = JSON.parse(
       fs.readFileSync(
