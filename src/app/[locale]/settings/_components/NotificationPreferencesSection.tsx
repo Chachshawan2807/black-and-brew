@@ -18,6 +18,7 @@ import {
   ensurePushSubscriptionFromUserGesture,
   formatPushRegistrationError,
   getLastPushRegistrationError,
+  getLastPushRegistrationDetail,
   hasLocalPushSubscription,
   hasServerPushRegistration,
   reconcileDevicePushRegistration,
@@ -100,12 +101,12 @@ export default function NotificationPreferencesSection({
   const skipNextAutomaticPrefsSyncRef = useRef(false);
   const wantsPush = wantsPushRegistration(prefs);
 
-  const refreshDeviceState = useCallback(async () => {
+  const refreshDeviceState = useCallback(async (options?: { fromUserGesture?: boolean }) => {
     const permissionState = getNotificationPermissionState();
     setPermission(permissionState);
 
     if (wantsPushRegistration(prefs) && permissionState === 'granted') {
-      setDevicePushState(await reconcileDevicePushRegistration(locale));
+      setDevicePushState(await reconcileDevicePushRegistration(locale, options));
     } else {
       await refreshLocalPushSubscriptionState();
       const hasLocal = hasLocalPushSubscription();
@@ -184,12 +185,14 @@ export default function NotificationPreferencesSection({
       warmPushRegistrationStack();
       const ok = await ensurePushSubscriptionFromUserGesture(locale);
       setPermission(getNotificationPermissionState());
-      await refreshDeviceState();
-      if (!ok) {
+      await refreshDeviceState({ fromUserGesture: true });
+      if (!ok && !hasServerPushRegistration()) {
         const err = getLastPushRegistrationError();
-        setRegisterError(
-          err ? formatPushRegistrationError(err, isTh) : formatPushRegistrationError('ensure_failed', isTh),
-        );
+        const detail = getLastPushRegistrationDetail();
+        const formatted = err
+          ? formatPushRegistrationError(err, isTh)
+          : formatPushRegistrationError('ensure_failed', isTh);
+        setRegisterError(detail ? `${formatted} (${detail})` : formatted);
         return false;
       }
 

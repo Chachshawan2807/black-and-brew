@@ -1,8 +1,13 @@
 import { describe, expect, test } from 'vitest';
-import { classifyPushRegistrationError, shouldReplaceLocalPushSubscription } from '@/lib/push-registration-errors';
+import {
+  classifyPushRegistrationError,
+  isRetryablePushRegisterError,
+  shouldReplaceLocalPushSubscription,
+} from '@/lib/push-registration-errors';
 import {
   applicationServerKeysMatch,
   urlBase64ToUint8Array,
+  vapidApplicationServerKeyCandidates,
   vapidPublicKeyToApplicationServerKey,
 } from '@/lib/vapid-public-key';
 
@@ -22,12 +27,11 @@ describe('classifyPushRegistrationError', () => {
     ).toBe('gesture_required');
   });
 
-  test('maps invalid VAPID applicationServerKey errors', () => {
+  test('maps Chrome overload-resolution failures to vapid_key_invalid', () => {
     expect(
       classifyPushRegistrationError(
-        new DOMException(
-          "Failed to execute 'subscribe' on 'PushManager': The provided applicationServerKey is not valid.",
-          'InvalidAccessError',
+        new TypeError(
+          "Failed to execute 'subscribe' on 'PushManager': Overload resolution failed.",
         ),
       ),
     ).toBe('vapid_key_invalid');
@@ -40,22 +44,49 @@ describe('classifyPushRegistrationError', () => {
       ),
     ).toBe('push_unavailable');
   });
+
+  test('maps stale PWA Server Action and network failures to server_unreachable', () => {
+    expect(
+      classifyPushRegistrationError(new Error('Failed to find Server Action "xyz"')),
+    ).toBe('server_unreachable');
+    expect(classifyPushRegistrationError(new TypeError('Failed to fetch'))).toBe(
+      'server_unreachable',
+    );
+    expect(classifyPushRegistrationError(new TypeError('Load failed'))).toBe('server_unreachable');
+  });
 });
 
 describe('shouldReplaceLocalPushSubscription', () => {
-  test('drops only endpoints the server confirmed are gone', () => {
-    expect(shouldReplaceLocalPushSubscription('missing')).toBe(true);
+  test('never drops a local endpoint after a retryable register failure', () => {
+    expect(shouldReplaceLocalPushSubscription('missing')).toBe(false);
     expect(shouldReplaceLocalPushSubscription('registered')).toBe(false);
     expect(shouldReplaceLocalPushSubscription('unauthorized')).toBe(false);
     expect(shouldReplaceLocalPushSubscription('error')).toBe(false);
   });
+
+  test('session and transport errors stay retryable so Settings can upsert again', () => {
+    expect(isRetryablePushRegisterError('supabase_session_missing')).toBe(true);
+    expect(isRetryablePushRegisterError('pin_session_required')).toBe(true);
+    expect(isRetryablePushRegisterError('server_unreachable')).toBe(true);
+    expect(isRetryablePushRegisterError('invalid_subscription')).toBe(false);
+  });
 });
 
 describe('vapidPublicKeyToApplicationServerKey', () => {
-  test('copies a 65-byte uncompressed P-256 key into a standalone ArrayBuffer', () => {
+  test('copies a 65-byte uncompressed P-256 key into a standalone Uint8Array for Chrome', () => {
     const key = vapidPublicKeyToApplicationServerKey(`  ${VALID_VAPID}  `);
+    expect(key).toBeInstanceOf(Uint8Array);
     expect(key.byteLength).toBe(65);
-    expect(new Uint8Array(key)[0]).toBe(0x04);
+    expect(key.byteOffset).toBe(0);
+    expect(key[0]).toBe(0x04);
+  });
+
+  test('exposes Uint8Array then detached ArrayBuffer candidates for Chrome Android subscribe', () => {
+    const [bytes, buffer] = vapidApplicationServerKeyCandidates(VALID_VAPID);
+    expect(bytes).toBeInstanceOf(Uint8Array);
+    expect(bytes.byteLength).toBe(65);
+    expect(buffer).toBeInstanceOf(ArrayBuffer);
+    expect(buffer.byteLength).toBe(65);
   });
 
   test('rejects keys that are not uncompressed P-256', () => {

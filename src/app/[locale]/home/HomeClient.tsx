@@ -41,6 +41,7 @@ import {
   preloadSecretaryTaskOverlayShell,
 } from '@/lib/secretary/preload-secretary-overlay';
 import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
+import { writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/home-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
@@ -128,9 +129,11 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
   }, [board.tasks, workDateIso]);
 
   useEffect(() => {
-    return scheduleIdleWork(() => {
-      requestHomeBoardFullSync();
-    }, { timeout: 800 });
+    writeCachedSecretaryBoard(board);
+  }, [board]);
+
+  useEffect(() => {
+    requestHomeBoardFullSync();
   }, []);
 
   const visibility = { workDateIso };

@@ -22,17 +22,28 @@ export function bufferSourceToUint8Array(key: BufferSource): Uint8Array {
 }
 
 /**
- * Chrome Android rejects some Uint8Array views. Copy into a standalone ArrayBuffer
- * of exactly 65 bytes (uncompressed P-256).
+ * Chrome Android expects a Uint8Array of exactly 65 bytes (uncompressed P-256).
+ * Copy so the view is not a slice of a larger buffer.
  */
-export function vapidPublicKeyToApplicationServerKey(raw: string): ArrayBuffer {
+export function vapidPublicKeyToApplicationServerKey(raw: string): Uint8Array {
   const bytes = urlBase64ToUint8Array(raw);
   if (bytes.byteLength !== UNCOMPRESSED_P256_LENGTH) {
     throw new Error('vapid_key_invalid');
   }
-  const copy = new ArrayBuffer(bytes.byteLength);
-  new Uint8Array(copy).set(bytes);
-  return copy;
+  return new Uint8Array(bytes);
+}
+
+/**
+ * Chrome Android historically rejected ArrayBuffer, then some builds rejected Uint8Array.
+ * Try a copied Uint8Array first, then a detached ArrayBuffer of the same 65 bytes.
+ */
+export function vapidApplicationServerKeyCandidates(raw: string): [Uint8Array, ArrayBuffer] {
+  const bytes = vapidPublicKeyToApplicationServerKey(raw);
+  const buffer = bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength,
+  );
+  return [bytes, buffer];
 }
 
 export function applicationServerKeysMatch(

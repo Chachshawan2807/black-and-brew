@@ -59,6 +59,7 @@ describe('push-subscription-client', () => {
     expect(formatPushRegistrationError('gesture_required', true)).toContain('กดปุ่ม');
     expect(formatPushRegistrationError('gesture_required', false)).toContain('Register');
     expect(formatPushRegistrationError('ensure_failed', true)).toContain('ลองใหม่');
+    expect(formatPushRegistrationError('server_unreachable', true)).toContain('อินเน็ต');
   });
 
   test('shouldDeferOsNotificationToPush defers when Android push is active in background', () => {
@@ -179,7 +180,9 @@ describe('push-subscription-client', () => {
     expect(source).toContain('ensureQueue');
     expect(source).toContain('subscribePushManager');
     expect(source).toContain('dropLocalPushSubscription');
-    expect(source).toContain('vapidPublicKeyToApplicationServerKey');
+    expect(source).toContain('vapidApplicationServerKeyCandidates');
+    expect(source).toContain("fetch('/api/push/register'");
+    expect(source).toContain('registerPushSubscription');
     expect(source).toContain('classifyPushRegistrationError');
     expect(source).toMatch(
       /const registrationPromise = ensurePushServiceWorkerReady\(\)[\s\S]*const permissionPromise = ensureNotificationPermissionGranted\(\)/,
@@ -205,7 +208,10 @@ describe('push-subscription-client', () => {
     expect(source).toMatch(
       /reconcileDevicePushRegistration[\s\S]*verifyServerPushRegistration\(subscription\.endpoint\)/,
     );
-    expect(source).toContain('shouldReplaceLocalPushSubscription');
+    expect(source).toContain('isRetryablePushRegisterError');
+    expect(source).not.toMatch(
+      /if \(existing\)[\s\S]*await dropLocalPushSubscription\(existing\);\s*existing = null;[\s\S]*subscribePushManager/,
+    );
   });
 
   test('settings auto-reconciles push with server on load not local-only refresh', () => {
@@ -213,11 +219,12 @@ describe('push-subscription-client', () => {
       resolve(__dirname, '../app/[locale]/settings/_components/NotificationPreferencesSection.tsx'),
       'utf8',
     );
-    expect(source).toContain('reconcileDevicePushRegistration(locale)');
+    expect(source).toContain('reconcileDevicePushRegistration(locale, options)');
     expect(source).toContain('schedulePushSubscriptionMaintenance(locale, { immediate: true })');
     expect(source).toContain('warmPushRegistrationStack');
     expect(source).toContain('skipNextAutomaticPrefsSyncRef');
-    expect(source).toContain('showRegisterButton');
+    expect(source).toContain('refreshDeviceState({ fromUserGesture: true })');
+    expect(source).toContain('getLastPushRegistrationDetail');
     expect(source).not.toContain('showIosRegister');
   });
 

@@ -65,14 +65,11 @@ function mapRow(row: Record<string, unknown>): SecretaryTask {
   };
 }
 
-export async function fetchSecretaryTasks(dateIso: string): Promise<{
+async function querySecretaryTasks(dateIso: string): Promise<{
   success: boolean;
   tasks?: SecretaryTask[];
   error?: string;
 }> {
-  const authError = await requireReadAccess();
-  if (authError) return { success: false, error: authError };
-
   try {
     const { data, error } = await getSupabaseAdmin()
       .from('operational_tasks')
@@ -100,6 +97,16 @@ export async function fetchSecretaryTasks(dateIso: string): Promise<{
     console.error('[fetchSecretaryTasks]', message);
     return { success: false, error: message };
   }
+}
+
+export async function fetchSecretaryTasks(dateIso: string): Promise<{
+  success: boolean;
+  tasks?: SecretaryTask[];
+  error?: string;
+}> {
+  const authError = await requireReadAccess();
+  if (authError) return { success: false, error: authError };
+  return querySecretaryTasks(dateIso);
 }
 
 export async function countPendingSecretaryTasks(dateIso: string): Promise<number> {
@@ -586,7 +593,7 @@ export async function loadSecretaryBoard(opts?: {
 
   try {
     if (deferDerivedSync) {
-      const tasksResult = await fetchSecretaryTasks(dateIso);
+      const tasksResult = await querySecretaryTasks(dateIso);
       if (!tasksResult.success || !tasksResult.tasks) {
         return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
       }

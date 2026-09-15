@@ -1,8 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getAuthSessionInfo } from '@/app/actions/auth';
 import { loadSecretaryBoard, type SecretaryBoard } from '@/app/actions/home-actions';
+import {
+  readCachedSecretaryBoard,
+  writeCachedSecretaryBoard,
+} from '@/lib/secretary/home-board-cache';
 import HomeClient from '../HomeClient';
 import { HomePageLoadingSkeleton } from './HomePageLoadingSkeleton';
 
@@ -13,27 +16,37 @@ type HomeClientAuthBootstrapProps = {
   locale: string;
 };
 
+function isUnauthorizedBoardError(error?: string): boolean {
+  if (!error) return true;
+  return error.toLowerCase().includes('unauthorized');
+}
+
 /** Loads home board on the client when RSC auth cookies are not ready yet (common on PWA resume). */
 export function HomeClientAuthBootstrap({ locale }: HomeClientAuthBootstrapProps) {
   const [board, setBoard] = useState<SecretaryBoard | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const loadInFlightRef = useRef(false);
+  const boardRef = useRef(board);
+  boardRef.current = board;
 
   const tryLoadBoard = useCallback(async () => {
-    if (loadInFlightRef.current || board) return;
+    if (loadInFlightRef.current) return;
     loadInFlightRef.current = true;
     setLoadError(null);
 
     try {
       for (let attempt = 0; attempt < SESSION_POLL_MAX_ATTEMPTS; attempt += 1) {
-        const session = await getAuthSessionInfo();
-        if (session.verified) {
-          const result = await loadSecretaryBoard({ locale });
-          if (result.success && result.board) {
-            setBoard(result.board);
-            return;
+        const result = await loadSecretaryBoard({ locale });
+        if (result.success && result.board) {
+          writeCachedSecretaryBoard(result.board);
+          setBoard(result.board);
+          return;
+        }
+
+        if (!isUnauthorizedBoardError(result.error)) {
+          if (!boardRef.current) {
+            setLoadError(result.error ?? 'ไม่สามารถโหลดงานได้');
           }
-          setLoadError(result.error ?? 'ไม่สามารถโหลดงานได้');
           return;
         }
 
@@ -41,17 +54,26 @@ export function HomeClientAuthBootstrap({ locale }: HomeClientAuthBootstrapProps
           await new Promise((resolve) => setTimeout(resolve, SESSION_POLL_MS));
         }
       }
+
+      if (!boardRef.current) {
+        setLoadError('ไม่สามารถโหลดงานได้');
+      }
     } catch (error) {
+      if (boardRef.current) return;
       const message = error instanceof Error ? error.message : 'ไม่สามารถโหลดงานได้';
       setLoadError(message);
     } finally {
       loadInFlightRef.current = false;
     }
-  }, [board, locale]);
+  }, [locale]);
 
   useEffect(() => {
+    const cached = readCachedSecretaryBoard(locale);
+    if (cached) {
+      setBoard(cached);
+    }
     void tryLoadBoard();
-  }, [tryLoadBoard]);
+  }, [locale, tryLoadBoard]);
 
   useEffect(() => {
     const onAuthenticated = () => {

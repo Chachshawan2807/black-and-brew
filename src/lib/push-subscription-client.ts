@@ -12,16 +12,24 @@ import {
   registerPushSubscription,
   unregisterPushSubscription,
 } from '@/app/actions/push-actions';
-import { ensureSupabaseSession, getSupabaseAccessToken } from '@/lib/supabase-session';
+import {
+  ensureSupabaseSession,
+  getSupabaseAccessToken,
+  refreshSupabaseAccessToken,
+} from '@/lib/supabase-session';
 import {
   extractPushSubscriptionPayload,
   type PushSubscriptionRegisterPayload,
 } from '@/lib/push-subscription-payload';
 import { verifyDevicePushRegistration } from '@/app/actions/push-actions';
 import { ensurePushServiceWorkerReady } from '@/lib/pwa-update';
-import { classifyPushRegistrationError, shouldReplaceLocalPushSubscription } from '@/lib/push-registration-errors';
+import {
+  classifyPushRegistrationError,
+  isRetryablePushRegisterError,
+} from '@/lib/push-registration-errors';
 import {
   applicationServerKeysMatch,
+  vapidApplicationServerKeyCandidates,
   vapidPublicKeyToApplicationServerKey,
 } from '@/lib/vapid-public-key';
 
@@ -30,6 +38,7 @@ export { urlBase64ToUint8Array } from '@/lib/vapid-public-key';
 let localPushSubscription: PushSubscription | null = null;
 let serverPushRegistrationConfirmed = false;
 let lastPushRegistrationError: string | null = null;
+let lastPushRegistrationDetail: string | null = null;
 
 /** iOS / iPadOS Web Push requires a user gesture to create a new subscription. */
 export function requiresUserGestureForPushSubscribe(
@@ -40,6 +49,10 @@ export function requiresUserGestureForPushSubscribe(
 
 export function getLastPushRegistrationError(): string | null {
   return lastPushRegistrationError;
+}
+
+export function getLastPushRegistrationDetail(): string | null {
+  return lastPushRegistrationDetail;
 }
 
 export function formatPushRegistrationError(code: string, isTh: boolean): string {
@@ -75,6 +88,10 @@ export function formatPushRegistrationError(code: string, isTh: boolean): string
     vapid_key_invalid: {
       th: 'คีย์การแจ้งเตือนของเซิร์ฟเวอร์ไม่ถูกต้อง ติดต่อผู้ดูแลระบบ',
       en: 'Server push key is invalid contact an administrator',
+    },
+    server_unreachable: {
+      th: 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ ตรวจอินเน็ตแล้วกดลงทะเบียนอีกครั้ง',
+      en: 'Could not reach the server check the network and tap Register again',
     },
     ensure_failed: {
       th: 'ลงทะเบียนไม่สำเร็จ กดปุ่มด้านล่างเพื่อลองใหม่',
@@ -362,8 +379,19 @@ export function shouldDeferOsNotificationToPush(
   return hasServerRegistration === true;
 }
 
-function setPushRegistrationError(code: string | null): void {
+function setPushRegistrationError(code: string | null, detail?: unknown): void {
   lastPushRegistrationError = code;
+  if (!code) {
+    lastPushRegistrationDetail = null;
+    return;
+  }
+  if (detail instanceof Error) {
+    lastPushRegistrationDetail = `${detail.name}: ${detail.message}`.slice(0, 160);
+  } else if (typeof detail === 'string' && detail.trim()) {
+    lastPushRegistrationDetail = detail.trim().slice(0, 160);
+  } else {
+    lastPushRegistrationDetail = null;
+  }
 }
 
 function markServerRegistrationConfirmed(subscription: PushSubscription | null): void {
@@ -383,6 +411,60 @@ async function ensureNotificationPermissionGranted(): Promise<boolean> {
   return result === 'granted';
 }
 
+type PushRegisterInput = {
+  accessToken: string;
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  clientSessionId: string;
+  prefs: NotificationPreferences;
+  locale: string;
+  userAgent: string;
+};
+
+type PushRegisterTransportResult = { success: true } | { success: false; error: string };
+
+async function registerPushSubscriptionViaHttp(
+  input: PushRegisterInput,
+): Promise<PushRegisterTransportResult> {
+  const response = await fetch('/api/push/register', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  const json = (await response.json().catch(() => null)) as PushRegisterTransportResult | null;
+  if (json && typeof json.success === 'boolean') {
+    return json;
+  }
+  return {
+    success: false,
+    error: classifyPushRegistrationError(new Error(`http_${response.status}`)),
+  };
+}
+
+async function registerPushSubscriptionOnServer(
+  input: PushRegisterInput,
+): Promise<PushRegisterTransportResult> {
+  const viaAction = await registerPushSubscription(input).catch((error: unknown) => {
+    logPushClientIssue('server register threw', error);
+    return {
+      success: false as const,
+      error: classifyPushRegistrationError(error),
+    };
+  });
+  if (viaAction.success) return viaAction;
+  if (!isRetryablePushRegisterError(viaAction.error) && viaAction.error !== 'ensure_failed') {
+    return viaAction;
+  }
+
+  try {
+    return await registerPushSubscriptionViaHttp(input);
+  } catch (error) {
+    logPushClientIssue('http register threw', error);
+    return { success: false, error: classifyPushRegistrationError(error) };
+  }
+}
+
 async function registerSubscriptionWithServer(
   subscription: PushSubscription,
   accessToken: string,
@@ -395,14 +477,22 @@ async function registerSubscriptionWithServer(
     return false;
   }
 
-  const result = await registerPushSubscription({
+  const input: PushRegisterInput = {
     accessToken,
     ...payload,
     clientSessionId: getClientSessionId(),
     prefs,
     locale,
     userAgent: navigator.userAgent,
-  });
+  };
+
+  let result = await registerPushSubscriptionOnServer(input);
+  if (!result.success && result.error === 'supabase_session_missing') {
+    const freshToken = await refreshSupabaseAccessToken();
+    if (freshToken && freshToken !== accessToken) {
+      result = await registerPushSubscriptionOnServer({ ...input, accessToken: freshToken });
+    }
+  }
 
   if (result.success) {
     markServerRegistrationConfirmed(subscription);
@@ -452,17 +542,33 @@ async function subscribePushManager(
   registration: ServiceWorkerRegistration,
   vapidKey: string,
 ): Promise<PushSubscription> {
-  const applicationServerKey = vapidPublicKeyToApplicationServerKey(vapidKey);
-  try {
-    return await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey,
-    });
-  } catch (error) {
-    const recovered = await recoverLocalPushSubscription(registration);
-    if (recovered) return recovered;
-    throw error;
+  const active =
+    registration.active && registration.pushManager
+      ? registration
+      : await navigator.serviceWorker.ready;
+  const recoveredFirst = await recoverLocalPushSubscription(active);
+  if (recoveredFirst) return recoveredFirst;
+
+  const keys = vapidApplicationServerKeyCandidates(vapidKey);
+  let firstError: unknown;
+  for (const applicationServerKey of keys) {
+    try {
+      return await active.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey,
+      });
+    } catch (error) {
+      firstError = error;
+      const recovered = await recoverLocalPushSubscription(active);
+      if (recovered) return recovered;
+      if (classifyPushRegistrationError(error) === 'subscribe_in_progress') {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        const afterWait = await recoverLocalPushSubscription(active);
+        if (afterWait) return afterWait;
+      }
+    }
   }
+  throw firstError instanceof Error ? firstError : new Error('subscribe_failed');
 }
 
 async function ensurePushSubscriptionUnqueued(
@@ -539,13 +645,20 @@ async function ensurePushSubscriptionUnqueued(
         setPushRegistrationError(null);
         return true;
       }
-      if (!shouldReplaceLocalPushSubscription(status)) {
-        setPushRegistrationError(status === 'unauthorized' ? 'pin_session_required' : 'server_not_registered');
+      if (status === 'unauthorized') {
+        setPushRegistrationError('pin_session_required');
         localPushSubscription = existing;
         return false;
       }
-      await dropLocalPushSubscription(existing);
-      existing = null;
+
+      const synced = await registerSubscriptionWithServer(existing, accessToken, prefs, locale);
+      if (synced) return true;
+
+      localPushSubscription = existing;
+      if (!getLastPushRegistrationError()) {
+        setPushRegistrationError('server_not_registered');
+      }
+      return false;
     }
 
     const subscription = existing ?? (await subscribePushManager(registration, vapidKey));
@@ -556,7 +669,7 @@ async function ensurePushSubscriptionUnqueued(
       setPushRegistrationError(null);
       return true;
     }
-    setPushRegistrationError(classifyPushRegistrationError(error));
+    setPushRegistrationError(classifyPushRegistrationError(error), error);
     logPushClientIssue('ensure failed', error);
     return false;
   }
@@ -696,13 +809,21 @@ export async function reconcileDevicePushRegistration(
         return 'server';
       }
 
-      if (!shouldReplaceLocalPushSubscription(status)) {
-        setPushRegistrationError(status === 'unauthorized' ? 'pin_session_required' : 'server_not_registered');
+      if (status === 'unauthorized') {
+        setPushRegistrationError('pin_session_required');
         return 'local_only';
       }
 
-      await dropLocalPushSubscription(subscription);
-      localPushSubscription = null;
+      const synced = await syncExistingSubscriptionToServer(subscription, prefs, locale);
+      if (synced) {
+        setPushRegistrationError(null);
+        return 'server';
+      }
+
+      if (!getLastPushRegistrationError()) {
+        setPushRegistrationError('server_not_registered');
+      }
+      return 'local_only';
     }
 
     serverPushRegistrationConfirmed = false;

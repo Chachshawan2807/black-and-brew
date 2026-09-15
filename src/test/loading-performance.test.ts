@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 const schedulePagePath = resolve(__dirname, '../app/[locale]/schedule/page.tsx');
 const layoutPath = resolve(__dirname, '../app/[locale]/layout.tsx');
 const appShellPath = resolve(__dirname, '../components/shell/AppShell.tsx');
+const appShellLoaderPath = resolve(__dirname, '../components/shell/AppShellLoader.tsx');
 const holidaySyncPath = resolve(__dirname, '../lib/holiday-sync.ts');
 
 describe('loading performance patterns', () => {
@@ -20,7 +21,10 @@ describe('loading performance patterns', () => {
   test('root layout defers heavy shell; AppShell defers global overlays', () => {
     const layout = readFileSync(layoutPath, 'utf-8');
     const appShell = readFileSync(appShellPath, 'utf-8');
+    const loader = readFileSync(appShellLoaderPath, 'utf-8');
     expect(layout).toContain('AppShellLoader');
+    expect(loader).not.toContain('ssr: false');
+    expect(appShell).toContain("import PinGateway from '@/components/auth/PinGateway'");
     expect(layout).not.toContain('InventoryQuickActionWrapper');
     expect(layout).not.toContain('AIChatOverlay');
     expect(appShell).toContain('DeferredOverlays');

@@ -104,23 +104,23 @@ export type PushRegistrationResult =
 export async function registerPushSubscription(
   input: z.infer<typeof subscriptionSchema>
 ): Promise<PushRegistrationResult> {
-  const auth = await ensureServerSession();
-  if (!auth.ok) return { success: false, error: 'pin_session_required' };
-
-  const parsed = subscriptionSchema.safeParse(input);
-  if (!parsed.success) {
-    console.error('[registerPushSubscription] Invalid input:', parsed.error.flatten());
-    return { success: false, error: 'invalid_payload' };
-  }
-
-  const safe = parsed.data;
-  const userId = auth.userId ?? (await resolveUserId(safe.accessToken));
-  if (!userId) {
-    console.error('[registerPushSubscription] Missing Supabase user id');
-    return { success: false, error: 'supabase_session_missing' };
-  }
-
   try {
+    const auth = await ensureServerSession();
+    if (!auth.ok) return { success: false, error: 'pin_session_required' };
+
+    const parsed = subscriptionSchema.safeParse(input);
+    if (!parsed.success) {
+      console.error('[registerPushSubscription] Invalid input:', parsed.error.flatten());
+      return { success: false, error: 'invalid_payload' };
+    }
+
+    const safe = parsed.data;
+    const userId = auth.userId ?? (await resolveUserId(safe.accessToken));
+    if (!userId) {
+      console.error('[registerPushSubscription] Missing Supabase user id');
+      return { success: false, error: 'supabase_session_missing' };
+    }
+
     const supabase = createServiceRoleClient();
 
     const { error } = await supabase.from('push_subscriptions').upsert(

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const getSession = vi.fn();
+const refreshSession = vi.fn();
 const signInAnonymously = vi.fn();
 const signOut = vi.fn();
 
@@ -8,6 +9,7 @@ vi.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
       getSession,
+      refreshSession,
       signInAnonymously,
       signOut,
     },
@@ -18,6 +20,7 @@ describe('ensureSupabaseSession', () => {
   beforeEach(() => {
     vi.resetModules();
     getSession.mockReset();
+    refreshSession.mockReset();
     signInAnonymously.mockReset();
     signOut.mockReset();
   });
@@ -113,5 +116,58 @@ describe('ensureSupabaseSession', () => {
     expect(a).toBe('tok-abc');
     expect(b).toBe('tok-abc');
     expect(getSession).toHaveBeenCalledTimes(1);
+  });
+
+  test('getSupabaseAccessToken refreshes an expired JWT instead of returning the cached token', async () => {
+    const expiredAt = Math.floor(Date.now() / 1000) - 120;
+    getSession.mockResolvedValue({
+      data: {
+        session: { user: { id: 'u1' }, access_token: 'tok-expired', expires_at: expiredAt },
+      },
+    });
+    refreshSession.mockResolvedValue({
+      data: {
+        session: {
+          user: { id: 'u1' },
+          access_token: 'tok-fresh',
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+        },
+      },
+      error: null,
+    });
+
+    const { getSupabaseAccessToken } = await import('@/lib/supabase-session');
+
+    expect(await getSupabaseAccessToken()).toBe('tok-fresh');
+    expect(refreshSession).toHaveBeenCalledTimes(1);
+    expect(signInAnonymously).not.toHaveBeenCalled();
+  });
+
+  test('getSupabaseAccessToken signs in anonymously when refresh of an expired JWT fails', async () => {
+    const expiredAt = Math.floor(Date.now() / 1000) - 120;
+    getSession.mockResolvedValue({
+      data: {
+        session: { user: { id: 'u1' }, access_token: 'tok-expired', expires_at: expiredAt },
+      },
+    });
+    refreshSession.mockResolvedValue({
+      data: { session: null },
+      error: { message: 'token is expired' },
+    });
+    signInAnonymously.mockResolvedValue({
+      error: null,
+      data: {
+        session: {
+          user: { id: 'u2' },
+          access_token: 'tok-anon',
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+        },
+      },
+    });
+
+    const { getSupabaseAccessToken } = await import('@/lib/supabase-session');
+
+    expect(await getSupabaseAccessToken()).toBe('tok-anon');
+    expect(signInAnonymously).toHaveBeenCalledTimes(1);
   });
 });

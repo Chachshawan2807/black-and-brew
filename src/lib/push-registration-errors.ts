@@ -18,20 +18,44 @@ export function classifyPushRegistrationError(error: unknown): string {
   if (name === 'InvalidStateError' || /already subscribed|in progress/i.test(message)) {
     return 'subscribe_in_progress';
   }
-  if (/applicationServerKey|vapid/i.test(message)) {
+  if (/applicationServerKey|vapid|overload resolution|cannot be converted|buffer source/i.test(message)) {
     return 'vapid_key_invalid';
   }
   if (name === 'AbortError') return 'push_unavailable';
   if (/push service not available/i.test(combined)) return 'push_unavailable';
   if (/registration failed/i.test(message)) return 'push_unavailable';
   if (/service_worker/i.test(combined)) return 'push_unavailable';
+  if (
+    /failed to find server action|failed to fetch|load failed|networkerror|fetch failed/i.test(
+      combined,
+    )
+  ) {
+    return 'server_unreachable';
+  }
 
   return 'ensure_failed';
 }
 
+const RETRYABLE_REGISTER_ERRORS = new Set([
+  'supabase_session_missing',
+  'pin_session_required',
+  'server_unreachable',
+  'server_exception',
+  'subscribe_in_progress',
+]);
+
+export function isRetryablePushRegisterError(error: string | null | undefined): boolean {
+  if (!error) return false;
+  return RETRYABLE_REGISTER_ERRORS.has(error);
+}
+
 export type PushVerifyStatus = 'registered' | 'missing' | 'unauthorized' | 'error';
 
-/** Only drop a local PushSubscription when the server confirmed the endpoint is gone (FCM 410). */
-export function shouldReplaceLocalPushSubscription(status: PushVerifyStatus): boolean {
-  return status === 'missing';
+/**
+ * Do not unsubscribe a working Chrome/FCM endpoint just because the server row is
+ * missing. Expired JWT / stale Server Actions used to drop the local sub, then
+ * subscribe() failed and Settings showed none + ensure_failed.
+ */
+export function shouldReplaceLocalPushSubscription(_status: PushVerifyStatus): boolean {
+  return false;
 }

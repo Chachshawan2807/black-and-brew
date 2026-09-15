@@ -2,15 +2,11 @@
 
 import { type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
+import PinGateway from '@/components/auth/PinGateway';
 import { LazySidebarLayout } from '@/components/shell/LazySidebarLayout';
 import { AppTooltipProvider } from '@/components/providers/AppTooltipProvider';
 import { FloatingOverlayProvider } from '@/components/floating/FloatingOverlayContext';
-import { RouteLoadingSkeleton } from '@/components/ui/route-loading-skeleton';
 import { LazyNotificationProvider } from '@/components/shell/LazyNotificationProvider';
-
-const authShellLoading = () => (
-  <RouteLoadingSkeleton label="กำลังเตรียมระบบ..." />
-);
 
 const PwaShellSync = dynamic(
   () => import('@/components/PwaShellSync').then((m) => ({ default: m.PwaShellSync })),
@@ -42,10 +38,6 @@ const PointerClickThroughGuard = dynamic(
     })),
   { ssr: false },
 );
-
-const PinGateway = dynamic(() => import('@/components/auth/PinGateway'), {
-  loading: authShellLoading,
-});
 
 const PushSubscriptionManager = dynamic(
   () =>

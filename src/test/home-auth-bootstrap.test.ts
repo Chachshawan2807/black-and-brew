@@ -19,8 +19,9 @@ describe('home client auth bootstrap', () => {
 
   test('bootstrap fetches secretary board after server session is verified', () => {
     const bootstrap = readFileSync(bootstrapPath, 'utf-8');
-    expect(bootstrap).toContain('getAuthSessionInfo');
+    expect(bootstrap).not.toContain('getAuthSessionInfo');
     expect(bootstrap).toContain('loadSecretaryBoard');
+    expect(bootstrap).toContain('readCachedSecretaryBoard');
     expect(bootstrap).toContain('bb-pin-authenticated');
     expect(bootstrap).toContain('HomeClient');
   });
