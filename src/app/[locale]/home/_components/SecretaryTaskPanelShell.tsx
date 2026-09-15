@@ -5,7 +5,6 @@ import { CloseIcon } from '@/components/ui/close-icon';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
-import { isSidebarMenuLabel } from '@/lib/sidebar-menu-labels';
 import type { SecretaryAttentionListItem } from '@/lib/secretary/task-detail-overlay';
 import { cn } from '@/lib/utils';
 import { BB_BTN_CLOSE } from '@/lib/ui-outlined-tokens';
@@ -46,7 +45,7 @@ export default function SecretaryTaskPanelShell({
   bodyScroll = true,
   children,
 }: SecretaryTaskPanelShellProps) {
-  const showTitle = !isSidebarMenuLabel(title);
+  const showTitle = Boolean(title.trim());
   const hasVisibleHeader = showTitle || Boolean(subtitle);
 
   useEffect(() => {

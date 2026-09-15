@@ -18,7 +18,8 @@ describe('sidebar duplicate page titles', () => {
   });
 
   test('keeps task-specific titles', () => {
-    expect(shouldShowPageTitle('ตรวจตารางงาน')).toBe(true);
+    expect(shouldShowPageTitle('ตารางงาน')).toBe(false);
+    expect(shouldShowPageTitle('ตารางงาน (2)')).toBe(true);
     expect(shouldShowPageTitle('รายการสั่งซื้อ')).toBe(true);
     expect(shouldShowPageTitle('ตั้งค่า')).toBe(true);
     expect(shouldShowPageTitle('เบิกของสาขา 2 (8 รายการ)')).toBe(true);
@@ -66,7 +67,7 @@ describe('sidebar duplicate page titles', () => {
     expect(secretary).not.toContain('title="หน้าหลัก"');
   });
 
-  test('secretary overlays hide duplicate sidebar titles', () => {
+  test('secretary overlays always show task title in panel header', () => {
     const panelShell = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/home/_components/SecretaryTaskPanelShell.tsx'),
       'utf-8',
@@ -76,9 +77,9 @@ describe('sidebar duplicate page titles', () => {
       'utf-8',
     );
 
-    expect(panelShell).toContain('isSidebarMenuLabel');
+    expect(panelShell).not.toContain('isSidebarMenuLabel');
     expect(panelShell).toContain('hasVisibleHeader');
-    expect(panelShell).toMatch(/hasVisibleHeader[\s\S]*absolute right-3 top-3/);
+    expect(panelShell).toContain('{title}');
     expect(listOverlay).toContain('SecretaryTaskPanelShell');
   });
 });
