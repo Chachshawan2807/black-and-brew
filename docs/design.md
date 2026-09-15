@@ -340,3 +340,16 @@ npm run skill:run design-review -- --target src/path/to/Component.tsx
 ```
 
 After notification UI: `npm run skill:run notification-smoke`.
+
+---
+
+## 15. Supplementary design skills (installed)
+
+Read `.cursor/skills/supplementary-design-erp/SKILL.md` before upstream.
+
+| Skill | Path | ERP role |
+| --- | --- | --- |
+| extract-design-system | `.agents/skills/extract-design-system/` | อ้างอิง token จาก `ui-outlined-tokens.ts` + `docs/design.md` ไม่ scrape URL มาทับ pastel |
+| vercel-composition-patterns | `.agents/skills/vercel-composition-patterns/` | ลด prop boolean ใน modal / FAB / toolbar |
+| sleek-design-mobile-apps | `.agents/skills/sleek-design-mobile-apps/` | ต้องมี `SLEEK_API_KEY`; งาน ERP มือถือใช้ chrome-modern-web-guidance ก่อน |
+| emil-design-eng | `.agents/skills/emil-design-eng/` | motion panel/sheet + `prefers-reduced-motion` ไม่ใส่บน cell กริด |

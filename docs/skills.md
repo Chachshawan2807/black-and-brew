@@ -89,3 +89,12 @@ Use with `AGENTS.md` + `docs/rules.md`.
 | ERP UI improvements | ปรับหน้า inventory/schedule/dashboard | `npm run skill:run design-review` แล้วทำ 3 ขั้นใน `docs/design.md` §14 **ไม่ใช้** Hallmark default/redesign |
 
 Off-limits for Hallmark build/redesign: `inventory/`, `schedule/`, `dashboard/`, `settings/`, spreadsheet grids, pastel shift cards. Update upstream: `npx skills add nutlope/hallmark -y`.
+
+### Supplementary design (overlay required)
+
+| Skill | When | Overlay |
+| --- | --- | --- |
+| extract-design-system | สรุป/เริ่ม design tokens | `.cursor/skills/supplementary-design-erp/SKILL.md` ใช้ sources ใน repo |
+| vercel-composition-patterns | refactor modal/FAB/compound UI | overlay ห้ามแตะ spreadsheet row model |
+| sleek-design-mobile-apps | Sleek prototypes (`SLEEK_API_KEY`) | ERP touch/safe-area ใช้ chrome-modern-web-guidance เป็นค่าเริ่ม |
+| emil-design-eng | polish motion บน panel/sheet | overlay ห้าม motion บน grid cells |

@@ -401,6 +401,11 @@ Domain capability triggers (mobile UX, AI context, inventory integrity, token ec
 | ui-ux-pro-max | `.agents/skills/ui-ux-pro-max/SKILL.md` | Upstream UX/stack search ใช้ผ่าน overlay เท่านั้นใน ERP |
 | hallmark-erp | `.cursor/skills/hallmark-erp/SKILL.md` | Anti-AI-slop **audit/study เท่านั้น** อ่านก่อน hallmark upstream |
 | hallmark | `.agents/skills/hallmark/SKILL.md` | Upstream Hallmark (nutlope/hallmark) ใช้ผ่าน overlay เท่านั้นใน ERP |
+| supplementary-design-erp | `.cursor/skills/supplementary-design-erp/SKILL.md` | Overlay ก่อน extract-design-system, vercel-composition-patterns, sleek-design-mobile-apps, emil-design-eng |
+| extract-design-system | `.agents/skills/extract-design-system/SKILL.md` | สรุป token/pattern (อ่าน ERP sources ใน overlay ไม่ทับ palette) |
+| vercel-composition-patterns | `.agents/skills/vercel-composition-patterns/SKILL.md` | Compound components สำหรับ modal/FAB/shell |
+| sleek-design-mobile-apps | `.agents/skills/sleek-design-mobile-apps/SKILL.md` | Sleek API prototypes; ERP mobile ใช้ chrome-modern-web-guidance เป็นหลัก |
+| emil-design-eng | `.agents/skills/emil-design-eng/SKILL.md` | Motion/polish บน panel/sheet ไม่แตะ spreadsheet cells |
 | security-review | `.agents/skills/security-review/SKILL.md` | รีวิวช่องโหว่ security ในโค้ด (OWASP) |
 | google-cloud-waf-security | `.agents/skills/google-cloud-waf-security/SKILL.md` | แนวทาง security บน Google Cloud |
 | gemini-api | `.agents/skills/gemini-api/SKILL.md` | ใช้ Gemini API / Vertex AI (SDK `@google/genai`) |
@@ -408,9 +413,9 @@ Domain capability triggers (mobile UX, AI context, inventory integrity, token ec
 
 **AgentSkillOS Runbooks:** ทักษะโปรเจกต์ (clean cache, smoke check, db wrappers) อยู่ใน `.agent-skills/skills/` แยกจาก `.agents/skills/` (third-party). ลงทะเบียนใน `.agent-skills/registry.json` · blueprint ใน `.agent-skills/README.md`
 
-**ลำดับความสำคัญเมื่อขัดกัน:** ERP domain rules → chrome-modern-web-guidance → React & Next.js skills → design review skills (`web-design-guidelines`, `impeccable` critique) → ui-ux-pro-max (via `ui-ux-pro-max-erp` overlay) → hallmark (`audit` / `study` via `hallmark-erp` overlay เท่านั้น)
+**ลำดับความสำคัญเมื่อขัดกัน:** ERP domain rules → chrome-modern-web-guidance → React & Next.js skills → design review skills (`web-design-guidelines`, `impeccable` critique) → ui-ux-pro-max (via `ui-ux-pro-max-erp` overlay) → hallmark (`audit` / `study` via `hallmark-erp` overlay เท่านั้น) → supplementary design skills (via `supplementary-design-erp` overlay เท่านั้น)
 
-**อัปเดต skills:** `npx skills add <owner/repo@skill> -y` (เช่น `pedronauck/skills@next-best-practices`, `GoogleChrome/modern-web-guidance@modern-web-guidance`, `nutlope/hallmark@hallmark`, `vercel-labs/agent-skills@web-design-guidelines`, `pbakaus/impeccable@impeccable`). ห้ามใช้ `vercel-labs/next-skills` (repo ถูกลบแล้ว). Overlay ที่ดูแลเอง: `.cursor/skills/chrome-modern-web-guidance/`, `.cursor/skills/hallmark-erp/` (อ่านหลังอัปเดต upstream ทุกครั้ง)
+**อัปเดต skills:** `npx skills add <owner/repo@skill> -y` (เช่น `pedronauck/skills@next-best-practices`, `GoogleChrome/modern-web-guidance@modern-web-guidance`, `nutlope/hallmark@hallmark`, `vercel-labs/agent-skills@web-design-guidelines`, `pbakaus/impeccable@impeccable`, `arvindrk/extract-design-system@extract-design-system`, `vercel-labs/agent-skills@vercel-composition-patterns`, `sleekdotdesign/agent-skills@sleek-design-mobile-apps`, `emilkowalski/skill@emil-design-eng`). ห้ามใช้ `vercel-labs/next-skills` (repo ถูกลบแล้ว). Overlay ที่ดูแลเอง: `.cursor/skills/chrome-modern-web-guidance/`, `.cursor/skills/hallmark-erp/`, `.cursor/skills/supplementary-design-erp/` (อ่านหลังอัปเดต upstream ทุกครั้ง)
 
 Matt Pocock engineering (`.agents/skills/`): `domain-modeling`, `codebase-design`, `improve-codebase-architecture`, `setup-ts-deep-modules`, `diagnosing-bugs`, `code-review`, `to-spec`, `implement-spec`.
 
