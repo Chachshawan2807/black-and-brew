@@ -165,6 +165,28 @@ describe('push-subscription-client', () => {
     expect(source).toContain('if (!serverPushRegistrationConfirmed)');
   });
 
+  test('settings auto-reconciles push with server on load not local-only refresh', () => {
+    const source = readFileSync(
+      resolve(__dirname, '../app/[locale]/settings/_components/NotificationPreferencesSection.tsx'),
+      'utf8',
+    );
+    expect(source).toContain('refreshPushSubscriptionState(locale)');
+    expect(source).toContain('schedulePushSubscriptionMaintenance(locale)');
+  });
+
+  test('refreshPushSubscriptionState gates on wantsPushRegistration only not inventory enabled', () => {
+    const source = readFileSync(
+      resolve(__dirname, '../lib/push-subscription-client.ts'),
+      'utf8',
+    );
+    expect(source).not.toMatch(
+      /refreshPushSubscriptionState[\s\S]*?if \(!prefs\.enabled \|\| !wantsPushRegistration/,
+    );
+    expect(source).not.toMatch(
+      /syncPushPrefsToServer[\s\S]*?if \(!prefs\.enabled \|\| !wantsPushRegistration/,
+    );
+  });
+
   test('wantsPushRegistration stays on for schedule or insight channels without inventory', () => {
     const prefs = {
       ...DEFAULT_NOTIFICATION_PREFERENCES,

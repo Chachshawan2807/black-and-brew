@@ -428,7 +428,7 @@ export async function syncPushPrefsToServer(
 ): Promise<void> {
   if (typeof window === 'undefined') return;
 
-  if (!prefs.enabled || !wantsPushRegistration(prefs)) {
+  if (!wantsPushRegistration(prefs)) {
     await removePushSubscription();
     return;
   }
@@ -465,7 +465,7 @@ export async function refreshPushSubscriptionState(locale: string): Promise<void
   if (typeof window === 'undefined') return;
 
   const prefs = loadNotificationPreferences();
-  if (!prefs.enabled || !wantsPushRegistration(prefs)) {
+  if (!wantsPushRegistration(prefs)) {
     localPushSubscription = null;
     serverPushRegistrationConfirmed = false;
     return;
@@ -502,7 +502,12 @@ export async function refreshLocalPushSubscriptionState(): Promise<boolean> {
     localPushSubscription = subscription;
     if (subscription) {
       if (!serverPushRegistrationConfirmed) {
-        await verifyServerPushRegistration(subscription.endpoint);
+        const registered = await verifyServerPushRegistration(subscription.endpoint);
+        if (!registered) {
+          setPushRegistrationError('server_not_registered');
+        } else {
+          setPushRegistrationError(null);
+        }
       }
     } else {
       serverPushRegistrationConfirmed = false;

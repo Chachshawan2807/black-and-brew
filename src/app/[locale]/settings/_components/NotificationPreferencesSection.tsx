@@ -21,7 +21,9 @@ import {
   hasLocalPushSubscription,
   hasServerPushRegistration,
   refreshLocalPushSubscriptionState,
+  refreshPushSubscriptionState,
   requiresUserGestureForPushSubscribe,
+  schedulePushSubscriptionMaintenance,
   syncPushPrefsToServer,
   wantsPushRegistration } from '@/lib/push-subscription-client';
 import type { NotificationPreferences } from '@/lib/notification-types';
@@ -95,17 +97,26 @@ export default function NotificationPreferencesSection({
   const wantsPush = wantsPushRegistration(prefs);
 
   const refreshDeviceState = useCallback(async () => {
-    await refreshLocalPushSubscriptionState();
+    const permissionState = getNotificationPermissionState();
+    setPermission(permissionState);
+
+    if (wantsPushRegistration(prefs) && permissionState === 'granted') {
+      await refreshPushSubscriptionState(locale);
+    } else {
+      await refreshLocalPushSubscriptionState();
+    }
+
     const hasLocal = hasLocalPushSubscription();
     const hasServer = hasServerPushRegistration();
     setDevicePushState(hasServer ? 'server' : hasLocal ? 'local_only' : 'none');
     const err = getLastPushRegistrationError();
     setRegisterError(err ? formatPushRegistrationError(err, isTh) : null);
-  }, [isTh]);
+  }, [isTh, locale, prefs]);
 
   useEffect(() => {
     if (!prefsHydratedRef.current) {
       prefsHydratedRef.current = true;
+      schedulePushSubscriptionMaintenance(locale);
       void refreshDeviceState();
       return;
     }

@@ -14,7 +14,7 @@ import {
   formatPushRegistrationError,
   getLastPushRegistrationError,
   hasServerPushRegistration,
-  refreshLocalPushSubscriptionState,
+  refreshPushSubscriptionState,
   requiresUserGestureForPushSubscribe,
   schedulePushSubscriptionMaintenance,
   wantsPushRegistration,
@@ -49,12 +49,12 @@ export function PushSubscriptionManager() {
       return;
     }
 
-    await refreshLocalPushSubscriptionState();
+    await refreshPushSubscriptionState(locale);
     const permission = getNotificationPermissionState();
     setShowIosBanner(
       permission !== 'denied' && !hasServerPushRegistration(),
     );
-  }, [isIos]);
+  }, [isIos, locale]);
 
   useEffect(() => {
     const schedule = () => {
