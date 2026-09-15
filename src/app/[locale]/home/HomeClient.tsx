@@ -29,7 +29,12 @@ import {
   filterConsolidatedSecretaryBoardTasks,
   type SecretaryBoardDisplayTask,
 } from '@/lib/secretary/consolidate-board-tasks';
-import { useHomeBoardSync, type BoardSyncPayload } from '@/hooks/use-home-board-sync';
+import {
+  publishHomeSidebarPendingCount,
+  requestHomeBoardFullSync,
+  useHomeBoardSync,
+  type BoardSyncPayload,
+} from '@/hooks/use-home-board-sync';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import {
   preloadSecretaryOverlayForTask,
@@ -115,8 +120,18 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
     onSync: applyBoardSync,
     onWorkDateChange: setWorkDateIso,
     getBaseSnapshot: () => boardRef.current.snapshot,
-    skipInitialFullSync: false,
+    skipInitialFullSync: true,
   });
+
+  useEffect(() => {
+    publishHomeSidebarPendingCount(board.tasks, workDateIso);
+  }, [board.tasks, workDateIso]);
+
+  useEffect(() => {
+    return scheduleIdleWork(() => {
+      requestHomeBoardFullSync();
+    }, { timeout: 800 });
+  }, []);
 
   const visibility = { workDateIso };
 
@@ -130,10 +145,10 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
 
     return scheduleIdleWork(() => {
       preloadSecretaryTaskOverlayShell();
-      for (const task of visibleTasks) {
+      for (const task of visibleTasks.slice(0, 6)) {
         preloadSecretaryOverlayForTask(task);
       }
-    }, { timeout: 2000 });
+    }, { timeout: 3000 });
   }, [visibleTasks]);
 
   const visibleTaskCount = useMemo(

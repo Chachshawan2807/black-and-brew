@@ -19,7 +19,9 @@ import {
 } from '@/lib/secretary/board-sync-scope';
 import type { SecretarySnapshotPatch } from '@/lib/secretary/snapshot-patch';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
+import { countSidebarPendingSecretaryTasks } from '@/lib/secretary/count-sidebar-pending-tasks';
 import { watchBangkokWorkDate } from '@/lib/secretary/watch-bangkok-work-date';
+import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 
 export type BoardSyncPayload = {
   tasks: SecretaryTask[];
@@ -38,7 +40,7 @@ type SyncRegistration = {
 };
 
 const registrations = new Set<SyncRegistration>();
-const invalidationListeners = new Set<() => void>();
+const sidebarPendingCountListeners = new Set<(count: number) => void>();
 
 let channel: ReturnType<typeof supabase.channel> | null = null;
 let subscriberCount = 0;
@@ -59,16 +61,20 @@ function cancelSharedChannelTeardown() {
   teardownCancel = null;
 }
 
-function emitInvalidation() {
-  invalidationListeners.forEach((listener) => {
-    listener();
+export function publishHomeSidebarPendingCount(
+  tasks: readonly SecretaryTask[],
+  dateIso: string,
+): void {
+  const count = countSidebarPendingSecretaryTasks(tasks, dateIso);
+  sidebarPendingCountListeners.forEach((listener) => {
+    listener(count);
   });
 }
 
-export function subscribeHomeBoardInvalidation(listener: () => void): () => void {
-  invalidationListeners.add(listener);
+export function subscribeHomeSidebarPendingCount(listener: (count: number) => void): () => void {
+  sidebarPendingCountListeners.add(listener);
   return () => {
-    invalidationListeners.delete(listener);
+    sidebarPendingCountListeners.delete(listener);
   };
 }
 
@@ -112,7 +118,6 @@ async function ensureSharedSecretaryChannel() {
       if (table && isSecretaryRealtimeTable(table)) {
         pendingTables.add(table);
       }
-      emitInvalidation();
       scheduleDebouncedBoardSync();
     };
 
@@ -185,6 +190,7 @@ async function runAllBoardSyncs() {
           snapshotPatch: result.snapshotPatch,
           syncKind: plan.kind,
         });
+        publishHomeSidebarPendingCount(result.tasks, dateIso);
       }),
     );
   })();
@@ -256,7 +262,9 @@ export function useHomeBoardSync(options: {
       await ensureSharedSecretaryChannel();
       if (cancelled) return;
       if (!skipInitialFullSyncRef.current) {
-        requestHomeBoardFullSync();
+        scheduleIdleWork(() => {
+          if (!cancelled) requestHomeBoardFullSync();
+        }, { timeout: 800 });
       }
     })();
 
