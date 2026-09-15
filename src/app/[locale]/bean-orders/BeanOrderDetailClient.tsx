@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Banknote, History, ImageDown, Package, Pencil, Truck, User } from '@/lib/icons';
 import {
@@ -16,7 +16,6 @@ import {
   type BeanOrderDetail,
 } from '@/app/actions/bean-order-actions';
 import {
-  formatBeanOrderCarrierChangeMessage,
   initialCarrierSelection,
   OTHER_CARRIER_CODE,
   resolveCarrierCodeForSave,
@@ -49,14 +48,13 @@ import { navigateWithViewTransition } from '@/lib/view-transition';
 import {
   stashBeanOrderDeliveredPatch,
 } from '@/lib/bean-orders/delivered-notify-snapshot';
-import { OrderListStatusGroup } from './_components/OrderStatusBadge';
 import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_BODY_GRID, BEAN_ORDER_DETAIL_FULFILLMENT_CARD, BEAN_ORDER_DETAIL_LINES_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_DETAIL_PAYMENT_ACTIONS, BEAN_ORDER_DETAIL_PAYMENT_BODY, BEAN_ORDER_DETAIL_PAYMENT_COLUMN, BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID, BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT, BEAN_ORDER_DETAIL_SHIPPING_COLUMN, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_INFO, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE } from './_components/bean-order-layout';
 import {
   BeanOrderBackLink,
   BeanOrderIconBadge,
   BeanOrderPageShell,
   BeanOrderSectionReveal,
-  BeanOrderStatusMessages,
+  BeanOrderStatusBanner,
   useBeanOrderMotion,
 } from './_components/bean-order-ui-primitives';
 import { LoadingIcon } from '@/components/ui/loading-icon';
@@ -80,22 +78,11 @@ export default function BeanOrderDetailClient({
   onBack,
 }: Props) {
   const router = useRouter();
-  const pathname = usePathname();
   const isReadOnly = useReadOnly();
   const fileRef = useRef<HTMLInputElement>(null);
   const [order, setOrder] = useState(initialOrder);
   const [prevInitialOrder, setPrevInitialOrder] = useState(initialOrder);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const flash = sessionStorage.getItem('bb-bean-order-flash');
-    if (flash) {
-      sessionStorage.removeItem('bb-bean-order-flash');
-      return flash;
-    }
-    return null;
-  });
-  const [prevPathname, setPrevPathname] = useState(pathname);
   const [error, setError] = useState<string | null>(null);
   const [pendingSlipPreview, setPendingSlipPreview] = useState<string | null>(null);
 
@@ -111,17 +98,6 @@ export default function BeanOrderDetailClient({
     setCarrierCode(nextCarrier.carrierCode);
     setCustomCarrierLabel(nextCarrier.customCarrierLabel);
     setTrackingNumber(initialOrder.shipment?.trackingNumber ?? '');
-  }
-
-  if (pathname !== prevPathname) {
-    setPrevPathname(pathname);
-    const flash = sessionStorage.getItem('bb-bean-order-flash');
-    if (flash) {
-      sessionStorage.removeItem('bb-bean-order-flash');
-      setMessage(flash);
-    } else {
-      setMessage(null);
-    }
   }
 
   const cancelled = Boolean(order.cancelledAt);
@@ -202,14 +178,9 @@ export default function BeanOrderDetailClient({
         ? { ...prev.payment, confirmedAt: null, confirmedBy: null }
         : prev.payment,
     }));
-    setMessage('เปลี่ยนเป็นรอชำระแล้ว');
   }
 
-  async function persistShipmentFromForm(
-    code: string,
-    customLabel: string,
-    successMessage: string | ((previousCarrier: string | null, resolvedCarrier: string) => string),
-  ) {
+  async function persistShipmentFromForm(code: string, customLabel: string) {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
     if (busy) return;
 
@@ -258,11 +229,6 @@ export default function BeanOrderDetailClient({
         shippedAt: prev.shipment?.shippedAt ?? new Date().toISOString(),
       },
     }));
-    const messageText =
-      typeof successMessage === 'function'
-        ? successMessage(previousCarrierCode, resolvedCarrierCode)
-        : successMessage;
-    setMessage(messageText);
   }
 
   async function autoSaveCarrierChannel(code: string, customLabel: string) {
@@ -276,9 +242,7 @@ export default function BeanOrderDetailClient({
     const previousCarrierCode = order.shipment?.carrierCode ?? null;
     if (resolvedCarrierCode === previousCarrierCode) return;
 
-    await persistShipmentFromForm(code, customLabel, (previous, resolved) =>
-      formatBeanOrderCarrierChangeMessage(previous, resolved),
-    );
+    await persistShipmentFromForm(code, customLabel);
   }
 
   function handleCarrierCodeChange(next: string) {
@@ -296,9 +260,7 @@ export default function BeanOrderDetailClient({
   }
 
   async function handleShip() {
-    await persistShipmentFromForm(carrierCode, customCarrierLabel, (previous, resolved) =>
-      formatBeanOrderCarrierChangeMessage(previous, resolved),
-    );
+    await persistShipmentFromForm(carrierCode, customCarrierLabel);
   }
 
   async function handleConfirmDelivered() {
@@ -361,15 +323,7 @@ export default function BeanOrderDetailClient({
         animate={heading.animate}
         transition={heading.transition}
       >
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <h1 className="text-2xl font-normal">{order.orderNo}</h1>
-          <OrderListStatusGroup
-            slipUploadedAt={order.payment?.uploadedAt}
-            paymentStatus={order.paymentStatus}
-            trackingStatus={order.shipment?.trackingStatus}
-            cancelledAt={order.cancelledAt}
-          />
-        </div>
+        <h1 className="text-2xl font-normal">{order.orderNo}</h1>
         {editable && !isReadOnly && !embedded ? (
           <Link
             href={`/${locale}/bean-orders/${order.id}/edit`}
@@ -381,7 +335,7 @@ export default function BeanOrderDetailClient({
         ) : null}
       </motion.div>
 
-      <BeanOrderStatusMessages message={message} error={error} />
+      {error ? <BeanOrderStatusBanner message={error} variant="error" className="mb-3" /> : null}
 
       <BeanOrderSectionReveal className={`${BEAN_ORDER_CARD} mb-4 p-4`} delay={0.04}>
         <div className="flex items-start gap-3">

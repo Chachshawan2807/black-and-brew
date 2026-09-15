@@ -3,7 +3,7 @@ import type { SecretaryTask } from '@/lib/secretary/types';
 export type SecretaryTaskOverlayKind =
   | 'purchase_orders'
   | 'branch_withdraw_panel'
-  | 'bean_orders_panel'
+  | 'bean_orders_list'
   | 'maintenance_list'
   | 'schedule_review_list'
   | 'task_info';
@@ -20,7 +20,7 @@ export function resolveSecretaryTaskOverlayKind(
     case 'bean_payment_pending':
     case 'bean_ship_pending':
     case 'bean_tracking_check':
-      return 'bean_orders_panel';
+      return 'bean_orders_list';
     case 'maintenance_due':
     case 'maintenance_overdue':
       return 'maintenance_list';

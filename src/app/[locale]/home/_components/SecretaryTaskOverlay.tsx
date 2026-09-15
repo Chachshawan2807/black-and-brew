@@ -13,6 +13,7 @@ import {
   updateManualSecretaryTask,
 } from '@/app/actions/home-actions';
 import type { SecretaryBoardDisplayTask } from '@/lib/secretary/consolidate-board-tasks';
+import { buildBeanOrderListItems, resolveBeanOrderListEmptyMessage } from '@/lib/secretary/build-bean-order-list-items';
 import { buildScheduleReviewListItems } from '@/lib/secretary/build-schedule-review-list-items';
 import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import { preloadSecretaryOverlayForTask } from '@/lib/secretary/preload-secretary-overlay';
@@ -27,7 +28,6 @@ const PurchaseOrdersModal = dynamic(
   () => import('@/app/[locale]/inventory/_components/PurchaseOrdersModal'),
   { ssr: false },
 );
-const BeanOrdersOverlay = dynamic(() => import('./BeanOrdersOverlay'), { ssr: false });
 const SecretaryManualTaskDialog = dynamic(() => import('./SecretaryManualTaskDialog'), {
   ssr: false,
 });
@@ -118,6 +118,14 @@ export default function SecretaryTaskOverlay({
     [overlayKind, task],
   );
 
+  const beanOrderListItems = useMemo(
+    () =>
+      task && overlayKind === 'bean_orders_list'
+        ? buildBeanOrderListItems(task, snapshot)
+        : [],
+    [overlayKind, snapshot, task],
+  );
+
   useEffect(() => {
     if (overlayKind && task) {
       preloadSecretaryOverlayForTask(task);
@@ -182,20 +190,25 @@ export default function SecretaryTaskOverlay({
     );
   }
 
-  if (overlayKind === 'bean_orders_panel') {
+  if (overlayKind === 'bean_orders_list') {
     return (
       <Suspense
         fallback={
           <SecretaryOverlaySuspenseShell
             title={task.title}
             onClose={onClose}
-            maxWidthClass="max-w-4xl"
-            variant="embed"
-            label="กำลังเปิดออเดอร์เมล็ดกาแฟ..."
+            maxWidthClass="max-w-lg"
+            variant="list"
+            label="กำลังเปิดรายละเอียดออเดอร์เมล็ดกาแฟ..."
           />
         }
       >
-        <BeanOrdersOverlay task={task} locale={locale} onClose={onClose} />
+        <SecretaryTaskListOverlay
+          title={task.title}
+          items={beanOrderListItems}
+          emptyMessage={resolveBeanOrderListEmptyMessage(task)}
+          onClose={onClose}
+        />
       </Suspense>
     );
   }

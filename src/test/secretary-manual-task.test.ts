@@ -113,7 +113,9 @@ describe('secretary manual task UI', () => {
       'utf-8',
     );
     expect(overlay).toContain('SecretaryManualTaskDialog');
-    expect(overlay).toContain('BeanOrdersOverlay');
+    expect(overlay).toContain('buildBeanOrderListItems');
+    expect(overlay).toContain('SecretaryTaskListOverlay');
     expect(overlay).toContain('PurchaseOrdersModal');
+    expect(overlay).not.toContain('BeanOrdersOverlay');
   });
 });

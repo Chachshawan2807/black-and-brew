@@ -21,24 +21,14 @@ describe('bean order navigation after save/delete', () => {
     );
   });
 
-  test('detail page reads shipment flash message when pathname changes', () => {
+  test('detail page does not show success flash banners', () => {
     const source = readFileSync(
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
       'utf8',
     );
-    expect(source).toContain("sessionStorage.getItem('bb-bean-order-flash')");
-    expect(source).toContain('usePathname');
-    expect(source).toMatch(/if \(pathname !== prevPathname\)[\s\S]*bb-bean-order-flash[\s\S]*setMessage\(flash\)/);
-  });
-
-  test('detail page clears stale message when pathname changes without flash', () => {
-    const source = readFileSync(
-      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
-      'utf8',
-    );
-    expect(source).toMatch(
-      /if \(pathname !== prevPathname\)[\s\S]*if \(flash\) \{[\s\S]*setMessage\(flash\)[\s\S]*\} else \{[\s\S]*setMessage\(null\)/,
-    );
+    expect(source).not.toContain('BeanOrderStatusMessages');
+    expect(source).not.toContain("sessionStorage.getItem('bb-bean-order-flash')");
+    expect(source).not.toContain('OrderListStatusGroup');
   });
 
   test('detail delete success redirects to bean-orders list', () => {
@@ -109,7 +99,8 @@ describe('bean order navigation after save/delete', () => {
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrdersClient.tsx'),
       'utf8',
     );
-    expect(listSource).toContain("sessionStorage.getItem('bb-bean-order-flash')");
+    expect(listSource).toContain("sessionStorage.removeItem('bb-bean-order-flash')");
+    expect(listSource).not.toContain('BeanOrderStatusBanner');
     expect(listSource).toContain('consumeBeanOrderDeliveredPatch');
     expect(listSource).toContain('applyBeanOrderDeliveredPatch');
     expect(listSource).toContain('prevOrdersSync');

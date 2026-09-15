@@ -1,7 +1,6 @@
 import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
 import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
 import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
-import { prefetchBeanOrdersForOverlay } from '@/lib/secretary/overlay-data-cache';
 import {
   resolveSecretaryTaskOverlayKind,
   type SecretaryTaskOverlayKind,
@@ -18,14 +17,7 @@ function preloadOverlayChunks(kind: SecretaryTaskOverlayKind): void {
     case 'purchase_orders':
       preloadPurchaseOrdersModal();
       break;
-    case 'bean_orders_panel':
-      void Promise.all([
-        import('@/app/[locale]/home/_components/BeanOrdersOverlay'),
-        import('@/app/[locale]/bean-orders/BeanOrdersClient'),
-        import('@/app/[locale]/bean-orders/BeanOrderDetailClient'),
-      ]);
-      prefetchBeanOrdersForOverlay();
-      break;
+    case 'bean_orders_list':
     case 'schedule_review_list':
     case 'maintenance_list':
       void import('@/app/[locale]/home/_components/SecretaryTaskListOverlay');

@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
-import { AnimatePresence } from 'framer-motion';
 import { Plus, Search } from '@/lib/icons';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import { BeanOrderListItem } from './_components/BeanOrderListItem';
@@ -18,11 +17,7 @@ import {
   BEAN_ORDER_LIST_CELL,
   BEAN_ORDER_PAGE,
 } from './_components/bean-order-layout';
-import {
-  BeanOrderEmptyState,
-  BeanOrderPageShell,
-  BeanOrderStatusBanner,
-} from './_components/bean-order-ui-primitives';
+import { BeanOrderEmptyState, BeanOrderPageShell } from './_components/bean-order-ui-primitives';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { warmRouteNavigation } from '@/lib/warm-route-navigation';
 import { cn } from '@/lib/utils';
@@ -57,15 +52,6 @@ export default function BeanOrdersClient({
   const [fulfillmentFilter, setFulfillmentFilter] = useState<'all' | 'pending' | 'shipped'>(
     defaultFulfillmentFilter,
   );
-  const [message, setMessage] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const flash = sessionStorage.getItem('bb-bean-order-flash');
-    if (flash) {
-      sessionStorage.removeItem('bb-bean-order-flash');
-      return flash;
-    }
-    return null;
-  });
   const [prevPathname, setPrevPathname] = useState(pathname);
   const [, startTransition] = useTransition();
 
@@ -76,14 +62,14 @@ export default function BeanOrdersClient({
 
   if (pathname !== prevPathname) {
     setPrevPathname(pathname);
-    const flash = sessionStorage.getItem('bb-bean-order-flash');
-    if (flash) {
+    if (typeof window !== 'undefined') {
       sessionStorage.removeItem('bb-bean-order-flash');
-      setMessage(flash);
-    } else {
-      setMessage(null);
     }
   }
+
+  useEffect(() => {
+    sessionStorage.removeItem('bb-bean-order-flash');
+  }, []);
 
   useEffect(() => {
     if (embedded) return;
@@ -138,12 +124,6 @@ export default function BeanOrdersClient({
           }
         />
       )}
-
-      <AnimatePresence mode="sync">
-        {message ? (
-          <BeanOrderStatusBanner key="flash" message={message} variant="success" />
-        ) : null}
-      </AnimatePresence>
 
       <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
         <div className="relative">
