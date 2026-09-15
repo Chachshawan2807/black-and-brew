@@ -25,6 +25,7 @@ import type {
 } from '@/lib/secretary/types';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { buildMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 
 const TASK_SELECT =
@@ -571,7 +572,7 @@ export async function loadSecretaryBoard(opts?: {
   dateIso?: string;
   locale?: string;
   /**
-   * When true (default), return snapshot + DB tasks without blocking on derived sync.
+   * When true (default), return a minimal snapshot + DB tasks only (no inventory/shifts fetch).
    * HomeClient runs a background full sync after hydrate.
    */
   deferDerivedSync?: boolean;
@@ -584,44 +585,45 @@ export async function loadSecretaryBoard(opts?: {
   const deferDerivedSync = opts?.deferDerivedSync ?? true;
 
   try {
-    const [snapshot, tasksResult] = await Promise.all([
-      fetchSecretarySnapshot({ dateIso, locale }),
-      fetchSecretaryTasks(dateIso),
-    ]);
-
-    if (!deferDerivedSync) {
-      const syncResult = await syncDerivedSecretaryTasks({ snapshot, dateIso, locale });
-      if (!syncResult.success) {
-        return { success: false, error: syncResult.error };
-      }
-
-      const tasksAfterSync =
-        (syncResult.upserted ?? 0) > 0 || (syncResult.autoSkipped ?? 0) > 0
-          ? await fetchSecretaryTasks(dateIso)
-          : tasksResult;
-
-      if (!tasksAfterSync.success || !tasksAfterSync.tasks) {
-        return { success: false, error: tasksAfterSync.error ?? 'Failed to load tasks' };
+    if (deferDerivedSync) {
+      const tasksResult = await fetchSecretaryTasks(dateIso);
+      if (!tasksResult.success || !tasksResult.tasks) {
+        return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
       }
 
       return {
         success: true,
         board: {
-          snapshot,
-          tasks: tasksAfterSync.tasks,
+          snapshot: buildMinimalSecretaryBoardSnapshot(dateIso, locale),
+          tasks: tasksResult.tasks,
         },
       };
     }
 
-    if (!tasksResult.success || !tasksResult.tasks) {
-      return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
+    const [snapshot, tasksResult] = await Promise.all([
+      fetchSecretarySnapshot({ dateIso, locale }),
+      fetchSecretaryTasks(dateIso),
+    ]);
+
+    const syncResult = await syncDerivedSecretaryTasks({ snapshot, dateIso, locale });
+    if (!syncResult.success) {
+      return { success: false, error: syncResult.error };
+    }
+
+    const tasksAfterSync =
+      (syncResult.upserted ?? 0) > 0 || (syncResult.autoSkipped ?? 0) > 0
+        ? await fetchSecretaryTasks(dateIso)
+        : tasksResult;
+
+    if (!tasksAfterSync.success || !tasksAfterSync.tasks) {
+      return { success: false, error: tasksAfterSync.error ?? 'Failed to load tasks' };
     }
 
     return {
       success: true,
       board: {
         snapshot,
-        tasks: tasksResult.tasks,
+        tasks: tasksAfterSync.tasks,
       },
     };
   } catch (error) {

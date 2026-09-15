@@ -1,7 +1,7 @@
 import type { SecretarySnapshot } from '@/lib/secretary/types';
 import { EMPTY_SECRETARY_COUNT_SESSION } from '@/lib/secretary/types';
 
-/** Empty snapshot helper. Home board load uses fetchSecretarySnapshot instead. */
+/** Lightweight snapshot for fast home SSR; full data arrives via background board sync. */
 export function buildMinimalSecretaryBoardSnapshot(
   dateIso: string,
   locale: string,

@@ -14,12 +14,17 @@ describe('home secretary board load', () => {
     const source = readFileSync(homeActionsPath, 'utf-8');
     expect(source).toContain('deferDerivedSync');
     expect(source).toMatch(/deferDerivedSync\s*=\s*opts\?\.deferDerivedSync\s*\?\?\s*true/);
-    expect(source).toMatch(/if\s*\(\s*!deferDerivedSync\s*\)/);
+    expect(source).toMatch(/if\s*\(\s*deferDerivedSync\s*\)/);
+    expect(source).toContain('buildMinimalSecretaryBoardSnapshot');
+    expect(source).toMatch(
+      /if\s*\(\s*deferDerivedSync\s*\)\s*\{[\s\S]*?buildMinimalSecretaryBoardSnapshot[\s\S]*?\}\s*\n\n\s*const \[snapshot/,
+    );
   });
 
   test('HomeClient triggers background board sync after SSR hydrate', () => {
     const source = readFileSync(homeClientPath, 'utf-8');
-    expect(source).toContain('skipInitialFullSync: false');
+    expect(source).toContain('skipInitialFullSync: true');
+    expect(source).toContain('requestHomeBoardFullSync');
   });
 
   test('home loading skeleton does not show loading copy', () => {
