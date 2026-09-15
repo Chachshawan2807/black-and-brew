@@ -32,9 +32,13 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).not.toMatch(/max-md:bottom-\[calc\(14\.5rem/);
   });
 
-  test('layout mounts global quick action and notification FABs', () => {
+  test('AppShell mounts global quick action and notification FABs', () => {
     const layoutCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/layout.tsx'),
+      'utf-8',
+    );
+    const appShellCode = fs.readFileSync(
+      path.resolve(__dirname, '../components/shell/AppShell.tsx'),
       'utf-8',
     );
     const deferredCode = fs.readFileSync(
@@ -42,14 +46,15 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
 
-    expect(layoutCode).toContain('<DeferredOverlays />');
-    expect(layoutCode).toContain('<PointerClickThroughGuard />');
+    expect(layoutCode).toContain('AppShellLoader');
+    expect(appShellCode).toContain('<DeferredOverlays />');
+    expect(appShellCode).toContain('<PointerClickThroughGuard />');
     expect(deferredCode).toContain('<InventoryQuickActionWrapper />');
     expect(deferredCode).toContain('<InventoryNotificationFAB />');
     expect(deferredCode).toContain('notificationFabReady');
     expect(deferredCode).toContain('quickActionReady');
     expect(deferredCode).not.toContain('AIChatOverlay');
-    expect(layoutCode).toContain('<FabStackHideToggle />');
+    expect(appShellCode).toContain('<FabStackHideToggle />');
   });
 
   test('FAB stack uses safe-area-aware positions without AI chat layer', () => {

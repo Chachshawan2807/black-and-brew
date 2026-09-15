@@ -19,8 +19,8 @@ describe('notification fab cross-platform sync', () => {
     resolve(__dirname, '../hooks/use-inventory-notifications.ts'),
     'utf8',
   );
-  const layoutSource = readFileSync(
-    resolve(__dirname, '../app/[locale]/layout.tsx'),
+  const appShellSource = readFileSync(
+    resolve(__dirname, '../components/shell/AppShell.tsx'),
     'utf8',
   );
   const crossTabSource = readFileSync(
@@ -41,12 +41,17 @@ describe('notification fab cross-platform sync', () => {
   );
 
   test('NotificationProvider wraps FAB on all pages (desktop + mobile)', () => {
+    const lazyProviderSource = readFileSync(
+      resolve(__dirname, '../components/shell/LazyNotificationProvider.tsx'),
+      'utf8',
+    );
     const deferredSource = readFileSync(
       resolve(__dirname, '../components/shell/DeferredOverlays.tsx'),
       'utf8',
     );
-    expect(layoutSource).toContain('NotificationProvider');
-    expect(layoutSource).toContain('DeferredOverlays');
+    expect(appShellSource).toContain('LazyNotificationProvider');
+    expect(appShellSource).toContain('DeferredOverlays');
+    expect(lazyProviderSource).toContain('NotificationProvider');
     expect(deferredSource).toContain('InventoryNotificationFAB');
   });
 

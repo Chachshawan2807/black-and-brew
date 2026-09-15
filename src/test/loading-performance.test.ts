@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest';
 
 const schedulePagePath = resolve(__dirname, '../app/[locale]/schedule/page.tsx');
 const layoutPath = resolve(__dirname, '../app/[locale]/layout.tsx');
+const appShellPath = resolve(__dirname, '../components/shell/AppShell.tsx');
 const holidaySyncPath = resolve(__dirname, '../lib/holiday-sync.ts');
 
 describe('loading performance patterns', () => {
@@ -16,12 +17,16 @@ describe('loading performance patterns', () => {
     );
   });
 
-  test('layout defers global overlays', () => {
-    const source = readFileSync(layoutPath, 'utf-8');
-    expect(source).toContain('DeferredOverlays');
-    expect(source).not.toContain('InventoryQuickActionWrapper');
-    expect(source).not.toContain('AIChatOverlay');
-    expect(source).toContain('RoutePrefetchOnIdle');
+  test('root layout defers heavy shell; AppShell defers global overlays', () => {
+    const layout = readFileSync(layoutPath, 'utf-8');
+    const appShell = readFileSync(appShellPath, 'utf-8');
+    expect(layout).toContain('AppShellLoader');
+    expect(layout).not.toContain('InventoryQuickActionWrapper');
+    expect(layout).not.toContain('AIChatOverlay');
+    expect(appShell).toContain('DeferredOverlays');
+    expect(appShell).not.toContain('InventoryQuickActionWrapper');
+    expect(appShell).not.toContain('AIChatOverlay');
+    expect(appShell).toContain('RoutePrefetchOnIdle');
   });
 
   test('holiday sync batches database writes', () => {
