@@ -25,10 +25,14 @@ describe('home client auth bootstrap', () => {
     expect(bootstrap).toContain('HomeClient');
   });
 
-  test('PinGateway notifies authenticated routes before Supabase session warmup finishes', () => {
+  test('PinGateway registers push after PIN auth with user gesture', () => {
     const pin = readFileSync(pinGatewayPath, 'utf-8');
+    expect(pin).toContain('registerPushAfterAuthentication');
     expect(pin).toMatch(
-      /serverSession\.verified[\s\S]*dispatchEvent\(new CustomEvent\('bb-pin-authenticated'\)\)[\s\S]*ensureSupabaseSession/,
+      /completeAuthentication[\s\S]*registerPushAfterAuthentication\(locale,\s*\{ fromUserGesture: true \}\)/,
+    );
+    expect(pin).toMatch(
+      /serverSession\.verified[\s\S]*registerPushAfterAuthentication\(locale\)/,
     );
   });
 });

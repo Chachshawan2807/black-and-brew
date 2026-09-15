@@ -16,6 +16,7 @@ import {
   hasServerPushRegistration,
   refreshPushSubscriptionState,
   requiresUserGestureForPushSubscribe,
+  PUSH_REGISTRATION_UPDATED_EVENT,
   schedulePushSubscriptionMaintenance,
   warmPushRegistrationStack,
   wantsPushRegistration,
@@ -67,10 +68,12 @@ export function PushSubscriptionManager() {
     schedule();
     window.addEventListener('bb-pin-authenticated', schedule);
     window.addEventListener('bb-notification-prefs-changed', schedule);
+    window.addEventListener(PUSH_REGISTRATION_UPDATED_EVENT, refreshBannerState);
 
     return () => {
       window.removeEventListener('bb-pin-authenticated', schedule);
       window.removeEventListener('bb-notification-prefs-changed', schedule);
+      window.removeEventListener(PUSH_REGISTRATION_UPDATED_EVENT, refreshBannerState);
     };
   }, [locale, refreshBannerState]);
 

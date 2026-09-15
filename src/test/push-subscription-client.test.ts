@@ -154,7 +154,20 @@ describe('push-subscription-client', () => {
       'utf8',
     );
     expect(source).toContain('MAINTENANCE_DEBOUNCE_MS = 120');
-    expect(source).toContain('MAINTENANCE_RETRY_MS = [0, 350, 1_200]');
+    expect(source).toContain('MAINTENANCE_RETRY_MS = [0, 250, 700, 1_500]');
+    expect(source).toContain('maintenanceInFlight');
+    expect(source).not.toContain('maintenanceGeneration');
+  });
+
+  test('registerPushAfterAuthentication waits for PIN and Supabase before subscribing', () => {
+    const source = readFileSync(
+      resolve(__dirname, '../lib/push-subscription-client.ts'),
+      'utf8',
+    );
+    expect(source).toContain('export async function registerPushAfterAuthentication');
+    expect(source).toContain('waitForAuthenticatedPushPrerequisites');
+    expect(source).toContain('getAuthSessionInfo');
+    expect(source).toContain('fromUserGesture: options.fromUserGesture === true');
   });
 
   test('ensurePushSubscription requests permission in parallel with SW and session', () => {
@@ -195,6 +208,7 @@ describe('push-subscription-client', () => {
     expect(source).toContain('schedulePushSubscriptionMaintenance(locale, { immediate: true })');
     expect(source).toContain('warmPushRegistrationStack');
     expect(source).toContain('skipNextAutomaticPrefsSyncRef');
+    expect(source).toContain('PUSH_REGISTRATION_UPDATED_EVENT');
   });
 
   test('refreshPushSubscriptionState gates on wantsPushRegistration only not inventory enabled', () => {

@@ -70,14 +70,74 @@ export function formatPushRegistrationError(code: string, isTh: boolean): string
 
 /** Debounce window merges resume / focus / pageshow bursts on mobile. */
 const MAINTENANCE_DEBOUNCE_MS = 120;
-/** Retry when Supabase session is not ready yet after PIN unlock. */
-const MAINTENANCE_RETRY_MS = [0, 350, 1_200] as const;
+/** Retry when Supabase / PIN cookies are not ready yet after unlock. */
+const MAINTENANCE_RETRY_MS = [0, 250, 700, 1_500] as const;
+const AUTH_SESSION_POLL_MS = 150;
+const AUTH_SESSION_POLL_MAX = 24;
 
 let maintenanceTimer: ReturnType<typeof setTimeout> | null = null;
-let maintenanceGeneration = 0;
+let maintenanceInFlight: Promise<void> | null = null;
+
+export const PUSH_REGISTRATION_UPDATED_EVENT = 'bb-push-registration-updated';
+
+function dispatchPushRegistrationUpdated(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(PUSH_REGISTRATION_UPDATED_EVENT));
+}
+
+async function waitForAuthenticatedPushPrerequisites(): Promise<boolean> {
+  const { getAuthSessionInfo } = await import('@/app/actions/auth');
+
+  for (let attempt = 0; attempt < AUTH_SESSION_POLL_MAX; attempt += 1) {
+    const [supabaseReady, pinSession] = await Promise.all([
+      ensureSupabaseSession(),
+      getAuthSessionInfo(),
+    ]);
+    if (supabaseReady && pinSession.verified) {
+      return true;
+    }
+    if (attempt < AUTH_SESSION_POLL_MAX - 1) {
+      await new Promise((resolve) => setTimeout(resolve, AUTH_SESSION_POLL_MS));
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Register (or re-sync) Web Push after PIN / passkey auth.
+ * Use `fromUserGesture: true` from PIN / passkey handlers so iOS can subscribe.
+ */
+export async function registerPushAfterAuthentication(
+  locale: string,
+  options: { fromUserGesture?: boolean } = {},
+): Promise<boolean> {
+  const prefs = loadNotificationPreferences();
+  if (!wantsPushRegistration(prefs)) {
+    setPushRegistrationError(null);
+    return false;
+  }
+
+  warmPushRegistrationStack();
+  await waitForAuthenticatedPushPrerequisites();
+
+  const ok = await ensurePushSubscription(locale, {
+    fromUserGesture: options.fromUserGesture === true,
+  });
+  if (!ok) {
+    schedulePushSubscriptionMaintenance(locale, { immediate: true });
+  }
+  return ok;
+}
+
+function queuePushSubscriptionMaintenance(locale: string): void {
+  if (maintenanceInFlight) return;
+  maintenanceInFlight = runPushSubscriptionMaintenance(locale).finally(() => {
+    maintenanceInFlight = null;
+  });
+}
 
 async function runPushSubscriptionMaintenance(locale: string): Promise<void> {
-  const generation = ++maintenanceGeneration;
   const prefs = loadNotificationPreferences();
   if (!wantsPushRegistration(prefs)) {
     localPushSubscription = null;
@@ -86,12 +146,17 @@ async function runPushSubscriptionMaintenance(locale: string): Promise<void> {
   }
 
   for (let attempt = 0; attempt < MAINTENANCE_RETRY_MS.length; attempt += 1) {
-    if (generation !== maintenanceGeneration) return;
     const delay = MAINTENANCE_RETRY_MS[attempt];
     if (delay > 0) {
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
-    if (generation !== maintenanceGeneration) return;
+
+    if (!wantsPushRegistration(loadNotificationPreferences())) {
+      return;
+    }
+
+    await waitForAuthenticatedPushPrerequisites();
+
     const ok = await ensurePushSubscription(locale);
     if (ok) return;
   }
@@ -110,13 +175,13 @@ export function schedulePushSubscriptionMaintenance(
   if (options?.immediate) {
     if (maintenanceTimer) clearTimeout(maintenanceTimer);
     maintenanceTimer = null;
-    void runPushSubscriptionMaintenance(locale);
+    queuePushSubscriptionMaintenance(locale);
     return;
   }
   if (maintenanceTimer) clearTimeout(maintenanceTimer);
   maintenanceTimer = setTimeout(() => {
     maintenanceTimer = null;
-    void runPushSubscriptionMaintenance(locale);
+    queuePushSubscriptionMaintenance(locale);
   }, MAINTENANCE_DEBOUNCE_MS);
 }
 
@@ -156,7 +221,11 @@ export async function verifyServerPushRegistration(endpoint?: string | null): Pr
 
   try {
     const result = await verifyDevicePushRegistration(target);
+    const wasConfirmed = serverPushRegistrationConfirmed;
     serverPushRegistrationConfirmed = result.registered;
+    if (result.registered && !wasConfirmed) {
+      dispatchPushRegistrationUpdated();
+    }
     return result.registered;
   } catch {
     serverPushRegistrationConfirmed = false;
@@ -276,8 +345,12 @@ function setPushRegistrationError(code: string | null): void {
 }
 
 function markServerRegistrationConfirmed(subscription: PushSubscription | null): void {
+  const wasConfirmed = serverPushRegistrationConfirmed;
   localPushSubscription = subscription;
   serverPushRegistrationConfirmed = subscription !== null;
+  if (subscription && !wasConfirmed) {
+    dispatchPushRegistrationUpdated();
+  }
 }
 
 async function ensureNotificationPermissionGranted(): Promise<boolean> {

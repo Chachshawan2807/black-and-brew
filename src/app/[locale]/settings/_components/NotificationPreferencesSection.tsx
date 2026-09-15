@@ -23,6 +23,7 @@ import {
   refreshLocalPushSubscriptionState,
   refreshPushSubscriptionState,
   requiresUserGestureForPushSubscribe,
+  PUSH_REGISTRATION_UPDATED_EVENT,
   schedulePushSubscriptionMaintenance,
   syncPushPrefsToServer,
   warmPushRegistrationStack,
@@ -138,6 +139,16 @@ export default function NotificationPreferencesSection({
     }
     void syncPushPrefsToServer(prefs, locale).then(() => refreshDeviceState());
   }, [prefs, locale, refreshDeviceState]);
+
+  useEffect(() => {
+    const onRegistrationUpdated = () => {
+      void refreshDeviceState();
+    };
+    window.addEventListener(PUSH_REGISTRATION_UPDATED_EVENT, onRegistrationUpdated);
+    return () => {
+      window.removeEventListener(PUSH_REGISTRATION_UPDATED_EVENT, onRegistrationUpdated);
+    };
+  }, [refreshDeviceState]);
 
   useEffect(() => {
     if (!wantsPush) return;

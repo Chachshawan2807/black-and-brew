@@ -24,6 +24,8 @@ import {
 import { recordLoginEvent } from '@/app/actions/login-history-actions';
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
+import { ensureFullNotificationPreferencesOnAuth } from '@/lib/notification-preferences';
+import { registerPushAfterAuthentication } from '@/lib/push-subscription-client';
 import {
   getBiometricAutoLoginReadiness,
   loginWithDevicePasskey,
@@ -144,8 +146,13 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
         setIsReadOnly(serverSession.readOnly);
         setIsAuthenticated(true);
         setAuthCheckComplete(true);
+        ensureFullNotificationPreferencesOnAuth();
         window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
-        void (supabaseSessionTask ?? ensureSupabaseSession());
+        const locale = (params?.locale as string) || 'th';
+        void (async () => {
+          await (supabaseSessionTask ?? ensureSupabaseSession());
+          await registerPushAfterAuthentication(locale);
+        })();
         return;
       }
 
@@ -160,7 +167,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [params?.locale]);
 
   useEffect(() => {
     let cancelled = false;
@@ -194,9 +201,12 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     setIsReadOnly(readOnly);
     setIsAuthenticated(true);
     setShowEnrollment(false);
-    window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
+    ensureFullNotificationPreferencesOnAuth();
     await ensureSupabaseSession();
-  }, []);
+    const locale = (params?.locale as string) || 'th';
+    await registerPushAfterAuthentication(locale, { fromUserGesture: true });
+    window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
+  }, [params?.locale]);
 
   const passkeySkipKey = (fingerprint: string) => `bb_passkey_skip_${fingerprint}`;
 
