@@ -20,6 +20,12 @@ export const SETTINGS_SECTION = cn(BB_DATA_CARD, 'overflow-hidden');
 
 export const SETTINGS_SECTION_BODY = 'p-4 md:p-5';
 
+/** Full-width row trigger shared by collapsible sections and install-app row */
+export const SETTINGS_ROW_TRIGGER = cn(
+  'flex w-full items-center gap-3 p-4 md:p-5 text-left bb-transition',
+  'hover:bg-muted/30',
+);
+
 export const SETTINGS_BTN = BB_BTN_OUTLINE;
 
 export const SETTINGS_BTN_PRIMARY = BB_BTN_OUTLINE_PRIMARY;
@@ -81,7 +87,7 @@ type SettingsIconBadgeProps = {
 
 const BADGE_SIZE = {
   sm: 'h-7 w-7 rounded-xl',
-  md: 'h-8 w-8',
+  md: 'h-8 w-8 rounded-xl',
   lg: 'h-10 w-10',
 } as const;
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Download, Share, SquarePlus } from '@/lib/icons';
 import { CloseIcon } from '@/components/ui/close-icon';
 import { LoadingIcon } from '@/components/ui/loading-icon';
@@ -14,6 +15,11 @@ import { usePwaInstall } from '@/hooks/use-pwa-install';
 import type { PwaInstallMode } from '@/lib/pwa-install';
 import { cn } from '@/lib/utils';
 import { BB_BTN_CLOSE, BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
+import {
+  SETTINGS_ROW_TRIGGER,
+  SETTINGS_SECTION,
+  SettingsIconBadge,
+} from '@/app/[locale]/settings/_components/settings-ui-primitives';
 
 const COPY = {
   th: {
@@ -60,6 +66,11 @@ export function PwaInstallButton({
   const { visible, mode, promptInstall } = usePwaInstall();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPreparing, setIsPreparing] = useState(false);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalTarget(document.body);
+  }, []);
 
   const openIosGuide = useCallback(() => {
     const dialog = dialogRef.current;
@@ -109,99 +120,132 @@ export function PwaInstallButton({
 
   const installButtonClass =
     variant === 'settings'
-      ? cn(
-          BB_BTN_OUTLINE_PRIMARY,
-          'inline-flex w-full items-center justify-center gap-2 text-[13px] py-2.5 h-auto min-h-[44px] font-normal',
-        )
+      ? cn(SETTINGS_ROW_TRIGGER, showPreparing && 'opacity-70')
       : 'pointer-events-auto inline-flex items-center gap-1.5 rounded-2xl border border-border/80 bg-card/80 px-3.5 py-2 text-xs font-normal text-muted-foreground backdrop-blur-sm transition-colors hover:border-foreground/20 hover:text-foreground disabled:opacity-70';
 
-  return (
-    <>
-      <div className={className}>
-        <button
-          type="button"
-          onClick={() => void handleInstall()}
-          disabled={showPreparing}
-          className={installButtonClass}
-          aria-busy={showPreparing}
-          aria-label={showPreparing ? t.preparing : t.install}
-        >
+  const installLabel = showPreparing ? t.preparing : t.install;
+
+  const installTrigger = (
+    <button
+      type="button"
+      onClick={() => void handleInstall()}
+      disabled={showPreparing}
+      className={installButtonClass}
+      aria-busy={showPreparing}
+      aria-label={installLabel}
+    >
+      {variant === 'settings' ? (
+        <>
+          <SettingsIconBadge className="shrink-0">
+            {showPreparing ? (
+              <LoadingIcon size="sm" strokeWidth={1.75} />
+            ) : (
+              <Download size={18} strokeWidth={1.75} aria-hidden />
+            )}
+          </SettingsIconBadge>
+          <span className="flex-1 min-w-0 text-[14px] text-foreground leading-snug">
+            {installLabel}
+          </span>
+        </>
+      ) : (
+        <>
           {showPreparing ? (
             <LoadingIcon size="sm" strokeWidth={1.5} />
           ) : (
             <Download size={14} strokeWidth={1.5} aria-hidden />
           )}
-          {showPreparing ? t.preparing : t.install}
-        </button>
-      </div>
+          {installLabel}
+        </>
+      )}
+    </button>
+  );
 
-      <dialog
-        ref={dialogRef}
-        className="bb-modal-panel m-auto w-[min(100%-2rem,22rem)] max-w-sm rounded-2xl border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-foreground/20 motion-reduce:open:animate-none"
-        aria-labelledby="pwa-ios-install-title"
-      >
-        <div className="flex flex-col gap-5 p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
-              <h2 id="pwa-ios-install-title" className="text-base font-normal tracking-wide">
-                {t.iosTitle}
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={closeIosGuide}
-              className={cn(BB_BTN_CLOSE, 'inline-flex h-8 w-8 shrink-0')}
-              aria-label={t.close}
-            >
-              <CloseIcon size="sm" strokeWidth={1.5} />
-            </button>
+  const iosGuideDialog = (
+    <dialog
+      ref={dialogRef}
+      className="bb-modal-panel m-auto w-[min(100%-2rem,22rem)] max-w-sm rounded-2xl border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-foreground/20 motion-reduce:open:animate-none"
+      aria-labelledby="pwa-ios-install-title"
+    >
+      <div className="flex flex-col gap-5 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <h2 id="pwa-ios-install-title" className="text-base font-normal tracking-wide">
+              {t.iosTitle}
+            </h2>
           </div>
-
-          <ol className="space-y-3 text-sm font-normal">
-            <li className="flex gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-xs tabular-nums">
-                1
-              </span>
-              <span className="pt-0.5">
-                <span className="inline-flex items-center gap-1 text-foreground">
-                  <Share size={14} strokeWidth={1.5} aria-hidden />
-                  {t.iosStep1}
-                </span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">{t.iosStep1Hint}</span>
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-xs tabular-nums">
-                2
-              </span>
-              <span className="pt-0.5">
-                <span className="inline-flex items-center gap-1 text-foreground">
-                  <SquarePlus size={14} strokeWidth={1.5} aria-hidden />
-                  {t.iosStep2}
-                </span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">{t.iosStep2Hint}</span>
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-xs tabular-nums">
-                3
-              </span>
-              <span className="pt-0.5">
-                <span className="text-foreground">{t.iosStep3}</span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">{t.iosStep3Hint}</span>
-              </span>
-            </li>
-          </ol>
-
           <button
             type="button"
             onClick={closeIosGuide}
-            className={cn(BB_BTN_OUTLINE_PRIMARY, 'w-full py-2.5 text-sm font-normal')}
+            className={cn(BB_BTN_CLOSE, 'inline-flex h-8 w-8 shrink-0')}
+            aria-label={t.close}
           >
-            {t.close}
+            <CloseIcon size="sm" strokeWidth={1.5} />
           </button>
         </div>
-      </dialog>
+
+        <ol className="space-y-3 text-sm font-normal">
+          <li className="flex gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-xs tabular-nums">
+              1
+            </span>
+            <span className="pt-0.5">
+              <span className="inline-flex items-center gap-1 text-foreground">
+                <Share size={14} strokeWidth={1.5} aria-hidden />
+                {t.iosStep1}
+              </span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{t.iosStep1Hint}</span>
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-xs tabular-nums">
+              2
+            </span>
+            <span className="pt-0.5">
+              <span className="inline-flex items-center gap-1 text-foreground">
+                <SquarePlus size={14} strokeWidth={1.5} aria-hidden />
+                {t.iosStep2}
+              </span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{t.iosStep2Hint}</span>
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-xs tabular-nums">
+              3
+            </span>
+            <span className="pt-0.5">
+              <span className="text-foreground">{t.iosStep3}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{t.iosStep3Hint}</span>
+            </span>
+          </li>
+        </ol>
+
+        <button
+          type="button"
+          onClick={closeIosGuide}
+          className={cn(BB_BTN_OUTLINE_PRIMARY, 'w-full py-2.5 text-sm font-normal')}
+        >
+          {t.close}
+        </button>
+      </div>
+    </dialog>
+  );
+
+  const portaledDialog =
+    portalTarget != null ? createPortal(iosGuideDialog, portalTarget) : iosGuideDialog;
+
+  if (variant === 'settings') {
+    return (
+      <>
+        <section className={cn(SETTINGS_SECTION, className)}>{installTrigger}</section>
+        {portaledDialog}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className={className}>{installTrigger}</div>
+      {portaledDialog}
     </>
   );
 }

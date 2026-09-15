@@ -3,7 +3,11 @@
 import { useId, useState, type ReactNode } from 'react';
 import { ChevronDown, Fingerprint, History, Shield, type LucideIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
-import { SETTINGS_SECTION, SettingsIconBadge } from './settings-ui-primitives';
+import {
+  SETTINGS_ROW_TRIGGER,
+  SETTINGS_SECTION,
+  SettingsIconBadge,
+} from './settings-ui-primitives';
 
 const ICONS = {
   history: History,
@@ -52,11 +56,7 @@ export default function SettingsCollapsibleSection({
         onFocus={prepare}
         aria-expanded={open}
         aria-controls={panelId}
-        className={cn(
-          'flex w-full items-center gap-3 p-4 md:p-5 text-left bb-transition',
-          'hover:bg-muted/30',
-          open && 'border-b border-border',
-        )}
+        className={cn(SETTINGS_ROW_TRIGGER, open && 'border-b border-border')}
       >
         <SettingsIconBadge className="shrink-0">
           <Icon size={18} strokeWidth={1.75} />

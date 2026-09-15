@@ -72,17 +72,29 @@ describe('pwa-install', () => {
       resolve(ROOT, 'src/app/[locale]/settings/_components/SettingsPwaInstallSection.tsx'),
       'utf-8',
     );
+    const button = readFileSync(
+      resolve(ROOT, 'src/components/PwaInstallButton.tsx'),
+      'utf-8',
+    );
 
     expect(layout).not.toContain('PwaInstallShell');
     expect(pinGateway).not.toContain('PwaInstallShell');
     expect(settingsSections).toContain('SettingsPwaInstallSection');
     expect(settingsInstall).not.toContain('modeFilter');
+    expect(settingsInstall).not.toContain('usePwaInstall');
+    expect(settingsInstall).not.toContain('SETTINGS_SECTION_BODY');
+    expect(button).toContain('SettingsIconBadge');
+    expect(button).toContain('SETTINGS_ROW_TRIGGER');
+    expect(button).not.toContain('BB_BTN_OUTLINE_PRIMARY,\n          \'inline-flex w-full');
   });
 
   test('usePwaInstall caches useSyncExternalStore snapshot to avoid infinite re-renders', () => {
     const hook = readFileSync(resolve(ROOT, 'src/hooks/use-pwa-install.ts'), 'utf-8');
 
     expect(hook).toContain('cachedPwaVisibility');
+    expect(hook).toContain('cachedInstallStore');
+    expect(hook).toContain('globalDeferredPrompt');
+    expect(hook).not.toContain('deferredPromptRef');
     expect(hook).not.toContain('readPwaInstallVisibility()');
   });
 });

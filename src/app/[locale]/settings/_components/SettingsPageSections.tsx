@@ -83,7 +83,7 @@ export default function SettingsPageSections({ locale, isTh }: SettingsPageSecti
         load={() => import('./PasskeyDeviceSection')}
       />
 
-      <SettingsPwaInstallSection locale={isTh ? 'th' : 'en'} isTh={isTh} />
+      <SettingsPwaInstallSection locale={isTh ? 'th' : 'en'} />
     </div>
   );
 }
