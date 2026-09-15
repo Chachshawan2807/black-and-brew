@@ -36,6 +36,7 @@ export function InventoryGridSourceFilterButton({
     <HintTooltip tip="กรองตามช่องทางสั่งซื้อ">
       <button
         type="button"
+        aria-label="กรองตามช่องทางสั่งซื้อ"
         aria-expanded={expanded}
         aria-controls="inventory-grid-source-filter-panel"
         aria-pressed={isActive}

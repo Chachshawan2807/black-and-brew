@@ -673,7 +673,7 @@ export default function BranchWithdrawClient({
         >
           {isReceiving ? (
             <>
-              <LoadingIcon size="md" className="shrink-0" />
+              <LoadingIcon size="md" className="shrink-0" aria-hidden />
               <span className="truncate">กำลังรับเข้า…</span>
             </>
           ) : (
@@ -694,7 +694,7 @@ export default function BranchWithdrawClient({
       disabled={catalogLoading || availablePickItems.length === 0}
       className={ADD_FROM_CATALOG_BUTTON_CLASS}
     >
-      <Plus className="h-4 w-4" />
+      <Plus className="h-4 w-4" aria-hidden />
       <span>เพิ่มรายการจากคลังสินค้า</span>
     </button>
   );

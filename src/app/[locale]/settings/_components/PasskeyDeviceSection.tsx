@@ -225,7 +225,11 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
             disabled={busy}
             className={cn(SETTINGS_BTN, 'text-[13px] py-2.5 h-auto min-h-[44px]')}
           >
-            {busy ? <LoadingIcon size={16} className="animate-spin" /> : <BiometricIcon size={16} />}
+            {busy ? (
+              <LoadingIcon size={16} className="animate-spin" aria-hidden />
+            ) : (
+              <BiometricIcon size={16} aria-hidden />
+            )}
             {isTh ? 'บันทึกเครื่องนี้' : 'Save this device'}
           </button>
         ) : (
@@ -235,7 +239,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
             disabled={busy}
             className={cn(SETTINGS_BTN_DANGER, 'text-[13px] py-2.5 h-auto min-h-[44px]')}
           >
-            {busy ? <LoadingIcon size={16} className="animate-spin" /> : null}
+            {busy ? <LoadingIcon size={16} className="animate-spin" aria-hidden /> : null}
             {isTh ? 'ลบการเข้าด้วยยืนยันตัวตนแบบไบโอเมตริก' : 'Remove biometric login'}
           </button>
         )}

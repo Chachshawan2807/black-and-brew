@@ -24,6 +24,7 @@ import { logClientDataChange } from '@/lib/client-data-change-log';
 import { recordItemAddHistory } from '@/app/actions/inventory-actions';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { cn } from '@/lib/utils';
+import { BB_FIELD_INPUT_MUTED } from '@/lib/ui-outlined-tokens';
 import { InventoryModalPortal } from './InventoryModalPortal';
 
 export type NewInventoryItemInput = {
@@ -194,7 +195,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
                   if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                   setNewItemData((prev) => ({ ...prev, stock: val }));
                 }}
-                className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                className={BB_FIELD_INPUT_MUTED}
               />
             </div>
 
@@ -204,7 +205,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
                 name="new-item-unit"
                 value={newItemData.unit ?? ''}
                 onChange={(e) => setNewItemData((prev) => ({ ...prev, unit: e.target.value }))}
-                className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                className={BB_FIELD_INPUT_MUTED}
               />
             </div>
 
@@ -224,7 +225,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
                   if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                   setNewItemData((prev) => ({ ...prev, order_point: val }));
                 }}
-                className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                className={BB_FIELD_INPUT_MUTED}
               />
             </div>
 
@@ -244,7 +245,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
                   if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                   setNewItemData((prev) => ({ ...prev, target_stock: val }));
                 }}
-                className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                className={BB_FIELD_INPUT_MUTED}
               />
             </div>
 
@@ -254,7 +255,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
                 name="new-item-source"
                 value={newItemData.source ?? ''}
                 onChange={(e) => setNewItemData((prev) => ({ ...prev, source: e.target.value }))}
-                className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                className={BB_FIELD_INPUT_MUTED}
               />
             </div>
 
@@ -274,7 +275,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
                   v = v.replace(/^0+(?=\d)/, '');
                   setInsertPosition(v);
                 }}
-                className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                className={BB_FIELD_INPUT_MUTED}
               />
             </div>
           </div>

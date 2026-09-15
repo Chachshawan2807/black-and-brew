@@ -215,7 +215,7 @@ const CountInput = memo(function CountInput({
         className={cn(
           'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums bb-transition bb-pastel-surface bg-white text-black placeholder:text-black/45',
           isActive
-            ? 'w-28 h-11 border-black/30 ring-2 ring-black/10 bb-shadow-sm'
+            ? 'w-28 h-11 border-black/30 ring-2 ring-black/10 bb-shadow-sm focus-visible:ring-2 focus-visible:ring-black/15'
             : 'w-24 h-10 border-black/25 bb-shadow-sm focus:border-black/35 focus-visible:ring-1 focus-visible:ring-black/15',
           disabled && 'opacity-60 cursor-not-allowed'
         )}
@@ -402,7 +402,7 @@ const AdjustStockInput = memo(function AdjustStockInput({
         className={cn(
           'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums bb-transition bb-pastel-surface bg-white text-black placeholder:text-black/45',
           isActive
-            ? 'w-28 h-11 border-black/30 ring-2 ring-black/10 bb-shadow-sm'
+            ? 'w-28 h-11 border-black/30 ring-2 ring-black/10 bb-shadow-sm focus-visible:ring-2 focus-visible:ring-black/15'
             : 'w-24 h-10 border-black/25 bb-shadow-sm focus:border-black/35 focus-visible:ring-1 focus-visible:ring-black/15',
           disabled && 'opacity-60 cursor-not-allowed',
         )}

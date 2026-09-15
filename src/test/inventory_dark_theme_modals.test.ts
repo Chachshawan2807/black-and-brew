@@ -60,7 +60,8 @@ describe('inventory modals dark theme readability', () => {
     const addModalSection = code.slice(code.indexOf('{/* Add Modal */}'), code.indexOf('{/* Delete Confirm Alert */}'));
 
     expect(addModalSection).toContain('text-muted-foreground');
-    expect(addModalSection).toContain('bg-muted hover:bg-muted/80 border border-border');
+    expect(addModalSection).toContain('BB_FIELD_INPUT_MUTED');
+    expect(addModalSection).toContain('bg-muted');
     expect(addModalSection).not.toContain('text-slate-600');
     expect(addModalSection).not.toContain('bg-slate-50');
   });

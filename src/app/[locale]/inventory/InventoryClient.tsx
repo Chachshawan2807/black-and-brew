@@ -71,7 +71,7 @@ import {
 import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
-import { bbPastelClass } from '@/lib/ui-outlined-tokens';
+import { BB_FIELD_INPUT_MUTED, bbPastelClass } from '@/lib/ui-outlined-tokens';
 import { shouldShowPageTitle } from '@/lib/sidebar-menu-labels';
 import { blurActiveElement } from '@/lib/blur-active-element';
 import { scheduleInventoryGridCellBlur } from '@/lib/inventory-grid-cell-blur';
@@ -1898,7 +1898,7 @@ export default function InventoryClient({
                 type="button"
                 onClick={() => setIsQuickActionBarOpen(true)}
                 aria-expanded={false}
-                className="group w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground bb-shadow-sm bb-transition hover:bg-muted/50 active:scale-[0.99] motion-reduce:active:scale-100 inline-flex items-center justify-center gap-2"
+                className="group w-full min-h-[44px] rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground bb-shadow-sm bb-transition hover:bg-muted/50 active:scale-[0.99] motion-reduce:active:scale-100 inline-flex items-center justify-center gap-2 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
               >
                 <Package className="w-4 h-4 text-muted-foreground bb-transition group-hover:text-foreground" strokeWidth={ICON_STROKE} aria-hidden />
                 เปิด Quick Action
@@ -1921,6 +1921,7 @@ export default function InventoryClient({
                     onMouseEnter={preloadWithdrawRequiredItemsModal}
                     onFocus={preloadWithdrawRequiredItemsModal}
                     aria-haspopup="dialog"
+                    aria-label="รายการสินค้าที่ต้องเบิก"
                     className={cn(
                       INVENTORY_PASTEL_ACTION,
                       INVENTORY_PASTEL_ACTION_PAIR,
@@ -2084,7 +2085,7 @@ export default function InventoryClient({
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, stock: val }));
                       }}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className={BB_FIELD_INPUT_MUTED}
                     />
                   </div>
 
@@ -2094,7 +2095,7 @@ export default function InventoryClient({
                       name="new-item-unit"
                       value={newItemData.unit === null || newItemData.unit === undefined ? '' : newItemData.unit}
                       onChange={e => setNewItemData(prev => ({ ...prev, unit: e.target.value }))}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className={BB_FIELD_INPUT_MUTED}
                     />
                   </div>
 
@@ -2110,7 +2111,7 @@ export default function InventoryClient({
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, order_point: val }));
                       }}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className={BB_FIELD_INPUT_MUTED}
                     />
                   </div>
 
@@ -2126,7 +2127,7 @@ export default function InventoryClient({
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, target_stock: val }));
                       }}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className={BB_FIELD_INPUT_MUTED}
                     />
                   </div>
 
@@ -2136,7 +2137,7 @@ export default function InventoryClient({
                       name="new-item-source"
                       value={newItemData.source === null || newItemData.source === undefined ? '' : newItemData.source}
                       onChange={e => setNewItemData(prev => ({ ...prev, source: e.target.value }))}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className={BB_FIELD_INPUT_MUTED}
                     />
                   </div>
 
@@ -2191,7 +2192,7 @@ export default function InventoryClient({
                         v = v.replace(/^0+(?=\d)/, '');
                         setNewItemInsertPosition(v);
                       }}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className={BB_FIELD_INPUT_MUTED}
                     />
                   </div>
                 </div>

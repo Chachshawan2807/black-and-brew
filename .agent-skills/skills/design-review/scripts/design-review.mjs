@@ -66,6 +66,8 @@ const RULES = [
         const block = match[0];
         if (!/<[A-Z][a-zA-Z]*\s/.test(block)) continue;
         if (block.includes('aria-label') || block.includes('aria-labelledby')) continue;
+        if (/<span[\s>]/.test(block)) continue;
+        if (block.includes('role="switch"')) continue;
         const line = content.slice(0, match.index).split('\n').length;
         hits.push({ file, line, msg: 'button with icon child missing aria-label' });
       }

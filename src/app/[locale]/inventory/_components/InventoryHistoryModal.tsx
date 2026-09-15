@@ -502,7 +502,7 @@ export function InventoryHistoryModal({
 
           <span className="inline-flex items-center gap-2">
             แสดง {transactionHistory.length} รายการ
-            {isHistoryRefreshing ? <LoadingIcon size="sm" className="aria-hidden" /> : null}
+            {isHistoryRefreshing ? <LoadingIcon size="sm" aria-hidden /> : null}
           </span>
 
           {hasMoreHistory ? (
@@ -510,11 +510,11 @@ export function InventoryHistoryModal({
               type="button"
               onClick={onLoadMore}
               disabled={isHistoryLoading}
-              className="min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-[13px] font-normal text-foreground bb-transition hover:border-foreground/30 hover:bg-muted disabled:opacity-50"
+              className="min-h-11 touch-manipulation rounded-2xl border border-border bg-background px-4 py-2 text-[13px] font-normal text-foreground bb-transition hover:border-foreground/30 hover:bg-muted disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
             >
               {isHistoryLoading ? (
                 <span className="inline-flex items-center gap-2">
-                  <LoadingIcon size="md" />
+                  <LoadingIcon size="md" aria-hidden />
                   กำลังโหลดประวัติ...
                 </span>
               ) : (

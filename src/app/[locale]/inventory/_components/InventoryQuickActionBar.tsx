@@ -351,7 +351,7 @@ function QuickActionSaveButton({
       {isQuickPending ? (
         <LoadingIcon size="sm" className="text-[#000000]" />
       ) : (
-        <CloudUpload className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+        <CloudUpload className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
       )}
       <span>{isQuickPending ? 'กำลังบันทึก...' : bulkMode ? `บันทึก (${bulkCount})` : 'บันทึก'}</span>
     </button>
@@ -661,7 +661,7 @@ function SecondaryQuickActionButtons({
           INVENTORY_QUICK_ACTION_HOVER.order,
         )}
       >
-        <ShoppingCart className="w-4 h-4 shrink-0" strokeWidth={1.5} />
+        <ShoppingCart className="w-4 h-4 shrink-0" strokeWidth={1.5} aria-hidden />
         <span className="truncate">สั่งซื้อ</span>
         {itemsToOrderCount > 0 && (
           <span className={cn(bbPastelClass('bg-[#bee5eb]'), 'text-[10px] px-1.5 py-0.5 rounded-full font-normal shrink-0')}>
@@ -678,7 +678,7 @@ function SecondaryQuickActionButtons({
           INVENTORY_QUICK_ACTION_HOVER.addItem,
         )}
       >
-        <PlusCircle className="w-4 h-4 shrink-0" strokeWidth={1.5} />
+        <PlusCircle className="w-4 h-4 shrink-0" strokeWidth={1.5} aria-hidden />
         <span className="truncate">เพิ่มสินค้า</span>
       </button>
       <button
@@ -692,7 +692,7 @@ function SecondaryQuickActionButtons({
           INVENTORY_QUICK_ACTION_HOVER.history,
         )}
       >
-        <History className="w-4 h-4 shrink-0" strokeWidth={1.5} />
+        <History className="w-4 h-4 shrink-0" strokeWidth={1.5} aria-hidden />
         <span className="truncate">ประวัติ</span>
       </button>
     </>

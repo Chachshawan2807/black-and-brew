@@ -36,7 +36,8 @@ function SortButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 bb-transition ${
+      aria-pressed={active}
+      className={`flex min-h-[44px] items-center gap-1.5 rounded-lg border px-3 py-2 bb-transition touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 ${
         active
           ? `bb-pastel-surface ${activeClassName}`
           : 'border-border bg-muted text-foreground hover:bg-muted/80'
@@ -45,9 +46,9 @@ function SortButton({
       <span className="text-[11px]">{label}</span>
       {active ? (
         sortOrder === 'desc' ? (
-          <ArrowDown className="h-3.5 w-3.5" />
+          <ArrowDown className="h-3.5 w-3.5" aria-hidden />
         ) : (
-          <ArrowUp className="h-3.5 w-3.5" />
+          <ArrowUp className="h-3.5 w-3.5" aria-hidden />
         )
       ) : null}
     </button>

@@ -67,6 +67,7 @@ export default function SettingsCollapsibleSection({
         <ChevronDown
           size={16}
           strokeWidth={1.75}
+          aria-hidden
           className={cn(
             'shrink-0 text-muted-foreground bb-transition',
             open && 'rotate-180',

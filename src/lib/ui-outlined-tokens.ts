@@ -13,25 +13,29 @@ export const BB_RADIUS_ICON = 'rounded-xl';
 export const BB_BTN_MOTION =
   'bb-transition active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed';
 
+/** Keyboard focus ring for outlined controls */
+export const BB_FOCUS_RING =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15';
+
 /** Default outlined action button */
 export const BB_BTN_OUTLINE =
-  `inline-flex items-center justify-center gap-2 h-11 min-h-[44px] px-4 text-sm font-normal ${BB_RADIUS_SOFT} border border-border/80 bg-card text-foreground hover:bg-muted/40 hover:border-border bb-shadow-sm ${BB_BTN_MOTION}`;
+  `inline-flex items-center justify-center gap-2 h-11 min-h-[44px] px-4 text-sm font-normal ${BB_RADIUS_SOFT} border border-border/80 bg-card text-foreground hover:bg-muted/40 hover:border-border bb-shadow-sm touch-manipulation ${BB_BTN_MOTION} ${BB_FOCUS_RING}`;
 
 /** Outlined primary emphasis (replaces solid fill CTAs) */
 export const BB_BTN_OUTLINE_PRIMARY =
-  `inline-flex items-center justify-center gap-2 h-11 min-h-[44px] px-4 text-sm font-normal ${BB_RADIUS_SOFT} border-2 border-foreground/85 bg-card text-foreground hover:bg-muted/35 hover:border-foreground bb-shadow-sm ${BB_BTN_MOTION}`;
+  `inline-flex items-center justify-center gap-2 h-11 min-h-[44px] px-4 text-sm font-normal ${BB_RADIUS_SOFT} border-2 border-foreground/85 bg-card text-foreground hover:bg-muted/35 hover:border-foreground bb-shadow-sm touch-manipulation ${BB_BTN_MOTION} ${BB_FOCUS_RING}`;
 
 /** Outlined danger */
 export const BB_BTN_OUTLINE_DANGER =
-  `inline-flex items-center justify-center gap-2 h-11 min-h-[44px] px-4 text-sm font-normal ${BB_RADIUS_SOFT} border border-red-500/80 bg-card text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 ${BB_BTN_MOTION}`;
+  `inline-flex items-center justify-center gap-2 h-11 min-h-[44px] px-4 text-sm font-normal ${BB_RADIUS_SOFT} border border-red-500/80 bg-card text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 touch-manipulation ${BB_BTN_MOTION} ${BB_FOCUS_RING}`;
 
 /** Compact outlined button */
 export const BB_BTN_OUTLINE_SM =
-  `inline-flex h-9 min-h-[44px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap ${BB_RADIUS_SOFT} border border-border/80 bg-card px-3.5 text-xs text-foreground hover:bg-muted/35 hover:bb-shadow-sm ${BB_BTN_MOTION}`;
+  `inline-flex h-9 min-h-[44px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap ${BB_RADIUS_SOFT} border border-border/80 bg-card px-3.5 text-xs text-foreground hover:bg-muted/35 hover:bb-shadow-sm touch-manipulation ${BB_BTN_MOTION} ${BB_FOCUS_RING}`;
 
 /** Icon-only control with visible border */
 export const BB_BTN_ICON =
-  `inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center ${BB_RADIUS_SOFT} border border-border/80 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 hover:border-border ${BB_BTN_MOTION}`;
+  `inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center ${BB_RADIUS_SOFT} border border-border/80 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 hover:border-border touch-manipulation ${BB_BTN_MOTION} ${BB_FOCUS_RING}`;
 
 export const BB_BTN_ICON_ACTIVE = 'text-foreground bg-muted/35 border-border';
 
@@ -71,7 +75,7 @@ export const BB_ICON_BADGE_FILL = {
 
 /** Modal close control */
 export const BB_BTN_CLOSE =
-  `inline-flex h-10 w-10 items-center justify-center ${BB_RADIUS_SOFT} border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/35 hover:border-border bb-transition active:scale-95 motion-reduce:active:scale-100 disabled:opacity-50`;
+  `inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center ${BB_RADIUS_SOFT} border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/35 hover:border-border touch-manipulation bb-transition active:scale-95 motion-reduce:active:scale-100 disabled:opacity-50 ${BB_FOCUS_RING}`;
 
 /** Data card / content panel shell */
 export const BB_DATA_CARD =
@@ -83,7 +87,11 @@ export const BB_DATA_LIST =
 
 /** Form field with soft corners */
 export const BB_FIELD_INPUT =
-  `w-full h-11 ${BB_RADIUS_SOFT} border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-foreground/10 focus:border-foreground/30 bb-transition`;
+  `w-full h-11 ${BB_RADIUS_SOFT} border border-border bg-background px-3 text-sm outline-none focus-visible:outline-none focus:ring-2 focus:ring-foreground/10 focus:border-foreground/30 bb-transition`;
+
+/** Read-only or prefilled form fields (muted surface) */
+export const BB_FIELD_INPUT_MUTED =
+  `w-full h-11 px-4 ${BB_RADIUS_SOFT} border border-border bg-muted text-base md:text-sm font-normal text-foreground outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/10 focus:border-foreground/20 bb-transition`;
 
 /** Selected filter chip / scroll tab (outlined, not filled) */
 export const BB_CHIP_SELECTED =
@@ -121,7 +129,7 @@ export const BB_FAB_SHELL =
 
 /** Ghost text action (minimal border on hover) */
 export const BB_BTN_GHOST =
-  `inline-flex items-center gap-1.5 ${BB_RADIUS_SOFT} border border-transparent px-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/35 hover:border-border/60 ${BB_BTN_MOTION}`;
+  `inline-flex items-center gap-1.5 ${BB_RADIUS_SOFT} border border-transparent px-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/35 hover:border-border/60 touch-manipulation ${BB_BTN_MOTION} ${BB_FOCUS_RING}`;
 
 /** Pastel surface: keeps text/icons black in both themes (pair with hex bg fills) */
 export const BB_PASTEL_SURFACE = 'bb-pastel-surface';

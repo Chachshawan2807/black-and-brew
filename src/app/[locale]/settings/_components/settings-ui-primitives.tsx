@@ -10,6 +10,7 @@ import {
   BB_CHIP_SELECTED,
   BB_DATA_CARD,
   BB_FIELD_INPUT,
+  BB_FOCUS_RING,
   BB_ICON_BADGE_BASE,
   BB_ICON_BADGE_FILL,
   BB_RADIUS_ICON,
@@ -22,8 +23,9 @@ export const SETTINGS_SECTION_BODY = 'p-4 md:p-5';
 
 /** Full-width row trigger shared by collapsible sections and install-app row */
 export const SETTINGS_ROW_TRIGGER = cn(
-  'flex w-full items-center gap-3 p-4 md:p-5 text-left bb-transition',
+  'flex w-full min-h-[44px] items-center gap-3 p-4 md:p-5 text-left bb-transition touch-manipulation',
   'hover:bg-muted/30',
+  BB_FOCUS_RING,
 );
 
 export const SETTINGS_BTN = BB_BTN_OUTLINE;

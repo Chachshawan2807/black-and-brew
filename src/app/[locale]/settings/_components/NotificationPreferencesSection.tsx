@@ -70,9 +70,12 @@ function ToggleRow({
         aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={settingsSwitchTrack(checked, disabled)}
+        className={cn(
+          settingsSwitchTrack(checked, disabled),
+          'shrink-0 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15',
+        )}
       >
-        <span className={settingsSwitchThumb(checked)} />
+        <span className={settingsSwitchThumb(checked)} aria-hidden />
       </button>
     </div>
   );
@@ -326,12 +329,18 @@ export default function NotificationPreferencesSection({
           onClick={() => void registerThisDevice()}
           className={cn(SETTINGS_BTN_PRIMARY, 'mb-2 w-full text-[13px] py-2.5 h-auto min-h-[44px]')}
         >
-          {registering ? <LoadingIcon size={16} className="animate-spin" /> : <Bell size={16} strokeWidth={1.75} />}
+          {registering ? (
+            <LoadingIcon size={16} className="animate-spin" aria-hidden />
+          ) : (
+            <Bell size={16} strokeWidth={1.75} aria-hidden />
+          )}
           {isTh ? 'ลงทะเบียนการแจ้งเตือนบนเครื่องนี้' : 'Register notifications on this device'}
         </button>
       )}
       {registerError && (
-        <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2">{registerError}</p>
+        <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2" role="alert">
+          {registerError}
+        </p>
       )}
       {diag && wantsPush && (
         <p className="text-[11px] text-muted-foreground mb-2">
