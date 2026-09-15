@@ -2,6 +2,7 @@ import {
   beginViewTransitionNavigation,
   completeViewTransitionNavigation,
 } from '@/lib/view-transition-navigation-state';
+import { safeRouterNavigate } from '@/lib/warm-route-navigation';
 
 export function supportsViewTransition(): boolean {
   return typeof document !== 'undefined' && typeof document.startViewTransition === 'function';
@@ -44,7 +45,7 @@ export function navigateWithViewTransition(navigate: NavigateFn, href: string): 
   const generation = ++navigationGeneration;
 
   if (!shouldUseViewTransition()) {
-    navigate(href);
+    safeRouterNavigate(navigate, href);
     return;
   }
 
@@ -54,7 +55,7 @@ export function navigateWithViewTransition(navigate: NavigateFn, href: string): 
     if (generation !== navigationGeneration) {
       return waitForRoutePaint;
     }
-    navigate(href);
+    safeRouterNavigate(navigate, href);
     return waitForRoutePaint;
   });
 }
@@ -65,5 +66,5 @@ export function navigateWithViewTransition(navigate: NavigateFn, href: string): 
  */
 export function navigateWithoutViewTransition(navigate: NavigateFn, href: string): void {
   invalidatePendingViewTransitionNavigations();
-  navigate(href);
+  safeRouterNavigate(navigate, href);
 }

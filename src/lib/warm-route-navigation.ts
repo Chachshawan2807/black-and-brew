@@ -1,18 +1,43 @@
 import { preloadRouteChunk } from '@/lib/route-chunk-preload';
 
 type PrefetchFn = (href: string) => void;
+export type RouterNavigateFn = (href: string) => void;
+type RouterRefreshFn = () => void;
 
 const ROUTER_NOT_READY_MESSAGE = 'Router action dispatched before initialization';
 
-function safePrefetch(prefetch: PrefetchFn, href: string): void {
+export function isRouterNotReadyError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes(ROUTER_NOT_READY_MESSAGE);
+}
+
+function swallowRouterNotReady(action: () => void): void {
   try {
-    prefetch(href);
+    action();
   } catch (error) {
-    if (error instanceof Error && error.message.includes(ROUTER_NOT_READY_MESSAGE)) {
+    if (isRouterNotReadyError(error)) return;
+    throw error;
+  }
+}
+
+function safePrefetch(prefetch: PrefetchFn, href: string): void {
+  swallowRouterNotReady(() => prefetch(href));
+}
+
+/** Soft navigate; falls back to a full load if the App Router queue is not ready yet. */
+export function safeRouterNavigate(navigate: RouterNavigateFn, href: string): void {
+  try {
+    navigate(href);
+  } catch (error) {
+    if (isRouterNotReadyError(error)) {
+      window.location.assign(href);
       return;
     }
     throw error;
   }
+}
+
+export function safeRouterRefresh(refresh: RouterRefreshFn): void {
+  swallowRouterNotReady(refresh);
 }
 
 /**

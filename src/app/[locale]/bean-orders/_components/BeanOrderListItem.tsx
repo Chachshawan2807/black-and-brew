@@ -60,7 +60,7 @@ type CopyToast = {
 };
 
 const DETAIL_LINK_PROPS = {
-  prefetch: true,
+  prefetch: false,
   'data-bb-nav': 'instant',
 } as const;
 

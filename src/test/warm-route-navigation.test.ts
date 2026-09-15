@@ -1,5 +1,8 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest';
-import { warmRouteNavigation } from '@/lib/warm-route-navigation';
+import {
+  safeRouterNavigate,
+  warmRouteNavigation,
+} from '@/lib/warm-route-navigation';
 import { resetRouteChunkPreloadForTests } from '@/lib/route-chunk-preload';
 
 describe('warmRouteNavigation', () => {
@@ -34,5 +37,19 @@ describe('warmRouteNavigation', () => {
     });
 
     expect(() => warmRouteNavigation('/th/bean-orders/order-1', prefetch)).toThrow('network failed');
+  });
+
+  test('safeRouterNavigate falls back to location.assign when router is not ready', () => {
+    const assign = vi.fn();
+    vi.stubGlobal('location', { assign });
+
+    const navigate = vi.fn(() => {
+      throw new Error('Internal Next.js error: Router action dispatched before initialization.');
+    });
+
+    safeRouterNavigate(navigate, '/th/inventory');
+
+    expect(navigate).toHaveBeenCalledWith('/th/inventory');
+    expect(assign).toHaveBeenCalledWith('/th/inventory');
   });
 });

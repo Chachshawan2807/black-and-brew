@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
 import { navigateWithoutViewTransition } from '@/lib/view-transition';
+import { safeRouterRefresh } from '@/lib/warm-route-navigation';
 import { useShiftRealtime } from '@/hooks/use-shift-realtime';
 import { useDebouncedShiftRefresh } from '@/hooks/useDebouncedShiftRefresh';
 import { fetchWeekShiftsFromClient } from '@/lib/schedule/client-shift-queries';
@@ -774,7 +775,7 @@ export default function ScheduleClient({
               return acc;
             }, {})
           );
-          router.refresh();
+          safeRouterRefresh(() => router.refresh());
         } catch (error) {
           console.error('Failed to migrate cached regular holidays:', error);
           regularHolidayMigrationInFlightRef.current = false;
