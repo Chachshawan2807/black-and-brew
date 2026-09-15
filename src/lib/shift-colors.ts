@@ -104,6 +104,20 @@ export const SECRETARY_TASK_COLORS = {
   attention: bbPastelClass('bg-[#fde8e8]'),
 } as const;
 
+/** Home secretary board: module keyed pastels (text stays black via bb-pastel-surface) */
+export const SECRETARY_MODULE_CARD_COLORS = {
+  schedule: bbPastelClass('bg-[#e6f0ff]'),
+  dashboard: bbPastelClass('bg-[#ffe0a8]'),
+  inventory: bbPastelClass('bg-[#d4edda]'),
+  inventory_count: bbPastelClass('bg-[#fff3cd]'),
+  inventory_accuracy: bbPastelClass('bg-[#f8d7da]'),
+  branch_withdraw: bbPastelClass('bg-[#d1ecf1]'),
+  bean_orders: bbPastelClass('bg-[#f5efe6]'),
+  maintenance: bbPastelClass('bg-[#ffe4e6]'),
+  branch2: bbPastelClass('bg-[#ffda66]'),
+  custom: bbPastelClass('bg-[#e8e4f5]'),
+} as const;
+
 export const SALES_SECTION_COLORS = {
   headerIcon: bbPastelClass('bg-[#d4edda]'),
   upload: MORNING_LATTE_CREAM,

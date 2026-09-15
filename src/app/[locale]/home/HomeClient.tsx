@@ -1,16 +1,24 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { Plus } from '@/lib/icons';
+import { ClipboardList, Plus } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
-import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import {
   BB_BTN_OUTLINE_SM,
   BB_CHIP_IDLE,
   BB_CHIP_SELECTED,
+  BB_COUNT_BADGE_ACTIVE,
+  BB_COUNT_BADGE_BASE,
+  BB_COUNT_BADGE_IDLE,
+  BB_DATA_CARD,
 } from '@/lib/ui-outlined-tokens';
-import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
+import {
+  formatSecretaryWorkDateLabel,
+  resolveSecretaryBoardCardClass,
+  SECRETARY_MODULE_BOARD_TAGS,
+} from '@/lib/secretary/board-card-surface';
+import { HomePanelEmptyState } from '@/app/[locale]/_components/home-panel-primitives';
 import { mergeSecretarySnapshot } from '@/lib/secretary/snapshot-patch';
 import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
 import { createManualSecretaryTask } from '@/app/actions/home-actions';
@@ -133,6 +141,11 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
     [board.tasks, workDateIso],
   );
 
+  const workDateLabel = useMemo(
+    () => formatSecretaryWorkDateLabel(workDateIso),
+    [workDateIso],
+  );
+
   const handleAddTask = () => {
     const title = newTitle.trim();
     if (!title) return;
@@ -169,20 +182,50 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
   }, []);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-5">
-      <div className="flex flex-wrap gap-2 items-center">
-        <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
-          <button
-            type="button"
-            onClick={() => setShowCreateDialog(true)}
-            onPointerEnter={preloadSecretaryManualTaskDialog}
-            onFocus={preloadSecretaryManualTaskDialog}
-            className={BB_BTN_OUTLINE_SM}
-          >
-            <Plus size={14} />
-            เพิ่มงาน
-          </button>
-        </HintTooltip>
+    <div className="mx-auto w-full max-w-3xl px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-4">
+      <header>
+        <h1 className="bb-page-title-compact text-balance">{workDateLabel}</h1>
+      </header>
+
+      <div className={cn(BB_DATA_CARD, 'space-y-3 p-3 sm:p-4')}>
+        <div className="flex flex-wrap gap-2 items-center justify-start">
+          <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
+            <button
+              type="button"
+              onClick={() => setShowCreateDialog(true)}
+              onPointerEnter={preloadSecretaryManualTaskDialog}
+              onFocus={preloadSecretaryManualTaskDialog}
+              className={BB_BTN_OUTLINE_SM}
+            >
+              <Plus size={14} />
+              เพิ่มงาน
+            </button>
+          </HintTooltip>
+        </div>
+
+        <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">
+        <FilterChip
+          active={moduleFilter === 'all'}
+          onClick={() => setModuleFilter('all')}
+          label={`ทั้งหมด (${visibleTaskCount})`}
+          tip="แสดงงานทุกโมดูล"
+        />
+        {(Object.keys(MODULE_LABELS) as SecretaryTask['module'][]).map((module) => {
+          const count = countConsolidatedSecretaryBoardTasksByModule(board.tasks, module, {
+            workDateIso,
+          });
+          if (count === 0) return null;
+          return (
+            <FilterChip
+              key={module}
+              active={moduleFilter === module}
+              onClick={() => setModuleFilter(module)}
+              label={`${MODULE_LABELS[module]} (${count})`}
+              tip={MODULE_FILTER_TIPS[module]}
+            />
+          );
+        })}
+        </div>
       </div>
 
       <SecretaryManualTaskDialog
@@ -202,47 +245,29 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
         onSave={handleAddTask}
       />
 
-      <div className="flex flex-wrap gap-2">
-        <FilterChip
-          active={moduleFilter === 'all'}
-          onClick={() => setModuleFilter('all')}
-          label={`ทั้งหมด (${visibleTaskCount})`}
-          tip="แสดงงานทุกโมดูล รวมงานที่เสร็จแล้ว"
-        />
-        {(Object.keys(MODULE_LABELS) as SecretaryTask['module'][]).map((module) => {
-          const count = countConsolidatedSecretaryBoardTasksByModule(board.tasks, module, {
-            workDateIso,
-          });
-          if (count === 0) return null;
-          return (
-            <FilterChip
-              key={module}
-              active={moduleFilter === module}
-              onClick={() => setModuleFilter(module)}
-              label={`${MODULE_LABELS[module]} (${count})`}
-              tip={MODULE_FILTER_TIPS[module]}
-            />
-          );
-        })}
-      </div>
-
-      <ul className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+      <section aria-label="รายการงาน" className={cn(BB_DATA_CARD, 'p-3 sm:p-4')}>
+      <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2.5">
         {visibleTasks.length === 0 ? (
           <li className="col-span-full list-none">
-            <EmptyState>ไม่มีงานในตัวกรองนี้</EmptyState>
+            <HomePanelEmptyState
+              compact
+              icon={<ClipboardList size={22} strokeWidth={1.5} />}
+              title="ไม่มีงานในตัวกรองนี้"
+              subtitle="ลองเลือกตัวกรองอื่น หรือเพิ่มงานด้วยตนเอง"
+            />
           </li>
         ) : (
           visibleTasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}
-              isDone={task.status === 'done'}
               onPreloadOpen={() => preloadSecretaryOverlayForTask(task)}
               onOpen={() => setOverlayTask(task)}
             />
           ))
         )}
       </ul>
+      </section>
 
       <SecretaryTaskOverlay
         task={overlayTask}
@@ -259,39 +284,47 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
 
 function TaskCard({
   task,
-  isDone,
   onPreloadOpen,
   onOpen,
 }: {
   task: SecretaryBoardDisplayTask;
-  isDone: boolean;
   onPreloadOpen?: () => void;
   onOpen: () => void;
 }) {
   const titleLines = splitSecretaryCardTitle(task.title);
   const titleFontClass = resolveSecretaryCardTitleFontClass(titleLines.length);
   const canOpenDetail = canOpenSecretaryTaskDetail(task);
+  const moduleTag = SECRETARY_MODULE_BOARD_TAGS[task.module];
+  const groupCount = task.consolidatedTaskIds.length;
   const cardClassName = cn(
-    'flex aspect-square min-h-0 rounded-2xl border p-2.5 bb-transition',
-    isDone ? SECRETARY_TASK_COLORS.done : SECRETARY_TASK_COLORS.card,
-    canOpenDetail ? 'hover:brightness-[0.98] cursor-pointer' : 'cursor-default',
+    'flex aspect-square min-h-0 flex-col rounded-2xl border p-2 bb-transition bb-shadow-sm',
+    resolveSecretaryBoardCardClass(task.module),
+    canOpenDetail
+      ? 'hover:brightness-[0.98] hover:bb-shadow-md cursor-pointer motion-reduce:hover:brightness-100 active:scale-[0.99] motion-reduce:active:scale-100'
+      : 'cursor-default opacity-90',
   );
 
-  const openTip = !canOpenDetail
-    ? 'งานนี้ไม่มีรายละเอียดเพิ่มเติม'
-    : isDone
-      ? 'เปิดรายละเอียดงานที่เสร็จแล้ว'
-      : 'เปิดรายละเอียดงาน';
+  const openTip = canOpenDetail ? 'เปิดงาน' : 'งานนี้เปิดไม่ได้';
 
   const body = (
-    <>
-      <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain bb-smooth-scroll px-0.5 py-0.5">
-        <div className="my-auto flex w-full flex-col items-center gap-1">
+    <div className="flex h-full min-h-0 flex-col gap-1">
+      <div className="flex shrink-0 items-center justify-between gap-1">
+        <span className="truncate rounded-full border border-black/15 bg-white/55 px-2 py-0.5 text-[10px] leading-none text-black/70">
+          {moduleTag}
+        </span>
+        {groupCount > 1 ? (
+          <span className="shrink-0 rounded-full border border-black/15 bg-white/55 px-1.5 py-0.5 text-[10px] tabular-nums leading-none text-black/65">
+            ×{groupCount}
+          </span>
+        ) : null}
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bb-smooth-scroll px-0.5">
+        <div className="my-auto flex w-full flex-col items-center">
           <p
             className={cn(
               'flex w-full flex-col items-center gap-0.5 text-center tracking-[0.01em] [line-break:strict] [overflow-wrap:normal] [word-break:keep-all]',
               titleFontClass,
-              isDone ? 'text-black' : 'text-foreground',
+              'text-black',
             )}
           >
             {titleLines.map((line, index) => (
@@ -302,7 +335,7 @@ function TaskCard({
           </p>
         </div>
       </div>
-    </>
+    </div>
   );
 
   const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -328,7 +361,7 @@ function TaskCard({
           onPointerEnter={canOpenDetail ? warmOverlayChunk : undefined}
           onFocus={canOpenDetail ? warmOverlayChunk : undefined}
           onPointerDown={canOpenDetail ? warmOverlayChunk : undefined}
-          aria-label={canOpenDetail ? `เปิดรายละเอียดงาน ${task.title}` : undefined}
+          aria-label={canOpenDetail ? `เปิดงาน ${task.title}` : undefined}
           className={cn(cardClassName, 'block size-full text-left')}
         >
           {body}
@@ -336,6 +369,12 @@ function TaskCard({
       </HintTooltip>
     </li>
   );
+}
+
+function parseFilterChipLabel(label: string): { text: string; count: string | null } {
+  const match = label.match(/^(.+)\s\((\d+)\)$/);
+  if (!match) return { text: label, count: null };
+  return { text: match[1]!.trim(), count: match[2]! };
 }
 
 function FilterChip({
@@ -349,18 +388,30 @@ function FilterChip({
   label: string;
   tip: string;
 }) {
+  const { text, count } = parseFilterChipLabel(label);
+
   return (
     <HintTooltip tip={tip}>
       <button
         type="button"
         onClick={onClick}
         className={cn(
-          'inline-flex shrink-0 items-center justify-center min-h-10 rounded-2xl border px-3.5 py-2 text-[13px] font-normal whitespace-nowrap bb-transition touch-manipulation',
+          'inline-flex shrink-0 items-center justify-center gap-1.5 min-h-10 rounded-2xl border px-3 py-2 text-[13px] font-normal bb-transition touch-manipulation',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           active ? BB_CHIP_SELECTED : BB_CHIP_IDLE,
         )}
       >
-        {label}
+        <span className="whitespace-nowrap">{text}</span>
+        {count ? (
+          <span
+            className={cn(
+              BB_COUNT_BADGE_BASE,
+              active ? BB_COUNT_BADGE_ACTIVE : BB_COUNT_BADGE_IDLE,
+            )}
+          >
+            {count}
+          </span>
+        ) : null}
       </button>
     </HintTooltip>
   );
