@@ -58,6 +58,7 @@ describe('push-subscription-client', () => {
   test('formatPushRegistrationError returns localized messages', () => {
     expect(formatPushRegistrationError('gesture_required', true)).toContain('กดปุ่ม');
     expect(formatPushRegistrationError('gesture_required', false)).toContain('Register');
+    expect(formatPushRegistrationError('ensure_failed', true)).toContain('ลองใหม่');
   });
 
   test('shouldDeferOsNotificationToPush defers when Android push is active in background', () => {
@@ -175,7 +176,11 @@ describe('push-subscription-client', () => {
       resolve(__dirname, '../lib/push-subscription-client.ts'),
       'utf8',
     );
-    expect(source).toContain('const permissionPromise = ensureNotificationPermissionGranted()');
+    expect(source).toContain('ensureQueue');
+    expect(source).toContain('subscribePushManager');
+    expect(source).toContain('dropLocalPushSubscription');
+    expect(source).toContain('vapidPublicKeyToApplicationServerKey');
+    expect(source).toContain('classifyPushRegistrationError');
     expect(source).toMatch(
       /const registrationPromise = ensurePushServiceWorkerReady\(\)[\s\S]*const permissionPromise = ensureNotificationPermissionGranted\(\)/,
     );
@@ -200,9 +205,7 @@ describe('push-subscription-client', () => {
     expect(source).toMatch(
       /reconcileDevicePushRegistration[\s\S]*verifyServerPushRegistration\(subscription\.endpoint\)/,
     );
-    expect(source).toMatch(
-      /reconcileDevicePushRegistration[\s\S]*waitForAuthenticatedPushPrerequisites/,
-    );
+    expect(source).toContain('shouldReplaceLocalPushSubscription');
   });
 
   test('settings auto-reconciles push with server on load not local-only refresh', () => {
@@ -214,7 +217,8 @@ describe('push-subscription-client', () => {
     expect(source).toContain('schedulePushSubscriptionMaintenance(locale, { immediate: true })');
     expect(source).toContain('warmPushRegistrationStack');
     expect(source).toContain('skipNextAutomaticPrefsSyncRef');
-    expect(source).toContain('PUSH_REGISTRATION_UPDATED_EVENT');
+    expect(source).toContain('showRegisterButton');
+    expect(source).not.toContain('showIosRegister');
   });
 
   test('refreshPushSubscriptionState gates on wantsPushRegistration only not inventory enabled', () => {

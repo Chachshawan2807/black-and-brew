@@ -22,7 +22,6 @@ import {
   hasServerPushRegistration,
   reconcileDevicePushRegistration,
   refreshLocalPushSubscriptionState,
-  requiresUserGestureForPushSubscribe,
   PUSH_REGISTRATION_UPDATED_EVENT,
   schedulePushSubscriptionMaintenance,
   syncPushPrefsToServer,
@@ -86,7 +85,6 @@ function ToggleRow({
 export default function NotificationPreferencesSection({
   locale }: NotificationPreferencesSectionProps) {
   const isTh = locale === 'th';
-  const isIos = requiresUserGestureForPushSubscribe();
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPreferences());
   const [permission, setPermission] = useState(() => getNotificationPermissionState());
   const [devicePushState, setDevicePushState] = useState<'none' | 'local_only' | 'server'>('none');
@@ -295,8 +293,8 @@ export default function NotificationPreferencesSection({
   };
 
   const masterOn = isNotificationMasterEnabled(prefs);
-  const showIosRegister =
-    isIos && wantsPush && permission !== 'denied' && devicePushState !== 'server';
+  const showRegisterButton =
+    wantsPush && permission !== 'denied' && devicePushState !== 'server';
 
   return (
     <div>
@@ -340,7 +338,7 @@ export default function NotificationPreferencesSection({
                 : 'This device is not registered for push alerts'}
         </p>
       )}
-      {showIosRegister && (
+      {showRegisterButton && (
         <button
           type="button"
           disabled={registering}

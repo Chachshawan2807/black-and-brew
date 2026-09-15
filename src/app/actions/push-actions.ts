@@ -224,16 +224,17 @@ export async function getPushDiagnostics(): Promise<{
 
 export async function verifyDevicePushRegistration(endpoint: string): Promise<{
   registered: boolean;
+  status: 'registered' | 'missing' | 'unauthorized' | 'error';
   platform: 'apple' | 'fcm' | 'other' | 'unknown';
 }> {
   const auth = await ensureServerSession();
   if (!auth.ok) {
-    return { registered: false, platform: 'unknown' };
+    return { registered: false, status: 'unauthorized', platform: 'unknown' };
   }
 
   const trimmed = endpoint.trim();
   if (!trimmed) {
-    return { registered: false, platform: 'unknown' };
+    return { registered: false, status: 'missing', platform: 'unknown' };
   }
 
   const platform = trimmed.includes('web.push.apple.com')
@@ -255,13 +256,17 @@ export async function verifyDevicePushRegistration(endpoint: string): Promise<{
 
     if (error) {
       console.error('Supabase Error:', error.message, error.details);
-      return { registered: false, platform };
+      return { registered: false, status: 'error', platform };
     }
 
-    return { registered: Boolean(data), platform };
+    return {
+      registered: Boolean(data),
+      status: data ? 'registered' : 'missing',
+      platform,
+    };
   } catch (error) {
     console.error('[verifyDevicePushRegistration] Exception:', error);
-    return { registered: false, platform };
+    return { registered: false, status: 'error', platform };
   }
 }
 

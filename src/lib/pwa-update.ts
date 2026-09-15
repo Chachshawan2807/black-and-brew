@@ -50,7 +50,12 @@ export function ensurePushServiceWorkerReady(): Promise<ServiceWorkerRegistratio
   if (!pushSwReadyPromise) {
     pushSwReadyPromise = navigator.serviceWorker
       .register(PWA_SERVICE_WORKER_PATH, { updateViaCache: 'none' })
-      .then(() => navigator.serviceWorker.ready)
+      .then(async (registration) => {
+        if (!registration.active) {
+          await navigator.serviceWorker.ready;
+        }
+        return navigator.serviceWorker.ready;
+      })
       .catch((error) => {
         pushSwReadyPromise = null;
         throw error;
