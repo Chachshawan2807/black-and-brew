@@ -23,11 +23,11 @@ describe('home secretary board load', () => {
     );
   });
 
-  test('home page starts board fetch without waiting for checkAuth', () => {
+  test('home page loads board on the client for instant paint', () => {
     const source = readFileSync(homePagePath, 'utf-8');
-    expect(source).toContain('const boardPromise = loadSecretaryBoard');
-    expect(source).toContain('const authed = await checkAuth()');
-    expect(source).toContain('HomePageLoadingSkeleton');
+    expect(source).toContain('HomeClientEntry');
+    expect(source).not.toContain('loadSecretaryBoard');
+    expect(source).not.toContain('checkAuth');
   });
 
   test('HomeClient triggers background board sync after SSR hydrate', () => {

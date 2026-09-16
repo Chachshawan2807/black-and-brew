@@ -3,25 +3,27 @@ import { resolve } from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 const homePagePath = resolve(__dirname, '../app/[locale]/home/page.tsx');
-const bootstrapPath = resolve(
+const homeEntryPath = resolve(
   __dirname,
-  '../app/[locale]/home/_components/HomeClientAuthBootstrap.tsx',
+  '../app/[locale]/home/_components/HomeClientEntry.tsx',
 );
 const pinGatewayPath = resolve(__dirname, '../components/auth/PinGateway.tsx');
 
 describe('home client auth bootstrap', () => {
   test('home page loads board on the client when server auth is still pending', () => {
     const page = readFileSync(homePagePath, 'utf-8');
-    expect(page).toContain('HomeClientAuthBootstrap');
+    expect(page).toContain('HomeClientEntry');
     expect(page).not.toContain('กำลังตรวจสอบสิทธิ์');
     expect(page).not.toContain('HomeAuthRefresh');
   });
 
-  test('bootstrap fetches secretary board after server session is verified', () => {
-    const bootstrap = readFileSync(bootstrapPath, 'utf-8');
-    expect(bootstrap).not.toContain('getAuthSessionInfo');
+  test('home entry fetches secretary board on the client with session cache', () => {
+    const bootstrap = readFileSync(homeEntryPath, 'utf-8');
     expect(bootstrap).toContain('loadSecretaryBoard');
     expect(bootstrap).toContain('readCachedSecretaryBoard');
+    expect(bootstrap).toMatch(
+      /useState<SecretaryBoard \| null>\(\(\) => readCachedSecretaryBoard\(locale\)\)/,
+    );
     expect(bootstrap).toContain('bb-pin-authenticated');
     expect(bootstrap).toContain('HomeClient');
   });
