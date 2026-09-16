@@ -829,6 +829,31 @@ export async function syncPushPrefsToServer(
 
 export type DevicePushRegistrationState = 'server' | 'local_only' | 'none';
 
+/** UI success for device push registration (Settings register button, banners). */
+export function isDevicePushRegisteredOnServer(
+  state: DevicePushRegistrationState,
+): state is 'server' {
+  return state === 'server';
+}
+
+export type DevicePushRegistrationGestureResult = {
+  deviceState: DevicePushRegistrationState;
+};
+
+/**
+ * Settings "Register this device" pipeline: gesture ensure, then reconcile.
+ * Treat {@link isDevicePushRegisteredOnServer} on `deviceState` as success only.
+ * Do not branch on `ensurePushSubscription` boolean alone; reconcile may confirm
+ * `server` after ensure returns false (endpoint already on server, PIN unlock, etc.).
+ */
+export async function registerDevicePushFromUserGesture(
+  locale: string,
+): Promise<DevicePushRegistrationGestureResult> {
+  await ensurePushSubscriptionFromUserGesture(locale);
+  const deviceState = await reconcileDevicePushRegistration(locale, { fromUserGesture: true });
+  return { deviceState };
+}
+
 /**
  * Single source of truth for Settings / iOS banner status.
  * 1) Wait for PIN + Supabase (server actions need bb_auth_pin_verified).

@@ -21,8 +21,10 @@ import {
   getLastPushRegistrationDetail,
   hasLocalPushSubscription,
   hasServerPushRegistration,
+  isDevicePushRegisteredOnServer,
   reconcileDevicePushRegistration,
   refreshLocalPushSubscriptionState,
+  registerDevicePushFromUserGesture,
   PUSH_REGISTRATION_UPDATED_EVENT,
   schedulePushSubscriptionMaintenance,
   syncPushPrefsToServer,
@@ -187,13 +189,11 @@ export default function NotificationPreferencesSection({
     setRegisterError(null);
     try {
       warmPushRegistrationStack();
-      await ensurePushSubscriptionFromUserGesture(locale);
+      const { deviceState } = await registerDevicePushFromUserGesture(locale);
       setPermission(getNotificationPermissionState());
-      const deviceState = await refreshDeviceState({ fromUserGesture: true });
+      setDevicePushState(deviceState);
 
-      // reconcileDevicePushRegistration is the source of truth; ensure may return false
-      // while refresh still confirms server (e.g. endpoint already registered after PIN unlock).
-      if (deviceState === 'server') {
+      if (isDevicePushRegisteredOnServer(deviceState)) {
         setRegisterError(null);
         return true;
       }
