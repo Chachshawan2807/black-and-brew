@@ -186,14 +186,12 @@ export default function NotificationPreferencesSection({
       const ok = await ensurePushSubscriptionFromUserGesture(locale);
       setPermission(getNotificationPermissionState());
       await refreshDeviceState({ fromUserGesture: true });
-      if (!ok && !hasServerPushRegistration()) {
-        const err = getLastPushRegistrationError();
+      if (!ok || !hasServerPushRegistration()) {
+        const err = getLastPushRegistrationError() ?? 'ensure_failed';
         const detail = getLastPushRegistrationDetail();
-        const formatted = err
-          ? formatPushRegistrationError(err, isTh)
-          : formatPushRegistrationError('ensure_failed', isTh);
+        const formatted = formatPushRegistrationError(err, isTh);
         setRegisterError(detail ? `${formatted} (${detail})` : formatted);
-        return false;
+        return hasServerPushRegistration();
       }
 
       return true;

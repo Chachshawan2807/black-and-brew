@@ -117,9 +117,20 @@ if (targets.length > 25) {
 }
 
 if (!args.apply) {
-  console.log('\nDry-run complete. Re-run with --apply to delete.');
-  console.log('  stale: node scripts/push-subscriptions-cleanup.mjs --apply --mode=stale');
-  console.log('  all:   node scripts/push-subscriptions-cleanup.mjs --apply --mode=all --confirm=REMOVE_ALL');
+  console.log('\nDry-run complete. No rows were deleted.');
+  if (all.length > 0) {
+    console.log(
+      `The Settings screen still shows ${all.length} device(s) until you run with --apply.`,
+    );
+    if (args.mode === 'stale' && stale.length === 0) {
+      console.log(
+        'Mode stale deletes nothing when every row was updated in the last 60 days. Use --mode=all for a full reset.',
+      );
+    }
+  }
+  console.log('\nRe-run with --apply to delete.');
+  console.log('  stale: npm run push:cleanup:apply');
+  console.log('  all:   npm run push:cleanup:all');
   process.exit(0);
 }
 

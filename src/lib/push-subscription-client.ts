@@ -704,10 +704,14 @@ export async function ensurePushSubscription(
   locale: string,
   options: { fromUserGesture?: boolean } = {},
 ): Promise<boolean> {
-  const run = ensureQueue.then(() => {
+  const run = ensureQueue.then(async () => {
     if (hasServerPushRegistration() && localPushSubscription) {
-      setPushRegistrationError(null);
-      return true;
+      const status = await inspectServerPushRegistration(localPushSubscription.endpoint);
+      if (status === 'registered') {
+        setPushRegistrationError(null);
+        return true;
+      }
+      serverPushRegistrationConfirmed = false;
     }
     return ensurePushSubscriptionUnqueued(locale, options);
   });
@@ -879,9 +883,15 @@ export async function reconcileDevicePushRegistration(
     const recovered = await recoverLocalPushSubscription(registration);
     if (recovered) {
       localPushSubscription = recovered;
+      if (!getLastPushRegistrationError()) {
+        setPushRegistrationError('server_not_registered');
+      }
       return 'local_only';
     }
 
+    if (!getLastPushRegistrationError()) {
+      setPushRegistrationError('ensure_failed');
+    }
     return 'none';
   } catch (error) {
     logPushClientIssue('reconcile failed', error);
