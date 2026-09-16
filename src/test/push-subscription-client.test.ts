@@ -247,7 +247,14 @@ describe('push-subscription-client', () => {
     expect(source).toContain('skipNextAutomaticPrefsSyncRef');
     expect(source).toContain('refreshDeviceState({ fromUserGesture: true })');
     expect(source).toContain('getLastPushRegistrationDetail');
-    expect(source).toContain('ok && deviceState === \'server\'');
+    const registerBlock = source.match(
+      /const registerThisDevice = async[\s\S]*?^\  };/m,
+    )?.[0];
+    expect(registerBlock).toBeTruthy();
+    expect(registerBlock).toMatch(
+      /await ensurePushSubscriptionFromUserGesture[\s\S]*?if \(deviceState === 'server'\)[\s\S]*?setRegisterError\(null\)/,
+    );
+    expect(registerBlock).not.toMatch(/if \(!ok\)/);
     expect(source).not.toContain('showIosRegister');
   });
 

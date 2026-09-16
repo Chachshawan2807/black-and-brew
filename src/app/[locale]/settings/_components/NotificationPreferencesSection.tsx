@@ -187,10 +187,13 @@ export default function NotificationPreferencesSection({
     setRegisterError(null);
     try {
       warmPushRegistrationStack();
-      const ok = await ensurePushSubscriptionFromUserGesture(locale);
+      await ensurePushSubscriptionFromUserGesture(locale);
       setPermission(getNotificationPermissionState());
       const deviceState = await refreshDeviceState({ fromUserGesture: true });
-      if (ok && deviceState === 'server') {
+
+      // reconcileDevicePushRegistration is the source of truth; ensure may return false
+      // while refresh still confirms server (e.g. endpoint already registered after PIN unlock).
+      if (deviceState === 'server') {
         setRegisterError(null);
         return true;
       }
