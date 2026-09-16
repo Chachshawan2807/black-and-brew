@@ -151,7 +151,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
         const locale = (params?.locale as string) || 'th';
         void (async () => {
           await (supabaseSessionTask ?? ensureSupabaseSession());
-          await registerPushAfterAuthentication(locale);
+          await registerPushAfterAuthentication(locale, { fromUserGesture: true });
         })();
         return;
       }

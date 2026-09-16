@@ -48,6 +48,13 @@ export function requiresUserGestureForPushSubscribe(
   return /iPhone|iPad|iPod/i.test(userAgent);
 }
 
+/** Android PWAs can subscribe after PIN without a separate Settings tap. */
+export function isAndroidWebPushClient(
+  userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '',
+): boolean {
+  return /Android/i.test(userAgent);
+}
+
 export function getLastPushRegistrationError(): string | null {
   return lastPushRegistrationError;
 }
@@ -109,6 +116,8 @@ export function formatPushRegistrationError(code: string, isTh: boolean): string
 const MAINTENANCE_DEBOUNCE_MS = 120;
 /** Retry when Supabase / PIN cookies are not ready yet after unlock. */
 const MAINTENANCE_RETRY_MS = [0, 250, 700, 1_500] as const;
+/** Android: longer window after PIN while SW + anonymous session settle. */
+const ANDROID_PIN_AUTH_RETRY_MS = [0, 250, 700, 1_500, 3_000] as const;
 const AUTH_SESSION_POLL_MS = 150;
 const AUTH_SESSION_POLL_MAX = 24;
 
@@ -157,19 +166,37 @@ export async function registerPushAfterAuthentication(
     return false;
   }
 
+  const android = isAndroidWebPushClient();
+  const fromUserGesture = options.fromUserGesture === true || android;
+
   warmPushRegistrationStack();
+  await refreshSupabaseAccessToken();
   await waitForAuthenticatedPushPrerequisites();
 
-  const ok = await ensurePushSubscription(locale, {
-    fromUserGesture: options.fromUserGesture === true,
-  });
-  const reconciled = await reconcileDevicePushRegistration(locale, {
-    fromUserGesture: options.fromUserGesture === true,
-  });
-  if (!ok && reconciled !== 'server') {
-    schedulePushSubscriptionMaintenance(locale, { immediate: true });
+  const retryMs = android ? ANDROID_PIN_AUTH_RETRY_MS : MAINTENANCE_RETRY_MS;
+
+  for (let attempt = 0; attempt < retryMs.length; attempt += 1) {
+    const delay = retryMs[attempt];
+    if (delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
+    if (!wantsPushRegistration(loadNotificationPreferences())) {
+      return false;
+    }
+
+    const ok = await ensurePushSubscription(locale, { fromUserGesture });
+    const reconciled = await reconcileDevicePushRegistration(locale, { fromUserGesture });
+    if (ok || reconciled === 'server') {
+      setPushRegistrationError(null);
+      return true;
+    }
+
+    if (!android) break;
   }
-  return ok || reconciled === 'server';
+
+  schedulePushSubscriptionMaintenance(locale, { immediate: true });
+  return hasServerPushRegistration();
 }
 
 function queuePushSubscriptionMaintenance(locale: string): void {

@@ -33,7 +33,7 @@ describe('home client auth bootstrap', () => {
       /completeAuthentication[\s\S]*registerPushAfterAuthentication\(locale,\s*\{ fromUserGesture: true \}\)/,
     );
     expect(pin).toMatch(
-      /serverSession\.verified[\s\S]*registerPushAfterAuthentication\(locale\)/,
+      /serverSession\.verified[\s\S]*registerPushAfterAuthentication\(locale,\s*\{ fromUserGesture: true \}\)/,
     );
   });
 });

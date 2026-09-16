@@ -5,6 +5,7 @@ import {
   formatPushRegistrationError,
   hasMatchingApplicationServerKey,
   hasServerPushRegistration,
+  isAndroidWebPushClient,
   requiresUserGestureForPushSubscribe,
   shouldDeferOsNotificationToPush,
   urlBase64ToUint8Array,
@@ -35,6 +36,19 @@ describe('push-subscription-client', () => {
 
   test('treats subscriptions without an exposed applicationServerKey as valid (Safari/iOS)', () => {
     expect(hasMatchingApplicationServerKey(makeSubscription(null), 'BAAAAAAAAA')).toBe(true);
+  });
+
+  test('isAndroidWebPushClient detects Android PWAs', () => {
+    expect(
+      isAndroidWebPushClient(
+        'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/150.0.0.0 Mobile Safari/537.36',
+      ),
+    ).toBe(true);
+    expect(
+      isAndroidWebPushClient(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15',
+      ),
+    ).toBe(false);
   });
 
   test('requiresUserGestureForPushSubscribe detects iPhone and iPad', () => {
@@ -170,6 +184,9 @@ describe('push-subscription-client', () => {
     expect(source).toContain('waitForAuthenticatedPushPrerequisites');
     expect(source).toContain('getAuthSessionInfo');
     expect(source).toContain('fromUserGesture: options.fromUserGesture === true');
+    expect(source).toContain('isAndroidWebPushClient');
+    expect(source).toContain('ANDROID_PIN_AUTH_RETRY_MS');
+    expect(source).toContain('await refreshSupabaseAccessToken()');
   });
 
   test('ensurePushSubscription requests permission in parallel with SW and session', () => {
