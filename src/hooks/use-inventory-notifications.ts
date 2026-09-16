@@ -80,7 +80,12 @@ import {
   requestNotificationPermission,
   SW_INVENTORY_PUSH_RECEIVED,
 } from '@/lib/pwa-notification-bridge';
-import { shouldDeferOsNotificationToPush, refreshLocalPushSubscriptionState, wantsPushRegistration } from '@/lib/push-subscription-client';
+import {
+  hasServerPushRegistration,
+  refreshLocalPushSubscriptionState,
+  shouldDeferOsNotificationToPush,
+  wantsPushRegistration,
+} from '@/lib/push-subscription-client';
 import { isScheduleNotification, isSecurityNotification } from '@/lib/notification-display-icon';
 import { getNotificationCatchUpLimit } from '@/lib/dev-runtime';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
@@ -472,13 +477,14 @@ export function useInventoryNotifications() {
       const allInsights = eligible.every(isEligibleInsightNotification);
       const allSecurity = eligible.every(isEligibleSecurityNotification);
       const deferOsToPush = shouldDeferOsNotificationToPush(prefsRef.current);
+      const serverPushReady = hasServerPushRegistration();
       if (allDailyReports || allBeanOrder || allInsights || allSecurity) {
         for (const row of eligible) {
           pushNotification(formatNotificationRow(row, loc), undefined, {
             skipSystemNotification: allDailyReports
-              ? skipDailyReportOsNotification
+              ? skipDailyReportOsNotification && serverPushReady
               : allInsights
-                ? skipInsightOsNotification
+                ? skipInsightOsNotification && serverPushReady
                 : deferOsToPush,
           });
         }

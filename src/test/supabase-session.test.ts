@@ -53,7 +53,15 @@ describe('ensureSupabaseSession', () => {
   });
 
   test('returns immediately when session is already ensured', async () => {
-    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1' } } } });
+    getSession.mockResolvedValue({
+      data: {
+        session: {
+          user: { id: 'u1' },
+          access_token: 'tok-1',
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+        },
+      },
+    });
 
     const { ensureSupabaseSession } = await import('@/lib/supabase-session');
 
@@ -143,6 +151,30 @@ describe('ensureSupabaseSession', () => {
     expect(signInAnonymously).not.toHaveBeenCalled();
   });
 
+  test('does not reuse an expired JWT when anonymous sign-in fails', async () => {
+    const expiredAt = Math.floor(Date.now() / 1000) - 120;
+    getSession.mockResolvedValue({
+      data: {
+        session: { user: { id: 'u1' }, access_token: 'tok-expired', expires_at: expiredAt },
+      },
+    });
+    refreshSession.mockResolvedValue({
+      data: { session: null },
+      error: { message: 'token is expired' },
+    });
+    signOut.mockResolvedValue({ error: null });
+    signInAnonymously.mockResolvedValue({
+      error: { message: 'anonymous sign-ins disabled' },
+      data: { session: null },
+    });
+
+    const { getSupabaseAccessToken } = await import('@/lib/supabase-session');
+
+    expect(await getSupabaseAccessToken()).toBeNull();
+    expect(signOut).toHaveBeenCalled();
+    expect(signInAnonymously).toHaveBeenCalledTimes(1);
+  });
+
   test('getSupabaseAccessToken signs in anonymously when refresh of an expired JWT fails', async () => {
     const expiredAt = Math.floor(Date.now() / 1000) - 120;
     getSession.mockResolvedValue({
@@ -154,6 +186,7 @@ describe('ensureSupabaseSession', () => {
       data: { session: null },
       error: { message: 'token is expired' },
     });
+    signOut.mockResolvedValue({ error: null });
     signInAnonymously.mockResolvedValue({
       error: null,
       data: {

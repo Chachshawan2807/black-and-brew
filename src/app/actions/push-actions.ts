@@ -81,6 +81,41 @@ async function resolveUserId(accessToken: string): Promise<string | null> {
   return null;
 }
 
+async function resolvePushUserIdForPinSession(
+  accessToken: string,
+  clientSessionId?: string | null,
+): Promise<string | null> {
+  const fromJwt = await resolveUserId(accessToken);
+  if (fromJwt) return fromJwt;
+
+  const bindingUserId = process.env.PIN_PUSH_BINDING_USER_ID?.trim();
+  if (bindingUserId) return bindingUserId;
+
+  const sessionKey = clientSessionId?.trim();
+  if (!sessionKey) return null;
+
+  try {
+    const admin = createServiceRoleClient();
+    const { data, error } = await admin
+      .from('push_subscriptions')
+      .select('user_id')
+      .eq('client_session_id', sessionKey)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[resolvePushUserIdForPinSession] Supabase Error:', error.message, error.details);
+      return null;
+    }
+
+    return data?.user_id ?? null;
+  } catch (error) {
+    console.error('[resolvePushUserIdForPinSession] Exception:', error);
+    return null;
+  }
+}
+
 function prefsWithLocale(prefs: Partial<NotificationPreferences> | undefined, locale?: string) {
   return {
     ...DEFAULT_NOTIFICATION_PREFERENCES,
@@ -115,7 +150,9 @@ export async function registerPushSubscription(
     }
 
     const safe = parsed.data;
-    const userId = auth.userId ?? (await resolveUserId(safe.accessToken));
+    const userId =
+      auth.userId ??
+      (await resolvePushUserIdForPinSession(safe.accessToken, safe.clientSessionId));
     if (!userId) {
       console.error('[registerPushSubscription] Missing Supabase user id');
       return { success: false, error: 'supabase_session_missing' };

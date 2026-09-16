@@ -182,6 +182,10 @@ describe('push-subscription-client', () => {
     expect(source).toContain('dropLocalPushSubscription');
     expect(source).toContain('vapidApplicationServerKeyCandidates');
     expect(source).toContain("fetch('/api/push/register'");
+    expect(source).toMatch(
+      /registerPushSubscriptionOnServer[\s\S]*registerPushSubscriptionViaHttp[\s\S]*registerPushSubscription\(/,
+    );
+    expect(source).toContain('await refreshSupabaseAccessToken()');
     expect(source).toContain('registerPushSubscription');
     expect(source).toContain('classifyPushRegistrationError');
     expect(source).toMatch(

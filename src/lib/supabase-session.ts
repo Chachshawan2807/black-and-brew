@@ -13,26 +13,45 @@ type SessionLike = {
 } | null;
 
 function rememberSession(session: SessionLike): boolean {
-  if (!session) {
+  if (!session?.access_token) {
     cachedAccessToken = null;
     cachedExpiresAtMs = 0;
     return false;
   }
 
-  cachedAccessToken = session.access_token ?? null;
+  cachedAccessToken = session.access_token;
   cachedExpiresAtMs = typeof session.expires_at === 'number' ? session.expires_at * 1000 : 0;
   return true;
 }
 
 function isCachedTokenFresh(): boolean {
-  if (!sessionReady) return false;
+  if (!sessionReady || !cachedAccessToken) return false;
   if (!cachedExpiresAtMs) return true;
   return Date.now() < cachedExpiresAtMs - TOKEN_EXPIRY_SKEW_MS;
 }
 
 function sessionTokenNeedsRefresh(session: SessionLike): boolean {
-  if (!session?.access_token || typeof session.expires_at !== 'number') return false;
+  if (!session?.access_token) return true;
+  if (typeof session.expires_at !== 'number') return false;
   return session.expires_at * 1000 <= Date.now() + TOKEN_EXPIRY_SKEW_MS;
+}
+
+async function refreshOrClearSession(): Promise<SessionLike> {
+  const { data, error } = await supabase.auth.refreshSession();
+  if (!error && data.session?.access_token) {
+    return data.session;
+  }
+  await supabase.auth.signOut({ scope: 'local' });
+  return null;
+}
+
+async function signInAnonymouslyFresh(): Promise<SessionLike> {
+  const { data, error } = await supabase.auth.signInAnonymously();
+  if (error) {
+    console.error('[Supabase] Anonymous sign-in failed:', error.message);
+    return null;
+  }
+  return data.session;
 }
 
 async function ensureSupabaseSessionInternal(): Promise<boolean> {
@@ -44,20 +63,15 @@ async function ensureSupabaseSessionInternal(): Promise<boolean> {
     return rememberSession(session);
   }
 
-  if (session && sessionTokenNeedsRefresh(session)) {
-    const { data, error } = await supabase.auth.refreshSession();
-    if (!error && data.session) {
-      return rememberSession(data.session);
+  if (session?.access_token) {
+    const refreshed = await refreshOrClearSession();
+    if (refreshed) {
+      return rememberSession(refreshed);
     }
   }
 
-  const { data, error } = await supabase.auth.signInAnonymously();
-  if (error) {
-    console.error('[Supabase] Anonymous sign-in failed:', error.message);
-    return session ? rememberSession(session) : false;
-  }
-
-  return rememberSession(data.session);
+  const anonymous = await signInAnonymouslyFresh();
+  return rememberSession(anonymous);
 }
 
 /**
@@ -82,11 +96,17 @@ export async function ensureSupabaseSession(): Promise<boolean> {
         if (ok) {
           sessionReady = true;
         } else {
+          sessionReady = false;
+          cachedAccessToken = null;
+          cachedExpiresAtMs = 0;
           ensureSessionPromise = null;
         }
         return ok;
       })
       .catch((err) => {
+        sessionReady = false;
+        cachedAccessToken = null;
+        cachedExpiresAtMs = 0;
         ensureSessionPromise = null;
         throw err;
       });
@@ -104,6 +124,9 @@ export async function ensureSupabaseSession(): Promise<boolean> {
 export async function getSupabaseAccessToken(): Promise<string | null> {
   const ok = await ensureSupabaseSession();
   if (!ok) return null;
+  if (!isCachedTokenFresh()) {
+    return refreshSupabaseAccessToken();
+  }
   return cachedAccessToken;
 }
 

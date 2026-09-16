@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 const mockUpsert = vi.fn();
 const mockGetUser = vi.fn();
 const mockCookieGet = vi.fn();
+const mockMaybeSingle = vi.fn();
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn().mockImplementation(async () => ({
@@ -20,6 +21,15 @@ vi.mock('@supabase/supabase-js', () => ({
       return {
         from: vi.fn(() => ({
           upsert: mockUpsert,
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              order: vi.fn(() => ({
+                limit: vi.fn(() => ({
+                  maybeSingle: mockMaybeSingle,
+                })),
+              })),
+            })),
+          })),
         })),
       };
     }
@@ -54,6 +64,7 @@ describe('registerPushSubscription', () => {
       error: null,
     });
     mockUpsert.mockResolvedValue({ error: null });
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
   });
 
   test('upserts via service role after JWT validation so endpoint reclaim bypasses RLS', async () => {
@@ -99,6 +110,30 @@ describe('registerPushSubscription', () => {
 
     expect(result).toEqual({ success: false, error: 'pin_session_required' });
     expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
+  test('reuses prior push user_id by client_session_id when JWT is expired but PIN session is valid', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'token is expired', status: 403 },
+    });
+    mockMaybeSingle.mockResolvedValue({
+      data: { user_id: 'prior-user-id' },
+      error: null,
+    });
+
+    const result = await registerPushSubscription({
+      accessToken: 'expired-token',
+      endpoint: 'https://fcm.googleapis.com/fcm/send/device-1',
+      keys: { p256dh: 'p256', auth: 'auth' },
+      clientSessionId: 'bb-session-1',
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: 'prior-user-id' }),
+      { onConflict: 'endpoint' },
+    );
   });
 
   test('rejects when Auth getUser fails does not trust unsigned JWT payload', async () => {

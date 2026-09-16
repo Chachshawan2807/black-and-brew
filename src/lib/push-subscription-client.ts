@@ -446,6 +446,16 @@ async function registerPushSubscriptionViaHttp(
 async function registerPushSubscriptionOnServer(
   input: PushRegisterInput,
 ): Promise<PushRegisterTransportResult> {
+  try {
+    const viaHttp = await registerPushSubscriptionViaHttp(input);
+    if (viaHttp.success) return viaHttp;
+    if (!isRetryablePushRegisterError(viaHttp.error) && viaHttp.error !== 'ensure_failed') {
+      return viaHttp;
+    }
+  } catch (error) {
+    logPushClientIssue('http register threw', error);
+  }
+
   const viaAction = await registerPushSubscription(input).catch((error: unknown) => {
     logPushClientIssue('server register threw', error);
     return {
@@ -453,17 +463,7 @@ async function registerPushSubscriptionOnServer(
       error: classifyPushRegistrationError(error),
     };
   });
-  if (viaAction.success) return viaAction;
-  if (!isRetryablePushRegisterError(viaAction.error) && viaAction.error !== 'ensure_failed') {
-    return viaAction;
-  }
-
-  try {
-    return await registerPushSubscriptionViaHttp(input);
-  } catch (error) {
-    logPushClientIssue('http register threw', error);
-    return { success: false, error: classifyPushRegistrationError(error) };
-  }
+  return viaAction;
 }
 
 async function registerSubscriptionWithServer(
@@ -693,6 +693,7 @@ export async function ensurePushSubscription(
 
 /** Call directly from a button/toggle click required for first-time iOS Web Push. */
 export async function ensurePushSubscriptionFromUserGesture(locale: string): Promise<boolean> {
+  await refreshSupabaseAccessToken();
   return ensurePushSubscription(locale, { fromUserGesture: true });
 }
 
@@ -786,7 +787,11 @@ export async function reconcileDevicePushRegistration(
 
   const authReady = await waitForAuthenticatedPushPrerequisites();
   if (!authReady) {
-    setPushRegistrationError('pin_session_required');
+    const { getAuthSessionInfo } = await import('@/app/actions/auth');
+    const pinSession = await getAuthSessionInfo();
+    setPushRegistrationError(
+      pinSession.verified ? 'supabase_session_missing' : 'pin_session_required',
+    );
     return 'none';
   }
 
