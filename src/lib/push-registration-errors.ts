@@ -32,6 +32,12 @@ export function classifyPushRegistrationError(error: unknown): string {
   ) {
     return 'server_unreachable';
   }
+  if (/http_401|http_403|unauthorized|session missing or invalid/i.test(combined)) {
+    return 'pin_session_required';
+  }
+  if (/http_5\d\d|http_404/.test(combined)) {
+    return 'server_unreachable';
+  }
 
   return 'ensure_failed';
 }

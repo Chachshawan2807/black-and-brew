@@ -105,17 +105,21 @@ export default function NotificationPreferencesSection({
     const permissionState = getNotificationPermissionState();
     setPermission(permissionState);
 
+    let nextState: 'none' | 'local_only' | 'server' = 'none';
     if (wantsPushRegistration(prefs) && permissionState === 'granted') {
-      setDevicePushState(await reconcileDevicePushRegistration(locale, options));
+      nextState = await reconcileDevicePushRegistration(locale, options);
+      setDevicePushState(nextState);
     } else {
       await refreshLocalPushSubscriptionState();
       const hasLocal = hasLocalPushSubscription();
       const hasServer = hasServerPushRegistration();
-      setDevicePushState(hasServer ? 'server' : hasLocal ? 'local_only' : 'none');
+      nextState = hasServer ? 'server' : hasLocal ? 'local_only' : 'none';
+      setDevicePushState(nextState);
     }
 
     const err = getLastPushRegistrationError();
     setRegisterError(err ? formatPushRegistrationError(err, isTh) : null);
+    return nextState;
   }, [isTh, locale, prefs]);
 
   useEffect(() => {
@@ -183,18 +187,19 @@ export default function NotificationPreferencesSection({
     setRegisterError(null);
     try {
       warmPushRegistrationStack();
-      const ok = await ensurePushSubscriptionFromUserGesture(locale);
+      await ensurePushSubscriptionFromUserGesture(locale);
       setPermission(getNotificationPermissionState());
-      await refreshDeviceState({ fromUserGesture: true });
-      if (!ok || !hasServerPushRegistration()) {
-        const err = getLastPushRegistrationError() ?? 'ensure_failed';
-        const detail = getLastPushRegistrationDetail();
-        const formatted = formatPushRegistrationError(err, isTh);
-        setRegisterError(detail ? `${formatted} (${detail})` : formatted);
-        return hasServerPushRegistration();
+      const deviceState = await refreshDeviceState({ fromUserGesture: true });
+      if (deviceState === 'server') {
+        setRegisterError(null);
+        return true;
       }
 
-      return true;
+      const err = getLastPushRegistrationError() ?? 'ensure_failed';
+      const detail = getLastPushRegistrationDetail();
+      const formatted = formatPushRegistrationError(err, isTh);
+      setRegisterError(detail ? `${formatted} (${detail})` : formatted);
+      return false;
     } finally {
       setRegistering(false);
     }

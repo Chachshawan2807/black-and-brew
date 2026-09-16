@@ -13,6 +13,7 @@ import {
   unregisterPushSubscription,
 } from '@/app/actions/push-actions';
 import {
+  clearSupabaseSession,
   ensureSupabaseSession,
   getSupabaseAccessToken,
   refreshSupabaseAccessToken,
@@ -104,6 +105,22 @@ export function formatPushRegistrationError(code: string, isTh: boolean): string
     ensure_failed: {
       th: 'ลงทะเบียนไม่สำเร็จ กดปุ่มด้านล่างเพื่อลองใหม่',
       en: 'Registration failed tap Register below to retry',
+    },
+    invalid_subscription: {
+      th: 'ข้อมูล Push จากเบราว์เซอร์ไม่ครบ กดลงทะเบียนอีกครั้ง',
+      en: 'Browser push data was incomplete tap Register again',
+    },
+    invalid_payload: {
+      th: 'ส่งข้อมูลลงทะเบียนไม่ครบ ลองออกจากระบบแล้วเข้าใหม่',
+      en: 'Registration payload was incomplete try signing out and back in',
+    },
+    supabase_upsert_failed: {
+      th: 'บันทึกลงฐานข้อมูลไม่สำเร็จ ลองใหม่หรือติดต่อผู้ดูแล',
+      en: 'Could not save registration to the database try again or contact support',
+    },
+    vapid_not_configured: {
+      th: 'เซิร์ฟเวอร์ยังไม่ได้ตั้งค่า Push ติดต่อผู้ดูแลระบบ',
+      en: 'Push is not configured on the server contact an administrator',
     },
   };
 
@@ -451,6 +468,13 @@ type PushRegisterInput = {
 
 type PushRegisterTransportResult = { success: true } | { success: false; error: string };
 
+function classifyHttpPushRegisterStatus(status: number): string {
+  if (status === 401 || status === 403) return 'pin_session_required';
+  if (status >= 500) return 'server_unreachable';
+  if (status === 404) return 'server_unreachable';
+  return classifyPushRegistrationError(new Error(`http_${status}`));
+}
+
 async function registerPushSubscriptionViaHttp(
   input: PushRegisterInput,
 ): Promise<PushRegisterTransportResult> {
@@ -466,7 +490,7 @@ async function registerPushSubscriptionViaHttp(
   }
   return {
     success: false,
-    error: classifyPushRegistrationError(new Error(`http_${response.status}`)),
+    error: classifyHttpPushRegisterStatus(response.status),
   };
 }
 
@@ -521,6 +545,14 @@ async function registerSubscriptionWithServer(
       result = await registerPushSubscriptionOnServer({ ...input, accessToken: freshToken });
     }
   }
+  if (!result.success && result.error === 'supabase_session_missing') {
+    await clearSupabaseSession();
+    await ensureSupabaseSession();
+    const resetToken = await getSupabaseAccessToken();
+    if (resetToken) {
+      result = await registerPushSubscriptionOnServer({ ...input, accessToken: resetToken });
+    }
+  }
 
   if (result.success) {
     markServerRegistrationConfirmed(subscription);
@@ -528,8 +560,14 @@ async function registerSubscriptionWithServer(
     return true;
   }
 
-  setPushRegistrationError(result.error);
-  console.warn('[push-subscription] server register failed:', result.error);
+  const normalizedError =
+    result.error === 'Unauthorized: Session missing or invalid'
+      ? 'pin_session_required'
+      : result.error.includes('duplicate key') || result.error.includes('violates')
+        ? 'supabase_upsert_failed'
+        : result.error;
+  setPushRegistrationError(normalizedError);
+  console.warn('[push-subscription] server register failed:', normalizedError);
   return false;
 }
 

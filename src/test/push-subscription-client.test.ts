@@ -187,6 +187,7 @@ describe('push-subscription-client', () => {
     expect(source).toContain('isAndroidWebPushClient');
     expect(source).toContain('ANDROID_PIN_AUTH_RETRY_MS');
     expect(source).toContain('await refreshSupabaseAccessToken()');
+    expect(source).toContain('clearSupabaseSession');
   });
 
   test('ensurePushSubscription requests permission in parallel with SW and session', () => {
@@ -246,6 +247,7 @@ describe('push-subscription-client', () => {
     expect(source).toContain('skipNextAutomaticPrefsSyncRef');
     expect(source).toContain('refreshDeviceState({ fromUserGesture: true })');
     expect(source).toContain('getLastPushRegistrationDetail');
+    expect(source).toContain("deviceState === 'server'");
     expect(source).not.toContain('showIosRegister');
   });
 

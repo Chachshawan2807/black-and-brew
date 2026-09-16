@@ -81,9 +81,45 @@ async function resolveUserId(accessToken: string): Promise<string | null> {
   return null;
 }
 
+async function lookupPushSubscriptionUserId(
+  admin: ReturnType<typeof createServiceRoleClient>,
+  filter: { column: 'client_session_id' | 'endpoint'; value: string },
+): Promise<string | null> {
+  if (filter.column === 'endpoint') {
+    const { data, error } = await admin
+      .from('push_subscriptions')
+      .select('user_id')
+      .eq('endpoint', filter.value)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[lookupPushSubscriptionUserId] Supabase Error:', error.message, error.details);
+      return null;
+    }
+
+    return data?.user_id ?? null;
+  }
+
+  const { data, error } = await admin
+    .from('push_subscriptions')
+    .select('user_id')
+    .eq('client_session_id', filter.value)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[lookupPushSubscriptionUserId] Supabase Error:', error.message, error.details);
+    return null;
+  }
+
+  return data?.user_id ?? null;
+}
+
 async function resolvePushUserIdForPinSession(
   accessToken: string,
   clientSessionId?: string | null,
+  endpoint?: string | null,
 ): Promise<string | null> {
   const fromJwt = await resolveUserId(accessToken);
   if (fromJwt) return fromJwt;
@@ -91,29 +127,32 @@ async function resolvePushUserIdForPinSession(
   const bindingUserId = process.env.PIN_PUSH_BINDING_USER_ID?.trim();
   if (bindingUserId) return bindingUserId;
 
-  const sessionKey = clientSessionId?.trim();
-  if (!sessionKey) return null;
-
   try {
     const admin = createServiceRoleClient();
-    const { data, error } = await admin
-      .from('push_subscriptions')
-      .select('user_id')
-      .eq('client_session_id', sessionKey)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
 
-    if (error) {
-      console.error('[resolvePushUserIdForPinSession] Supabase Error:', error.message, error.details);
-      return null;
+    const endpointKey = endpoint?.trim();
+    if (endpointKey) {
+      const fromEndpoint = await lookupPushSubscriptionUserId(admin, {
+        column: 'endpoint',
+        value: endpointKey,
+      });
+      if (fromEndpoint) return fromEndpoint;
     }
 
-    return data?.user_id ?? null;
+    const sessionKey = clientSessionId?.trim();
+    if (sessionKey) {
+      const fromSession = await lookupPushSubscriptionUserId(admin, {
+        column: 'client_session_id',
+        value: sessionKey,
+      });
+      if (fromSession) return fromSession;
+    }
   } catch (error) {
     console.error('[resolvePushUserIdForPinSession] Exception:', error);
     return null;
   }
+
+  return null;
 }
 
 function prefsWithLocale(prefs: Partial<NotificationPreferences> | undefined, locale?: string) {
@@ -152,7 +191,11 @@ export async function registerPushSubscription(
     const safe = parsed.data;
     const userId =
       auth.userId ??
-      (await resolvePushUserIdForPinSession(safe.accessToken, safe.clientSessionId));
+      (await resolvePushUserIdForPinSession(
+        safe.accessToken,
+        safe.clientSessionId,
+        safe.endpoint,
+      ));
     if (!userId) {
       console.error('[registerPushSubscription] Missing Supabase user id');
       return { success: false, error: 'supabase_session_missing' };

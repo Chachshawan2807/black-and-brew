@@ -4,6 +4,7 @@ const mockUpsert = vi.fn();
 const mockGetUser = vi.fn();
 const mockCookieGet = vi.fn();
 const mockMaybeSingle = vi.fn();
+const mockEndpointMaybeSingle = vi.fn();
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn().mockImplementation(async () => ({
@@ -19,17 +20,26 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn((url: string, key: string, options?: { global?: { headers?: Record<string, string> } }) => {
     if (key === 'service-role-key') {
       return {
-        from: vi.fn(() => ({
+        from: vi.fn((table: string) => ({
           upsert: mockUpsert,
-          select: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              order: vi.fn(() => ({
-                limit: vi.fn(() => ({
-                  maybeSingle: mockMaybeSingle,
-                })),
-              })),
-            })),
-          })),
+          select: vi.fn((columns: string) => {
+            void columns;
+            return {
+              eq: vi.fn((column: string, value: string) => {
+                if (column === 'endpoint') {
+                  void value;
+                  return { maybeSingle: mockEndpointMaybeSingle };
+                }
+                return {
+                  order: vi.fn(() => ({
+                    limit: vi.fn(() => ({
+                      maybeSingle: mockMaybeSingle,
+                    })),
+                  })),
+                };
+              }),
+            };
+          }),
         })),
       };
     }
@@ -65,6 +75,7 @@ describe('registerPushSubscription', () => {
     });
     mockUpsert.mockResolvedValue({ error: null });
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    mockEndpointMaybeSingle.mockResolvedValue({ data: null, error: null });
   });
 
   test('upserts via service role after JWT validation so endpoint reclaim bypasses RLS', async () => {
@@ -132,6 +143,32 @@ describe('registerPushSubscription', () => {
     expect(result).toEqual({ success: true });
     expect(mockUpsert).toHaveBeenCalledWith(
       expect.objectContaining({ user_id: 'prior-user-id' }),
+      { onConflict: 'endpoint' },
+    );
+  });
+
+  test('reuses push user_id by endpoint when JWT is expired but PIN session is valid', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'token is expired', status: 403 },
+    });
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    mockEndpointMaybeSingle.mockResolvedValue({
+      data: { user_id: 'endpoint-owner-id' },
+      error: null,
+    });
+
+    const endpoint = 'https://fcm.googleapis.com/fcm/send/device-endpoint-reclaim';
+    const result = await registerPushSubscription({
+      accessToken: 'expired-token',
+      endpoint,
+      keys: { p256dh: 'p256', auth: 'auth' },
+      clientSessionId: 'brand-new-session',
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: 'endpoint-owner-id', endpoint }),
       { onConflict: 'endpoint' },
     );
   });
