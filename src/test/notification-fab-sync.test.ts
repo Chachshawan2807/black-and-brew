@@ -113,6 +113,14 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('serverPushReady');
   });
 
+  test('hook defers foreground security banners to the SW (which always shows them) to avoid duplicates', () => {
+    // sw.js shouldAlwaysShowOsBanner() shows security_alert even when a client is visible.
+    // The realtime hub must therefore skip its own OS banner for security when a server
+    // push registration exists, or the device gets two banners for the same alert.
+    expect(serviceWorkerSource).toMatch(/shouldAlwaysShowOsBanner[\s\S]*security_alert/);
+    expect(hookSource).toMatch(/allSecurity\s*\n?\s*\?\s*serverPushReady/);
+  });
+
   test('hook uses a unique realtime channel topic per subscribe attempt', () => {
     expect(hookSource).toContain('notificationRealtimeChannelSeq');
     expect(hookSource).toMatch(/inventory_change_notifications_\$\{channelId\}/);

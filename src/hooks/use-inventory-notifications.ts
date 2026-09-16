@@ -481,11 +481,16 @@ export function useInventoryNotifications() {
       if (allDailyReports || allBeanOrder || allInsights || allSecurity) {
         for (const row of eligible) {
           pushNotification(formatNotificationRow(row, loc), undefined, {
+            // security_alert always surfaces from the SW (shouldAlwaysShowOsBanner),
+            // so realtime must stay silent when a server push exists or the device
+            // shows the same alert twice in the foreground.
             skipSystemNotification: allDailyReports
               ? skipDailyReportOsNotification && serverPushReady
               : allInsights
                 ? skipInsightOsNotification && serverPushReady
-                : deferOsToPush,
+                : allSecurity
+                  ? serverPushReady
+                  : deferOsToPush,
           });
         }
         return;
