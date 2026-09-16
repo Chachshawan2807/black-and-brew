@@ -187,10 +187,10 @@ export default function NotificationPreferencesSection({
     setRegisterError(null);
     try {
       warmPushRegistrationStack();
-      await ensurePushSubscriptionFromUserGesture(locale);
+      const ok = await ensurePushSubscriptionFromUserGesture(locale);
       setPermission(getNotificationPermissionState());
       const deviceState = await refreshDeviceState({ fromUserGesture: true });
-      if (deviceState === 'server') {
+      if (ok && deviceState === 'server') {
         setRegisterError(null);
         return true;
       }

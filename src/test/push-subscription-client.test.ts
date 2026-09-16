@@ -247,7 +247,7 @@ describe('push-subscription-client', () => {
     expect(source).toContain('skipNextAutomaticPrefsSyncRef');
     expect(source).toContain('refreshDeviceState({ fromUserGesture: true })');
     expect(source).toContain('getLastPushRegistrationDetail');
-    expect(source).toContain("deviceState === 'server'");
+    expect(source).toContain('ok && deviceState === \'server\'');
     expect(source).not.toContain('showIosRegister');
   });
 
