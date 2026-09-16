@@ -10,20 +10,22 @@ const homeEntryPath = resolve(
 const pinGatewayPath = resolve(__dirname, '../components/auth/PinGateway.tsx');
 
 describe('home client auth bootstrap', () => {
-  test('home page loads board on the client when server auth is still pending', () => {
+  test('home page falls back to client entry when server auth is still pending', () => {
     const page = readFileSync(homePagePath, 'utf-8');
     expect(page).toContain('HomeClientEntry');
     expect(page).not.toContain('กำลังตรวจสอบสิทธิ์');
     expect(page).not.toContain('HomeAuthRefresh');
+    expect(page).toMatch(/if\s*\(\s*!authed\s*\)/);
   });
 
   test('home entry fetches secretary board on the client with session cache', () => {
     const bootstrap = readFileSync(homeEntryPath, 'utf-8');
     expect(bootstrap).toContain('loadSecretaryBoard');
+    expect(bootstrap).toContain('checkAuth');
+    expect(bootstrap).toContain('waitForPinReadAccess');
     expect(bootstrap).toContain('readCachedSecretaryBoard');
-    expect(bootstrap).toMatch(
-      /useState<SecretaryBoard \| null>\(\(\) => readCachedSecretaryBoard\(locale\)\)/,
-    );
+    expect(bootstrap).toMatch(/readCachedSecretaryBoard\(locale\)/);
+    expect(bootstrap).toContain('boardFromCacheOnInitRef');
     expect(bootstrap).toContain('bb-pin-authenticated');
     expect(bootstrap).toContain('HomeClient');
   });

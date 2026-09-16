@@ -44,6 +44,12 @@ import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual
 import { writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/home-actions';
+import type { HomeBoardLoadSource } from '@/lib/perf/home-board-perf';
+import {
+  homePerfOnBoardVisible,
+  homePerfStartSession,
+  registerHomeBoardPerfDevTools,
+} from '@/lib/perf/home-board-perf';
 import type { SecretaryTask } from '@/lib/secretary/types';
 import SecretaryTaskOverlay from './_components/SecretaryTaskOverlay';
 import SecretaryManualTaskDialog from './_components/SecretaryManualTaskDialog';
@@ -51,6 +57,8 @@ import SecretaryManualTaskDialog from './_components/SecretaryManualTaskDialog';
 type HomeClientProps = {
   initialBoard: SecretaryBoard;
   locale: string;
+  /** Where the first paint board came from (perf diagnostics only). */
+  boardLoadSource?: HomeBoardLoadSource;
 };
 
 type ModuleFilter = 'all' | SecretaryTask['module'];
@@ -81,7 +89,11 @@ const MODULE_FILTER_TIPS: Record<SecretaryTask['module'], string> = {
   custom: 'งานที่เพิ่มเอง',
 };
 
-export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
+export default function HomeClient({
+  initialBoard,
+  locale,
+  boardLoadSource = 'ssr',
+}: HomeClientProps) {
   const [board, setBoard] = useState(initialBoard);
   const [workDateIso, setWorkDateIso] = useState(() => initialBoard.snapshot.dateIso || todayIsoBkk());
   const [moduleFilter, setModuleFilter] = useState<ModuleFilter>('all');
@@ -135,6 +147,17 @@ export default function HomeClient({ initialBoard, locale }: HomeClientProps) {
   useEffect(() => {
     requestHomeBoardFullSync();
   }, []);
+
+  useEffect(() => {
+    registerHomeBoardPerfDevTools();
+    if (boardLoadSource === 'ssr') {
+      homePerfStartSession('ssr-direct');
+    }
+    homePerfOnBoardVisible({
+      taskCount: initialBoard.tasks.length,
+      source: boardLoadSource,
+    });
+  }, [boardLoadSource, initialBoard.tasks.length]);
 
   const visibility = { workDateIso };
 

@@ -5,6 +5,10 @@ import { describe, expect, test } from 'vitest';
 const homeActionsPath = resolve(__dirname, '../app/actions/home-actions.ts');
 const homeClientPath = resolve(__dirname, '../app/[locale]/home/HomeClient.tsx');
 const homePagePath = resolve(__dirname, '../app/[locale]/home/page.tsx');
+const homeEntryPath = resolve(
+  __dirname,
+  '../app/[locale]/home/_components/HomeClientEntry.tsx',
+);
 const skeletonPath = resolve(
   __dirname,
   '../app/[locale]/home/_components/HomePageLoadingSkeleton.tsx',
@@ -23,11 +27,13 @@ describe('home secretary board load', () => {
     );
   });
 
-  test('home page loads board on the client for instant paint', () => {
+  test('home page starts server board fetch in parallel with auth check', () => {
     const source = readFileSync(homePagePath, 'utf-8');
     expect(source).toContain('HomeClientEntry');
-    expect(source).not.toContain('loadSecretaryBoard');
-    expect(source).not.toContain('checkAuth');
+    expect(source).toContain('loadSecretaryBoard');
+    expect(source).toContain('checkAuth');
+    expect(source).toMatch(/const boardPromise = loadSecretaryBoard/);
+    expect(source).toMatch(/const authed = await checkAuth\(\)/);
   });
 
   test('HomeClient triggers background board sync after SSR hydrate', () => {
@@ -37,6 +43,17 @@ describe('home secretary board load', () => {
     expect(source).toContain('writeCachedSecretaryBoard');
     expect(source).not.toMatch(
       /scheduleIdleWork\(\(\)\s*=>\s*\{\s*requestHomeBoardFullSync\(\);/,
+    );
+  });
+
+  test('client entry polls checkAuth once then loads board', () => {
+    const source = readFileSync(homeEntryPath, 'utf-8');
+    expect(source).toContain('waitForPinReadAccess');
+    expect(source).toMatch(
+      /const authed = await waitForPinReadAccess\(\)[\s\S]*const result = await loadSecretaryBoard/,
+    );
+    expect(source).not.toMatch(
+      /for\s*\([^)]*attempt[^)]*\)[\s\S]*loadSecretaryBoard/,
     );
   });
 

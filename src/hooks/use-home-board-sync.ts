@@ -21,6 +21,7 @@ import type { SecretarySnapshotPatch } from '@/lib/secretary/snapshot-patch';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 import { countSidebarPendingSecretaryTasks } from '@/lib/secretary/count-sidebar-pending-tasks';
 import { watchBangkokWorkDate } from '@/lib/secretary/watch-bangkok-work-date';
+import { homePerfFullSyncEnd, homePerfFullSyncStart } from '@/lib/perf/home-board-perf';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 
 export type BoardSyncPayload = {
@@ -169,6 +170,14 @@ async function runAllBoardSyncs() {
   forceFullNextSync = false;
 
   syncInFlight = (async () => {
+    if (useFullSync) {
+      homePerfFullSyncStart();
+    }
+
+    let fullSyncOk = true;
+    let fullSyncTaskCount = 0;
+    let fullSyncKind: string | undefined;
+
     await Promise.all(
       [...registrations].map(async (registration) => {
         const dateIso = registration.getDateIso();
@@ -182,7 +191,15 @@ async function runAllBoardSyncs() {
           plan,
           baseSnapshot: registration.getBaseSnapshot(),
         });
-        if (!result.success || !result.tasks) return;
+        if (!result.success || !result.tasks) {
+          if (useFullSync) fullSyncOk = false;
+          return;
+        }
+
+        if (useFullSync) {
+          fullSyncTaskCount = result.tasks.length;
+          fullSyncKind = plan.kind;
+        }
 
         registration.listener({
           tasks: result.tasks,
@@ -193,6 +210,14 @@ async function runAllBoardSyncs() {
         publishHomeSidebarPendingCount(result.tasks, dateIso);
       }),
     );
+
+    if (useFullSync) {
+      homePerfFullSyncEnd({
+        ok: fullSyncOk,
+        taskCount: fullSyncTaskCount,
+        syncKind: fullSyncKind,
+      });
+    }
   })();
 
   try {
