@@ -58,4 +58,11 @@ describe('push registration gesture contract', () => {
     expect(registerBlock).not.toMatch(/if \(!ok\)/);
     expect(registerBlock).not.toMatch(/ok && deviceState/);
   });
+
+  test('settings register button renders above master notifications switch', () => {
+    const registerIdx = settingsSource.indexOf('Register notifications on this device');
+    const masterSwitchIdx = settingsSource.indexOf("label={isTh ? 'การแจ้งเตือน'");
+    expect(registerIdx).toBeGreaterThan(-1);
+    expect(masterSwitchIdx).toBeGreaterThan(registerIdx);
+  });
 });

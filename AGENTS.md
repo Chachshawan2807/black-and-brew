@@ -247,7 +247,7 @@ py -3 .agents/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack shadcn
 | Context | `src/components/notifications/NotificationProvider.tsx` | React context + mount `NotificationPanel` |
 | Persistence | `src/lib/notification-sync.ts`, `notification-storage.ts`, `notification-idb.ts`, `notification-unread-counter.ts` | list merge, localStorage, IDB, counter reconcile |
 | Cross-tab | `src/lib/notification-cross-tab.ts` | sync ข้ามแท็บเครื่องเดียวกัน |
-| OS / PWA | `src/lib/pwa-notification-bridge.ts`, `src/components/PwaRegister.tsx` | system notification, app badge, SW message bridge |
+| OS / PWA | `src/lib/pwa-notification-bridge.ts`, `src/components/PwaRegister.tsx`, `src/proxy.ts` + `PWA_PROXY_PASSTHROUGH_PATHS` in `pwa-config.ts` | system notification, app badge, SW message bridge; `/sw.js` must not locale-redirect |
 | Channel gates | `src/lib/notification-channel-gates.ts`, `notification-preferences.ts` | in-app vs OS ต่อ channel |
 | Push | `src/lib/push-subscription-client.ts`, `src/components/notifications/PushSubscriptionManager.tsx`, `public/sw.js` | Web Push background, iOS user gesture |
 | Types | `src/lib/notification-types.ts` | `InventoryNotification`, prefs keys |

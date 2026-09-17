@@ -14,6 +14,21 @@ export const PWA_START_URL = `/${PWA_DEFAULT_LOCALE}?utm_source=pwa`;
 export const PWA_OFFLINE_PAGE = '/offline.html';
 export const PWA_SERVICE_WORKER_PATH = '/sw.js';
 
+/**
+ * Static files that must never pass through next-intl locale redirects.
+ * Changing proxy routing without updating this list breaks Web Push (SW SecurityError).
+ */
+export const PWA_PROXY_PASSTHROUGH_PATHS = [
+  PWA_SERVICE_WORKER_PATH,
+  PWA_OFFLINE_PAGE,
+  '/pwa-assets.js',
+  '/notification-store.js',
+  '/offline-mutation-store.js',
+  '/pwa-badge.js',
+  '/manifest.webmanifest',
+  '/favicon.ico',
+] as const;
+
 export type PwaShortcut = {
   name: string;
   short_name: string;

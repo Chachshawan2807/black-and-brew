@@ -8,7 +8,7 @@ user-invocable: true
 
 ## When to use
 
-- After any change to notification hub, UI, persistence, or `public/sw.js`
+- After any change to notification hub, UI, persistence, `public/sw.js`, or `src/proxy.ts` / PWA passthrough paths
 - Before claiming notification FAB / panel / badge / OS banner fixes are done
 - When AI touched `use-inventory-notifications.ts` or files listed in `AGENTS.md` notification-hub-standard
 
@@ -26,7 +26,7 @@ npm run test:notifications
 
 ## What it does
 
-Runs the Vitest notification regression bundle (fab sync, panel view-only, sync/counter, cross-tab, PWA bridge, channel gates, badge, iOS parity, mobile layout).
+Runs the Vitest notification regression bundle (fab sync, panel view-only, sync/counter, cross-tab, PWA bridge, channel gates, badge, iOS parity, mobile layout, service worker proxy routing contract).
 
 ## Notes
 

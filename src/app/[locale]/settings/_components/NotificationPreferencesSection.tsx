@@ -312,46 +312,6 @@ export default function NotificationPreferencesSection({
 
   return (
     <div>
-      <ToggleRow
-        label={isTh ? 'การแจ้งเตือน' : 'Notifications'}
-        description={
-          isTh
-            ? 'เปิดหรือปิดการแจ้งเตือนทั้งหมดบนเครื่องนี้'
-            : 'Turn all alerts on or off on this device'
-        }
-        checked={masterOn}
-        onChange={(v) => void handleMasterNotifications(v)}
-        disabled={permission === 'unsupported'}
-      />
-      {permission === 'denied' && (
-        <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2">
-          {isTh
-            ? 'การแจ้งเตือนถูกปิดอยู่ เปิดได้ในการตั้งค่าอุปกรณ์'
-            : 'Notifications are blocked enable them in device settings'}
-        </p>
-      )}
-      {wantsPush && permission === 'granted' && (
-        <p
-          className={cn(
-            'text-[11px] mb-2',
-            devicePushState === 'server'
-              ? 'text-emerald-600 dark:text-emerald-400'
-              : 'text-amber-600 dark:text-amber-400',
-          )}
-        >
-          {devicePushState === 'server'
-            ? isTh
-              ? 'ลงทะเบียนรับการแจ้งเตือนแล้ว'
-              : 'This device is registered with the server alerts work when the app is closed'
-            : devicePushState === 'local_only'
-              ? isTh
-                ? 'เครื่องนี้อนุญาตการแจ้งเตือนแล้ว แต่ยังไม่ได้ลงทะเบียนกับเซิร์ฟเวอร์ กดปุ่มด้านล่าง'
-                : 'Notifications are allowed on this device but not registered with the server tap below'
-              : isTh
-                ? 'เครื่องนี้ยังไม่ได้ลงทะเบียนรับการแจ้งเตือน'
-                : 'This device is not registered for push alerts'}
-        </p>
-      )}
       {showRegisterButton && (
         <button
           type="button"
@@ -394,6 +354,46 @@ export default function NotificationPreferencesSection({
                 : 'Copy error codes (for support)'}
           </button>
         </div>
+      )}
+      {wantsPush && permission === 'granted' && (
+        <p
+          className={cn(
+            'text-[11px] mb-2',
+            devicePushState === 'server'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-amber-600 dark:text-amber-400',
+          )}
+        >
+          {devicePushState === 'server'
+            ? isTh
+              ? 'ลงทะเบียนรับการแจ้งเตือนแล้ว'
+              : 'This device is registered with the server alerts work when the app is closed'
+            : devicePushState === 'local_only'
+              ? isTh
+                ? 'เครื่องนี้อนุญาตการแจ้งเตือนแล้ว แต่ยังไม่ได้ลงทะเบียนกับเซิร์ฟเวอร์ กดปุ่มด้านบน'
+                : 'Notifications are allowed on this device but not registered with the server tap above'
+              : isTh
+                ? 'เครื่องนี้ยังไม่ได้ลงทะเบียนรับการแจ้งเตือน กดปุ่มด้านบน'
+                : 'This device is not registered for push alerts tap above'}
+        </p>
+      )}
+      <ToggleRow
+        label={isTh ? 'การแจ้งเตือน' : 'Notifications'}
+        description={
+          isTh
+            ? 'เปิดหรือปิดการแจ้งเตือนทั้งหมดบนเครื่องนี้'
+            : 'Turn all alerts on or off on this device'
+        }
+        checked={masterOn}
+        onChange={(v) => void handleMasterNotifications(v)}
+        disabled={permission === 'unsupported'}
+      />
+      {permission === 'denied' && (
+        <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2">
+          {isTh
+            ? 'การแจ้งเตือนถูกปิดอยู่ เปิดได้ในการตั้งค่าอุปกรณ์'
+            : 'Notifications are blocked enable them in device settings'}
+        </p>
       )}
       {diag && wantsPush && (
         <p className="text-[11px] text-muted-foreground mb-2">
