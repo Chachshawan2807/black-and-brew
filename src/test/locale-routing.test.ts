@@ -44,13 +44,20 @@ describe('locale routing (Thai-first ERP)', () => {
   });
 
   test('proxy rewrites locale-prefixed static assets to root paths', () => {
-    const code = fs.readFileSync(
+    const proxy = fs.readFileSync(
       path.resolve(__dirname, '../proxy.ts'),
       'utf-8',
     );
-    expect(code).toContain('rewriteLocalePrefixedPublicAsset');
-    expect(code).toMatch(/startsWith\('\/_next\/'\)/);
-    expect(code).toContain("'/manifest.webmanifest'");
+    const rewrite = fs.readFileSync(
+      path.resolve(__dirname, '../lib/locale-prefixed-public-asset.ts'),
+      'utf-8',
+    );
+    expect(proxy).toContain('rewriteLocalePrefixedPublicAsset');
+    expect(proxy).toContain('passThroughPublicRootAssets');
+    expect(proxy).toContain('isPublicRootAssetPath');
+    expect(rewrite).toMatch(/startsWith\('\/_next\/'\)/);
+    expect(rewrite).toContain("'/manifest.webmanifest'");
+    expect(rewrite).toContain('PUBLIC_ROOT_ASSET_PATHS');
   });
 
   test('proxy passes through /api routes without locale redirect (cron-job.org)', () => {

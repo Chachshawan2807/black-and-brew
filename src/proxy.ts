@@ -1,36 +1,19 @@
 import createMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
+import { rewriteLocalePrefixedPublicAsset } from '@/lib/locale-prefixed-public-asset';
+import { isPublicRootAssetPath } from '@/lib/pwa-public-asset-paths';
 import { routing } from './i18n/routing';
 
 const intlMiddleware = createMiddleware(routing);
 
-const LOCALE_PREFIX = /^\/(th|en)(\/.*)$/;
-
-/**
- * Dev/runtime may request `/_next` and manifest under `/th/...` (relative to locale URL).
- * next-intl would treat those as app routes → 404 and a blank "กำลังเตรียมระบบ..." shell.
- */
-export function rewriteLocalePrefixedPublicAsset(
-  request: NextRequest,
-): NextResponse | null {
-  const { pathname } = request.nextUrl;
-  const match = pathname.match(LOCALE_PREFIX);
-  if (!match) return null;
-
-  const rest = match[2];
-  const isPublicAsset =
-    rest.startsWith('/_next/') ||
-    rest === '/manifest.webmanifest' ||
-    rest.startsWith('/images/') ||
-    rest === '/favicon.ico' ||
-    rest.startsWith('/pwa-');
-
-  if (!isPublicAsset) return null;
-
-  const url = request.nextUrl.clone();
-  url.pathname = rest;
-  return NextResponse.rewrite(url);
+function passThroughPublicRootAssets(request: NextRequest): NextResponse | null {
+  if (isPublicRootAssetPath(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+  return null;
 }
+
+export { rewriteLocalePrefixedPublicAsset } from '@/lib/locale-prefixed-public-asset';
 
 function redirectLocaleIndexToHome(request: NextRequest): NextResponse | null {
   const { pathname } = request.nextUrl;
@@ -63,6 +46,9 @@ function passThroughApiRoutes(request: NextRequest): NextResponse | null {
 export default function proxy(request: NextRequest) {
   const apiPassthrough = passThroughApiRoutes(request);
   if (apiPassthrough) return apiPassthrough;
+
+  const publicAssetPassthrough = passThroughPublicRootAssets(request);
+  if (publicAssetPassthrough) return publicAssetPassthrough;
 
   const assetRewrite = rewriteLocalePrefixedPublicAsset(request);
   if (assetRewrite) return assetRewrite;
