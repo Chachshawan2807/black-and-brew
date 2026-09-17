@@ -24,6 +24,7 @@ import {
 } from '@/lib/push-subscription-payload';
 import { verifyDevicePushRegistration } from '@/app/actions/push-actions';
 import { ensurePushServiceWorkerReady } from '@/lib/pwa-update';
+import { isInstalledPwa } from '@/lib/pwa-app-badge';
 import {
   classifyPushRegistrationError,
   isRetryablePushRegisterError,
@@ -79,8 +80,8 @@ export function formatPushRegistrationError(code: string, isTh: boolean): string
       en: 'Notifications blocked enable them in device settings',
     },
     push_unavailable: {
-      th: 'บริการ Push ไม่พร้อม เปิดแอปจากไอคอนหน้าจอโฮม (ไม่ใช่ Safari)',
-      en: 'Push unavailable open the app from the home screen icon (not Safari)',
+      th: 'เปิดแอปจากไอคอนหน้าจอโฮม (ไม่ใช่ Safari) แล้วกดลงทะเบียนอีกครั้ง',
+      en: 'Open the app from the home screen icon (not Safari) then tap Register again',
     },
     gesture_required: {
       th: 'กดปุ่มลงทะเบียนการแจ้งเตือนด้านล่างเพื่อเปิดใช้บน iPhone/iPad',
@@ -127,6 +128,54 @@ export function formatPushRegistrationError(code: string, isTh: boolean): string
   const entry = messages[code];
   if (entry) return isTh ? entry.th : entry.en;
   return isTh ? `ลงทะเบียนไม่สำเร็จ (${code})` : `Registration failed (${code})`;
+}
+
+/** User-facing alert: Thai/English copy plus technical detail in parentheses when present. */
+export function formatPushRegistrationErrorWithDetailFrom(
+  code: string | null | undefined,
+  detail: string | null | undefined,
+  isTh: boolean,
+): string | null {
+  if (!code) return null;
+  const formatted = formatPushRegistrationError(code, isTh);
+  const trimmedDetail = detail?.trim();
+  return trimmedDetail ? `${formatted} (${trimmedDetail})` : formatted;
+}
+
+export function formatPushRegistrationErrorWithDetail(isTh: boolean): string | null {
+  return formatPushRegistrationErrorWithDetailFrom(
+    getLastPushRegistrationError(),
+    getLastPushRegistrationDetail(),
+    isTh,
+  );
+}
+
+/** One line to paste in chat/support: error code, detail, permission, PWA, endpoint host. */
+export function buildPushRegistrationSupportBundle(): string {
+  const code = getLastPushRegistrationError() ?? 'none';
+  const detail = getLastPushRegistrationDetail();
+  let endpointHost = '';
+  const endpoint = getLocalPushSubscriptionEndpoint();
+  if (endpoint) {
+    try {
+      endpointHost = new URL(endpoint).host;
+    } catch {
+      endpointHost = 'invalid';
+    }
+  }
+
+  return [
+    code,
+    detail ? `(${detail})` : null,
+    `perm=${getNotificationPermissionState()}`,
+    `localSub=${hasLocalPushSubscription()}`,
+    `serverOk=${hasServerPushRegistration()}`,
+    `pwa=${isInstalledPwa()}`,
+    `pushApi=${isPushManagerSupported()}`,
+    endpointHost ? `host=${endpointHost}` : 'host=none',
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 /** Debounce window merges resume / focus / pageshow bursts on mobile. */
@@ -608,6 +657,10 @@ async function subscribePushManager(
   registration: ServiceWorkerRegistration,
   vapidKey: string,
 ): Promise<PushSubscription> {
+  if (requiresUserGestureForPushSubscribe() && !isInstalledPwa()) {
+    throw new Error('push_requires_installed_pwa');
+  }
+
   const active =
     registration.active && registration.pushManager
       ? registration

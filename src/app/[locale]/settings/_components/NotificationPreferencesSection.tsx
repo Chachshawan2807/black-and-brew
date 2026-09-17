@@ -15,10 +15,13 @@ import {
   requestNotificationPermission } from '@/lib/pwa-notification-bridge';
 import { getPushDiagnostics } from '@/app/actions/push-actions';
 import {
+  buildPushRegistrationSupportBundle,
   ensurePushSubscriptionFromUserGesture,
-  formatPushRegistrationError,
+  formatPushRegistrationErrorWithDetail,
+  formatPushRegistrationErrorWithDetailFrom,
   getLastPushRegistrationError,
   getLastPushRegistrationDetail,
+  getLocalPushSubscriptionEndpoint,
   hasLocalPushSubscription,
   hasServerPushRegistration,
   isDevicePushRegisteredOnServer,
@@ -93,11 +96,13 @@ export default function NotificationPreferencesSection({
   const [devicePushState, setDevicePushState] = useState<'none' | 'local_only' | 'server'>('none');
   const [registering, setRegistering] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  const [registerSupportCopied, setRegisterSupportCopied] = useState(false);
   const [diag, setDiag] = useState<{
     subscriptionCount: number;
     appleSubscriptionCount: number;
     fcmSubscriptionCount: number;
     vapidConfigured: boolean;
+    thisDeviceRegistered: boolean;
   } | null>(null);
   const prefsHydratedRef = useRef(false);
   const skipNextAutomaticPrefsSyncRef = useRef(false);
@@ -119,8 +124,7 @@ export default function NotificationPreferencesSection({
       setDevicePushState(nextState);
     }
 
-    const err = getLastPushRegistrationError();
-    setRegisterError(err ? formatPushRegistrationError(err, isTh) : null);
+    setRegisterError(formatPushRegistrationErrorWithDetail(isTh));
     return nextState;
   }, [isTh, locale, prefs]);
 
@@ -163,13 +167,15 @@ export default function NotificationPreferencesSection({
 
     let cancelled = false;
     const loadDiagnostics = () => {
-      void getPushDiagnostics().then((result) => {
+      void getPushDiagnostics(getLocalPushSubscriptionEndpoint() ?? undefined).then((result) => {
         if (cancelled || !result.ok) return;
         setDiag({
           subscriptionCount: result.subscriptionCount,
           appleSubscriptionCount: result.appleSubscriptionCount,
           fcmSubscriptionCount: result.fcmSubscriptionCount,
-          vapidConfigured: result.vapidConfigured });
+          vapidConfigured: result.vapidConfigured,
+          thisDeviceRegistered: result.thisDeviceRegistered,
+        });
       });
     };
 
@@ -200,8 +206,7 @@ export default function NotificationPreferencesSection({
 
       const err = getLastPushRegistrationError() ?? 'ensure_failed';
       const detail = getLastPushRegistrationDetail();
-      const formatted = formatPushRegistrationError(err, isTh);
-      setRegisterError(detail ? `${formatted} (${detail})` : formatted);
+      setRegisterError(formatPushRegistrationErrorWithDetailFrom(err, detail, isTh));
       return false;
     } finally {
       setRegistering(false);
@@ -363,15 +368,37 @@ export default function NotificationPreferencesSection({
         </button>
       )}
       {registerError && (
-        <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2" role="alert">
-          {registerError}
-        </p>
+        <div className="mb-2 space-y-1.5" role="alert">
+          <p className="text-[11px] text-amber-600 dark:text-amber-400">{registerError}</p>
+          <button
+            type="button"
+            className="text-[11px] text-muted-foreground underline underline-offset-2 touch-manipulation min-h-[44px] text-left"
+            onClick={() => {
+              const line = buildPushRegistrationSupportBundle();
+              void navigator.clipboard?.writeText(line).then(
+                () => {
+                  setRegisterSupportCopied(true);
+                  window.setTimeout(() => setRegisterSupportCopied(false), 2500);
+                },
+                () => undefined,
+              );
+            }}
+          >
+            {registerSupportCopied
+              ? isTh
+                ? 'คัดลอกแล้ว วางในแชทได้เลย'
+                : 'Copied paste into chat'
+              : isTh
+                ? 'คัดลอกรหัสข้อผิดพลาด (ส่งให้ผู้ดูแล)'
+                : 'Copy error codes (for support)'}
+          </button>
+        </div>
       )}
       {diag && wantsPush && (
         <p className="text-[11px] text-muted-foreground mb-2">
           {isTh
-            ? `เซิร์ฟเวอร์: ${diag.vapidConfigured ? 'พร้อม' : 'ยังไม่พร้อม'} · ลงทะเบียนทั้งหมด ${diag.subscriptionCount} เครื่อง (iPhone ${diag.appleSubscriptionCount} · Android ${diag.fcmSubscriptionCount})`
-            : `Server: ${diag.vapidConfigured ? 'ready' : 'not ready'} · ${diag.subscriptionCount} device(s) (iPhone ${diag.appleSubscriptionCount} · Android ${diag.fcmSubscriptionCount})`}
+            ? `เซิร์ฟเวอร์: ${diag.vapidConfigured ? 'พร้อม' : 'ยังไม่พร้อม'} · สาขานี้ ${diag.subscriptionCount} เครื่อง (iPhone ${diag.appleSubscriptionCount} · Android ${diag.fcmSubscriptionCount})${diag.thisDeviceRegistered ? ' · เครื่องนี้ลงทะเบียนแล้ว' : ''}`
+            : `Server: ${diag.vapidConfigured ? 'ready' : 'not ready'} · ${diag.subscriptionCount} device(s) in branch (iPhone ${diag.appleSubscriptionCount} · Android ${diag.fcmSubscriptionCount})${diag.thisDeviceRegistered ? ' · this device registered' : ''}`}
         </p>
       )}
 

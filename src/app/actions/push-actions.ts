@@ -7,6 +7,7 @@ import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type NotificationPreferences,
 } from '@/lib/notification-types';
+import { pushSubscriptionIdsToPruneForSession } from '@/lib/push-subscription-prune';
 
 const subscriptionSchema = z.object({
   accessToken: z.string().min(1),
@@ -116,16 +117,16 @@ async function lookupPushSubscriptionUserId(
   return data?.user_id ?? null;
 }
 
-async function resolvePushUserIdForPinSession(
+async function resolvePushSubscriptionUserId(
   accessToken: string,
   clientSessionId?: string | null,
   endpoint?: string | null,
 ): Promise<string | null> {
-  const fromJwt = await resolveUserId(accessToken);
-  if (fromJwt) return fromJwt;
-
   const bindingUserId = process.env.PIN_PUSH_BINDING_USER_ID?.trim();
   if (bindingUserId) return bindingUserId;
+
+  const fromJwt = await resolveUserId(accessToken);
+  if (fromJwt) return fromJwt;
 
   try {
     const admin = createServiceRoleClient();
@@ -148,11 +149,48 @@ async function resolvePushUserIdForPinSession(
       if (fromSession) return fromSession;
     }
   } catch (error) {
-    console.error('[resolvePushUserIdForPinSession] Exception:', error);
+    console.error('[resolvePushSubscriptionUserId] Exception:', error);
     return null;
   }
 
   return null;
+}
+
+async function pruneDuplicatePushSubscriptionsForDevice(
+  admin: ReturnType<typeof createServiceRoleClient>,
+  input: {
+    userId: string;
+    branchId: string;
+    clientSessionId: string | null | undefined;
+    keepEndpoint: string;
+  },
+): Promise<void> {
+  const sessionId = input.clientSessionId?.trim();
+  if (!sessionId) return;
+
+  const { data, error } = await admin
+    .from('push_subscriptions')
+    .select('id, endpoint, client_session_id')
+    .eq('user_id', input.userId)
+    .eq('branch_id', input.branchId)
+    .eq('client_session_id', sessionId);
+
+  if (error) {
+    console.error('[pruneDuplicatePushSubscriptionsForDevice] Supabase Error:', error.message, error.details);
+    return;
+  }
+
+  const ids = pushSubscriptionIdsToPruneForSession(
+    (data ?? []) as { id: string; endpoint: string; client_session_id: string | null }[],
+    input.keepEndpoint,
+    sessionId,
+  );
+  if (ids.length === 0) return;
+
+  const { error: deleteError } = await admin.from('push_subscriptions').delete().in('id', ids);
+  if (deleteError) {
+    console.error('[pruneDuplicatePushSubscriptionsForDevice] delete failed:', deleteError.message, deleteError.details);
+  }
 }
 
 function prefsWithLocale(prefs: Partial<NotificationPreferences> | undefined, locale?: string) {
@@ -191,7 +229,7 @@ export async function registerPushSubscription(
     const safe = parsed.data;
     const userId =
       auth.userId ??
-      (await resolvePushUserIdForPinSession(
+      (await resolvePushSubscriptionUserId(
         safe.accessToken,
         safe.clientSessionId,
         safe.endpoint,
@@ -202,12 +240,13 @@ export async function registerPushSubscription(
     }
 
     const supabase = createServiceRoleClient();
+    const branchId = resolveBranchId(safe.branchId);
 
     const { error } = await supabase.from('push_subscriptions').upsert(
       {
         user_id: userId,
         profile_id: null,
-        branch_id: resolveBranchId(safe.branchId),
+        branch_id: branchId,
         endpoint: safe.endpoint,
         p256dh: safe.keys.p256dh,
         auth: safe.keys.auth,
@@ -227,6 +266,13 @@ export async function registerPushSubscription(
       return { success: false, error: error.message || 'supabase_upsert_failed' };
     }
 
+    await pruneDuplicatePushSubscriptionsForDevice(supabase, {
+      userId,
+      branchId,
+      clientSessionId: safe.clientSessionId,
+      keepEndpoint: safe.endpoint,
+    });
+
     return { success: true };
   } catch (error) {
     console.error('[registerPushSubscription] Exception:', error);
@@ -234,13 +280,14 @@ export async function registerPushSubscription(
   }
 }
 
-export async function getPushDiagnostics(): Promise<{
+export async function getPushDiagnostics(endpoint?: string): Promise<{
   ok: boolean;
   subscriptionCount: number;
   appleSubscriptionCount: number;
   fcmSubscriptionCount: number;
   vapidConfigured: boolean;
   latestEligibleLogAt: string | null;
+  thisDeviceRegistered: boolean;
 }> {
   const auth = await ensureServerSession();
   if (!auth.ok) {
@@ -251,6 +298,7 @@ export async function getPushDiagnostics(): Promise<{
       fcmSubscriptionCount: 0,
       vapidConfigured: false,
       latestEligibleLogAt: null,
+      thisDeviceRegistered: false,
     };
   }
 
@@ -263,9 +311,24 @@ export async function getPushDiagnostics(): Promise<{
     if (!supabaseUrl) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
     const admin = createClient(supabaseUrl, requireServiceRoleKey());
 
-    const { data: rows } = await admin.from('push_subscriptions').select('endpoint');
+    const branchId = resolveBranchId();
+    const { data: rows } = await admin
+      .from('push_subscriptions')
+      .select('endpoint')
+      .eq('branch_id', branchId);
 
     const endpoints = (rows ?? []) as { endpoint: string }[];
+    const trimmedEndpoint = endpoint?.trim();
+    let thisDeviceRegistered = false;
+    if (trimmedEndpoint) {
+      const { data: deviceRow } = await admin
+        .from('push_subscriptions')
+        .select('id')
+        .eq('branch_id', branchId)
+        .eq('endpoint', trimmedEndpoint)
+        .maybeSingle();
+      thisDeviceRegistered = Boolean(deviceRow);
+    }
     const appleSubscriptionCount = endpoints.filter((row) =>
       row.endpoint.includes('web.push.apple.com'),
     ).length;
@@ -289,6 +352,7 @@ export async function getPushDiagnostics(): Promise<{
       fcmSubscriptionCount,
       vapidConfigured,
       latestEligibleLogAt: latest?.occurred_at ?? null,
+      thisDeviceRegistered,
     };
   } catch {
     return {
@@ -298,6 +362,7 @@ export async function getPushDiagnostics(): Promise<{
       fcmSubscriptionCount: 0,
       vapidConfigured,
       latestEligibleLogAt: null,
+      thisDeviceRegistered: false,
     };
   }
 }
@@ -359,11 +424,11 @@ export async function syncPushSubscriptionPrefs(input: {
   const auth = await ensureServerSession();
   if (!auth.ok) return { success: false };
 
-  const userId = await resolveUserId(input.accessToken);
+  const userId = await resolvePushSubscriptionUserId(input.accessToken, null, input.endpoint);
   if (!userId) return { success: false };
 
   try {
-    const supabase = createUserScopedClient(input.accessToken);
+    const supabase = createServiceRoleClient();
 
     const { error } = await supabase
       .from('push_subscriptions')
@@ -393,11 +458,11 @@ export async function unregisterPushSubscription(input: {
   const auth = await ensureServerSession();
   if (!auth.ok) return { success: false };
 
-  const userId = await resolveUserId(input.accessToken);
+  const userId = await resolvePushSubscriptionUserId(input.accessToken, null, input.endpoint);
   if (!userId) return { success: false };
 
   try {
-    const supabase = createUserScopedClient(input.accessToken);
+    const supabase = createServiceRoleClient();
 
     const { error } = await supabase
       .from('push_subscriptions')

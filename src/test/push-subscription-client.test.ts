@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   formatPushRegistrationError,
+  formatPushRegistrationErrorWithDetailFrom,
   hasMatchingApplicationServerKey,
   hasServerPushRegistration,
   isAndroidWebPushClient,
@@ -67,6 +68,26 @@ describe('push-subscription-client', () => {
         'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/150.0.0.0 Mobile',
       ),
     ).toBe(false);
+  });
+
+  test('formatPushRegistrationErrorWithDetailFrom appends technical detail in parentheses', () => {
+    expect(
+      formatPushRegistrationErrorWithDetailFrom(
+        'ensure_failed',
+        'InvalidStateError: already subscribed',
+        true,
+      ),
+    ).toContain('ลองใหม่');
+    expect(
+      formatPushRegistrationErrorWithDetailFrom(
+        'ensure_failed',
+        'InvalidStateError: already subscribed',
+        true,
+      ),
+    ).toContain('(InvalidStateError: already subscribed)');
+    expect(formatPushRegistrationErrorWithDetailFrom('gesture_required', null, false)).not.toContain(
+      '(',
+    );
   });
 
   test('formatPushRegistrationError returns localized messages', () => {

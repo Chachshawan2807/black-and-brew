@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const mockUpsert = vi.fn();
+const mockDeleteIn = vi.fn();
 const mockGetUser = vi.fn();
 const mockCookieGet = vi.fn();
 const mockMaybeSingle = vi.fn();
 const mockEndpointMaybeSingle = vi.fn();
+const mockPruneSelectData = vi.fn();
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn().mockImplementation(async () => ({
@@ -22,13 +24,30 @@ vi.mock('@supabase/supabase-js', () => ({
       return {
         from: vi.fn((table: string) => ({
           upsert: mockUpsert,
+          delete: vi.fn(() => ({
+            in: mockDeleteIn,
+          })),
           select: vi.fn((columns: string) => {
-            void columns;
+            if (columns.includes('client_session_id')) {
+              const pruneChain = {
+                eq: vi.fn(() => pruneChain),
+              };
+              pruneChain.eq.mockImplementation((column: string) => {
+                if (column === 'client_session_id') {
+                  return Promise.resolve({ data: mockPruneSelectData(), error: null });
+                }
+                return pruneChain;
+              });
+              return pruneChain;
+            }
             return {
               eq: vi.fn((column: string, value: string) => {
                 if (column === 'endpoint') {
                   void value;
                   return { maybeSingle: mockEndpointMaybeSingle };
+                }
+                if (column === 'branch_id') {
+                  return Promise.resolve({ data: [], error: null });
                 }
                 return {
                   order: vi.fn(() => ({
@@ -62,6 +81,9 @@ import { registerPushSubscription } from '@/app/actions/push-actions';
 describe('registerPushSubscription', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.PIN_PUSH_BINDING_USER_ID;
+    mockPruneSelectData.mockReturnValue([]);
+    mockDeleteIn.mockResolvedValue({ error: null });
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
@@ -76,6 +98,47 @@ describe('registerPushSubscription', () => {
     mockUpsert.mockResolvedValue({ error: null });
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
     mockEndpointMaybeSingle.mockResolvedValue({ data: null, error: null });
+  });
+
+  test('uses PIN_PUSH_BINDING_USER_ID when configured for PIN sessions', async () => {
+    process.env.PIN_PUSH_BINDING_USER_ID = 'store-binding-user';
+    const result = await registerPushSubscription({
+      accessToken: 'test-access-token',
+      endpoint: 'https://push.example/sub/bound',
+      keys: { p256dh: 'p256', auth: 'auth' },
+      clientSessionId: 'bb-session-new',
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: 'store-binding-user' }),
+      { onConflict: 'endpoint' },
+    );
+    expect(mockGetUser).not.toHaveBeenCalled();
+  });
+
+  test('prunes duplicate endpoints for the same client session after upsert', async () => {
+    mockPruneSelectData.mockReturnValue([
+      {
+        id: 'old-row',
+        endpoint: 'https://push.example/sub/old',
+        client_session_id: 'bb-session-1',
+      },
+      {
+        id: 'keep-row',
+        endpoint: 'https://push.example/sub/1',
+        client_session_id: 'bb-session-1',
+      },
+    ]);
+
+    await registerPushSubscription({
+      accessToken: 'test-access-token',
+      endpoint: 'https://push.example/sub/1',
+      keys: { p256dh: 'p256', auth: 'auth' },
+      clientSessionId: 'bb-session-1',
+    });
+
+    expect(mockDeleteIn).toHaveBeenCalledWith('id', ['old-row']);
   });
 
   test('upserts via service role after JWT validation so endpoint reclaim bypasses RLS', async () => {

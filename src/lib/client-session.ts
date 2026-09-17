@@ -7,16 +7,31 @@ function generateId(): string {
   return `sess_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 }
 
-/** Stable per-browser-tab session id for suppressing self-notifications. */
+/**
+ * Stable per-device session id for push registration and self-notification suppression.
+ * Persisted in localStorage so PWA restarts keep the same id (sessionStorage was too volatile).
+ */
 export function getClientSessionId(): string {
   if (typeof window === 'undefined') {
     return '';
   }
   try {
-    const existing = sessionStorage.getItem(SESSION_KEY);
+    let existing = localStorage.getItem(SESSION_KEY);
+    if (!existing) {
+      const legacy = sessionStorage.getItem(SESSION_KEY);
+      if (legacy) {
+        localStorage.setItem(SESSION_KEY, legacy);
+        existing = legacy;
+        try {
+          sessionStorage.removeItem(SESSION_KEY);
+        } catch {
+          // ignore
+        }
+      }
+    }
     if (existing) return existing;
     const id = generateId();
-    sessionStorage.setItem(SESSION_KEY, id);
+    localStorage.setItem(SESSION_KEY, id);
     return id;
   } catch {
     return generateId();
@@ -26,6 +41,7 @@ export function getClientSessionId(): string {
 export function clearClientSessionId(): void {
   if (typeof window === 'undefined') return;
   try {
+    localStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem(SESSION_KEY);
   } catch {
     // ignore

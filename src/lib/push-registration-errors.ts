@@ -22,6 +22,9 @@ export function classifyPushRegistrationError(error: unknown): string {
     return 'vapid_key_invalid';
   }
   if (name === 'AbortError') return 'push_unavailable';
+  if (/push_requires_installed_pwa|home-screen app|installed pwa/i.test(combined)) {
+    return 'push_unavailable';
+  }
   if (/push service not available/i.test(combined)) return 'push_unavailable';
   if (/registration failed/i.test(message)) return 'push_unavailable';
   if (/service_worker/i.test(combined)) return 'push_unavailable';

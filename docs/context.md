@@ -64,6 +64,7 @@ BLACK AND BREW คือร้านกาแฟที่ดำเนินก�
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push VAPID public key | Public |
 | `VAPID_PRIVATE_KEY` | Web Push server signing key | Server only |
 | `VAPID_SUBJECT` | Push service contact URI | Server only |
+| `PIN_PUSH_BINDING_USER_ID` | OPTION shared `auth.users` id when anonymous JWT expires on PIN-only devices | Server only |
 | `PUSH_WEBHOOK_SECRET` | OPTION `POST /api/push/webhook` auth | Server only |
 | `UPSTASH_REDIS_REST_URL` | OPTION distributed rate limiting (Upstash) | Server only |
 | `UPSTASH_REDIS_REST_TOKEN` | OPTION distributed rate limiting (Upstash) | Server only |

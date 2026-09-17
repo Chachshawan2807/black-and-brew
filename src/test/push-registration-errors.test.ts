@@ -46,6 +46,12 @@ describe('classifyPushRegistrationError', () => {
     ).toBe('push_unavailable');
   });
 
+  test('maps iOS non-PWA push errors to push_unavailable', () => {
+    expect(classifyPushRegistrationError(new Error('push_requires_installed_pwa'))).toBe(
+      'push_unavailable',
+    );
+  });
+
   test('maps stale PWA Server Action and network failures to server_unreachable', () => {
     expect(
       classifyPushRegistrationError(new Error('Failed to find Server Action "xyz"')),
