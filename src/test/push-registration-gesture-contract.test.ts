@@ -26,16 +26,25 @@ describe('push registration gesture contract', () => {
     }
   });
 
-  test('registerDevicePushFromUserGesture reconciles after ensure and does not return ensure boolean', () => {
+  test('registerDevicePushFromUserGesture subscribes under gesture before reconcile auth wait', () => {
     const block = pushClientSource.match(
       /export async function registerDevicePushFromUserGesture[\s\S]*?^}/m,
     )?.[0];
     expect(block).toBeTruthy();
+    expect(block).toMatch(/subscribeLocalPushUnderUserGesture/);
+    expect(block).toMatch(/await reconcileDevicePushRegistration/);
+    expect(block).not.toMatch(/await ensurePushSubscriptionFromUserGesture/);
+  });
+
+  test('reconcile may subscribe before waitForAuthenticatedPushPrerequisites', () => {
+    const block = pushClientSource.match(
+      /export async function reconcileDevicePushRegistration[\s\S]*?^}/m,
+    )?.[0];
+    expect(block).toBeTruthy();
+    expect(block).toMatch(/maySubscribeBeforeAuth/);
     expect(block).toMatch(
-      /await ensurePushSubscriptionFromUserGesture[\s\S]*?await reconcileDevicePushRegistration/,
+      /subscribeLocalPushUnderUserGesture[\s\S]*waitForAuthenticatedPushPrerequisites/,
     );
-    expect(block).not.toMatch(/return ensurePushSubscription/);
-    expect(block).not.toMatch(/if \(ok\)/);
   });
 
   test('settings register button uses registerDevicePushFromUserGesture and isDevicePushRegisteredOnServer', () => {

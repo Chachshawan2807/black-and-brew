@@ -6,6 +6,33 @@ import { canRegisterServiceWorker } from '@/lib/pwa-notification-bridge';
 let reloadScheduled = false;
 let pushSwReadyPromise: Promise<ServiceWorkerRegistration> | null = null;
 
+async function waitForServiceWorkerActivation(
+  registration: ServiceWorkerRegistration,
+  timeoutMs = 12_000,
+): Promise<void> {
+  if (registration.active?.state === 'activated') return;
+
+  const worker =
+    registration.installing ?? registration.waiting ?? registration.active;
+  if (!worker) {
+    await navigator.serviceWorker.ready;
+    return;
+  }
+  if (worker.state === 'activated') return;
+
+  await new Promise<void>((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error('service_worker_activation_timeout'));
+    }, timeoutMs);
+    worker.addEventListener('statechange', () => {
+      if (worker.state === 'activated') {
+        window.clearTimeout(timer);
+        resolve();
+      }
+    });
+  });
+}
+
 export function installServiceWorkerUpdateListener(): () => void {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
     return () => {};
@@ -51,9 +78,7 @@ export function ensurePushServiceWorkerReady(): Promise<ServiceWorkerRegistratio
     pushSwReadyPromise = navigator.serviceWorker
       .register(PWA_SERVICE_WORKER_PATH, { updateViaCache: 'none' })
       .then(async (registration) => {
-        if (!registration.active) {
-          await navigator.serviceWorker.ready;
-        }
+        await waitForServiceWorkerActivation(registration);
         return navigator.serviceWorker.ready;
       })
       .catch((error) => {

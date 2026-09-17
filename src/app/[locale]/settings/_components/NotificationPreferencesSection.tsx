@@ -356,6 +356,7 @@ export default function NotificationPreferencesSection({
         <button
           type="button"
           disabled={registering}
+          onPointerDown={() => warmPushRegistrationStack()}
           onClick={() => void registerThisDevice()}
           className={cn(SETTINGS_BTN_PRIMARY, 'mb-2 w-full text-[13px] py-2.5 h-auto min-h-[44px]')}
         >

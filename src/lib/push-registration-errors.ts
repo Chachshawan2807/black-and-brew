@@ -27,7 +27,8 @@ export function classifyPushRegistrationError(error: unknown): string {
   }
   if (/push service not available/i.test(combined)) return 'push_unavailable';
   if (/registration failed/i.test(message)) return 'push_unavailable';
-  if (/service_worker/i.test(combined)) return 'push_unavailable';
+  if (/service_worker_activation_timeout|service_worker/i.test(combined)) return 'push_unavailable';
+  if (/subscribe_failed/i.test(combined)) return 'push_unavailable';
   if (
     /failed to find server action|failed to fetch|load failed|networkerror|fetch failed/i.test(
       combined,

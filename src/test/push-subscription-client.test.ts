@@ -7,6 +7,7 @@ import {
   hasMatchingApplicationServerKey,
   hasServerPushRegistration,
   isAndroidWebPushClient,
+  maySubscribeWithoutUserGesture,
   requiresUserGestureForPushSubscribe,
   shouldDeferOsNotificationToPush,
   urlBase64ToUint8Array,
@@ -37,6 +38,19 @@ describe('push-subscription-client', () => {
 
   test('treats subscriptions without an exposed applicationServerKey as valid (Safari/iOS)', () => {
     expect(hasMatchingApplicationServerKey(makeSubscription(null), 'BAAAAAAAAA')).toBe(true);
+  });
+
+  test('maySubscribeWithoutUserGesture is false on iPhone and true on Android', () => {
+    expect(
+      maySubscribeWithoutUserGesture(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15',
+      ),
+    ).toBe(false);
+    expect(
+      maySubscribeWithoutUserGesture(
+        'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/150.0.0.0 Mobile Safari/537.36',
+      ),
+    ).toBe(true);
   });
 
   test('isAndroidWebPushClient detects Android PWAs', () => {
@@ -230,6 +244,13 @@ describe('push-subscription-client', () => {
     expect(source).toMatch(
       /const registrationPromise = ensurePushServiceWorkerReady\(\)[\s\S]*const permissionPromise = ensureNotificationPermissionGranted\(\)/,
     );
+    expect(source).toMatch(
+      /maySubscribeNow[\s\S]*obtainBrowserPushSubscription[\s\S]*const sessionOk = await sessionPromise/,
+    );
+    expect(source).toMatch(
+      /maySubscribeBeforeAuth[\s\S]*subscribeLocalPushUnderUserGesture[\s\S]*waitForAuthenticatedPushPrerequisites/,
+    );
+    expect(source).toContain('subscribeLocalPushUnderUserGesture');
   });
 
   test('warmPushRegistrationStack preloads service worker and session', () => {

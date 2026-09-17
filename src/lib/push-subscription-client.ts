@@ -50,6 +50,13 @@ export function requiresUserGestureForPushSubscribe(
   return /iPhone|iPad|iPod/i.test(userAgent);
 }
 
+/** True when the browser may call pushManager.subscribe without a fresh tap (Android/desktop). */
+export function maySubscribeWithoutUserGesture(
+  userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '',
+): boolean {
+  return !requiresUserGestureForPushSubscribe(userAgent);
+}
+
 /** Android PWAs can subscribe after PIN without a separate Settings tap. */
 export function isAndroidWebPushClient(
   userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '',
@@ -653,6 +660,16 @@ async function recoverLocalPushSubscription(
   }
 }
 
+/** Create or recover a browser PushSubscription (no server register). */
+async function obtainBrowserPushSubscription(
+  registration: ServiceWorkerRegistration,
+  vapidKey: string,
+): Promise<PushSubscription> {
+  const recovered = await recoverLocalPushSubscription(registration);
+  if (recovered) return recovered;
+  return subscribePushManager(registration, vapidKey);
+}
+
 async function subscribePushManager(
   registration: ServiceWorkerRegistration,
   vapidKey: string,
@@ -685,6 +702,47 @@ async function subscribePushManager(
     }
   }
   throw firstError instanceof Error ? firstError : new Error('subscribe_failed');
+}
+
+/**
+ * iOS Web Push: subscribe must run while the user-gesture activation is still valid.
+ * Call this at the start of a button handler before PIN/session polling.
+ */
+async function subscribeLocalPushUnderUserGesture(): Promise<PushSubscription | null> {
+  if (!isPushManagerSupported()) {
+    setPushRegistrationError('push_unavailable');
+    return null;
+  }
+  if (getNotificationPermissionState() !== 'granted') {
+    setPushRegistrationError('permission_denied');
+    return null;
+  }
+
+  let vapidKey: string;
+  try {
+    const configured = getVapidPublicKey();
+    if (!configured) {
+      setPushRegistrationError('vapid_not_configured');
+      return null;
+    }
+    vapidPublicKeyToApplicationServerKey(configured);
+    vapidKey = configured;
+  } catch {
+    setPushRegistrationError('vapid_key_invalid');
+    return null;
+  }
+
+  try {
+    const registration = await ensurePushServiceWorkerReady();
+    const subscription = await obtainBrowserPushSubscription(registration, vapidKey);
+    localPushSubscription = subscription;
+    setPushRegistrationError(null);
+    return subscription;
+  } catch (error) {
+    setPushRegistrationError(classifyPushRegistrationError(error), error);
+    logPushClientIssue('gesture subscribe failed', error);
+    return null;
+  }
 }
 
 async function ensurePushSubscriptionUnqueued(
@@ -731,9 +789,20 @@ async function ensurePushSubscriptionUnqueued(
     const registration = await registrationPromise;
     let existing = await recoverLocalPushSubscription(registration);
 
-    if (!existing && requiresUserGestureForPushSubscribe() && !fromUserGesture) {
-      setPushRegistrationError('gesture_required');
-      return false;
+    if (!existing) {
+      const maySubscribeNow = fromUserGesture || maySubscribeWithoutUserGesture();
+      if (!maySubscribeNow) {
+        setPushRegistrationError('gesture_required');
+        return false;
+      }
+      try {
+        existing = await obtainBrowserPushSubscription(registration, vapidKey);
+        localPushSubscription = existing;
+      } catch (error) {
+        setPushRegistrationError(classifyPushRegistrationError(error), error);
+        logPushClientIssue('browser subscribe failed', error);
+        return false;
+      }
     }
 
     const sessionOk = await sessionPromise;
@@ -752,6 +821,20 @@ async function ensurePushSubscriptionUnqueued(
       await unregisterPushSubscription({ accessToken, endpoint: existing.endpoint });
       await dropLocalPushSubscription(existing);
       existing = null;
+      const mayResubscribe = fromUserGesture || maySubscribeWithoutUserGesture();
+      if (mayResubscribe) {
+        try {
+          existing = await obtainBrowserPushSubscription(registration, vapidKey);
+          localPushSubscription = existing;
+        } catch (error) {
+          setPushRegistrationError(classifyPushRegistrationError(error), error);
+          logPushClientIssue('vapid rotate subscribe failed', error);
+          return false;
+        }
+      } else {
+        setPushRegistrationError('gesture_required');
+        return false;
+      }
     }
 
     if (existing) {
@@ -777,9 +860,11 @@ async function ensurePushSubscriptionUnqueued(
       return false;
     }
 
-    const subscription = existing ?? (await subscribePushManager(registration, vapidKey));
-    localPushSubscription = subscription;
-    return registerSubscriptionWithServer(subscription, accessToken, prefs, locale);
+    setPushRegistrationError(
+      'ensure_failed',
+      'subscription_missing_after_browser_subscribe',
+    );
+    return false;
   } catch (error) {
     if (hasServerPushRegistration()) {
       setPushRegistrationError(null);
@@ -902,7 +987,7 @@ export type DevicePushRegistrationGestureResult = {
 export async function registerDevicePushFromUserGesture(
   locale: string,
 ): Promise<DevicePushRegistrationGestureResult> {
-  await ensurePushSubscriptionFromUserGesture(locale);
+  await subscribeLocalPushUnderUserGesture();
   const deviceState = await reconcileDevicePushRegistration(locale, { fromUserGesture: true });
   return { deviceState };
 }
@@ -932,13 +1017,35 @@ export async function reconcileDevicePushRegistration(
     return 'none';
   }
 
+  const maySubscribeBeforeAuth =
+    getNotificationPermissionState() === 'granted' &&
+    !hasLocalPushSubscription() &&
+    (options.fromUserGesture === true || maySubscribeWithoutUserGesture());
+
+  if (maySubscribeBeforeAuth) {
+    await subscribeLocalPushUnderUserGesture();
+  }
+
   const authReady = await waitForAuthenticatedPushPrerequisites();
   if (!authReady) {
+    try {
+      const registration = await ensurePushServiceWorkerReady();
+      const recovered = await recoverLocalPushSubscription(registration);
+      if (recovered) {
+        localPushSubscription = recovered;
+      }
+    } catch {
+      // ignore
+    }
+
     const { getAuthSessionInfo } = await import('@/app/actions/auth');
     const pinSession = await getAuthSessionInfo();
     setPushRegistrationError(
       pinSession.verified ? 'supabase_session_missing' : 'pin_session_required',
     );
+    if (hasLocalPushSubscription()) {
+      return 'local_only';
+    }
     return 'none';
   }
 
@@ -1006,7 +1113,10 @@ export async function reconcileDevicePushRegistration(
     }
 
     if (!getLastPushRegistrationError()) {
-      setPushRegistrationError('ensure_failed');
+      setPushRegistrationError(
+        'ensure_failed',
+        'subscribe_never_created_check_gesture_or_sw',
+      );
     }
     return 'none';
   } catch (error) {
