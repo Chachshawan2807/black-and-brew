@@ -26,13 +26,13 @@ describe('push registration gesture contract', () => {
     }
   });
 
-  test('registerDevicePushFromUserGesture subscribes under gesture before reconcile auth wait', () => {
+  test('registerDevicePushFromUserGesture runs ensure then reconcile without duplicate ensure', () => {
     const block = pushClientSource.match(
       /export async function registerDevicePushFromUserGesture[\s\S]*?^}/m,
     )?.[0];
     expect(block).toBeTruthy();
-    expect(block).toMatch(/subscribeLocalPushUnderUserGesture/);
-    expect(block).toMatch(/await reconcileDevicePushRegistration/);
+    expect(block).toMatch(/ensurePushSubscription\(locale, \{ fromUserGesture: true \}\)/);
+    expect(block).toMatch(/skipEnsureFallback: true/);
     expect(block).not.toMatch(/await ensurePushSubscriptionFromUserGesture/);
   });
 

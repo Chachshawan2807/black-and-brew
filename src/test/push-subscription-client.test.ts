@@ -245,12 +245,13 @@ describe('push-subscription-client', () => {
       /const registrationPromise = ensurePushServiceWorkerReady\(\)[\s\S]*const permissionPromise = ensureNotificationPermissionGranted\(\)/,
     );
     expect(source).toMatch(
-      /maySubscribeNow[\s\S]*obtainBrowserPushSubscription[\s\S]*const sessionOk = await sessionPromise/,
+      /maySubscribeNow[\s\S]*obtainBrowserPushSubscription[\s\S]*const sessionOk = await ensureSupabaseSession\(\)/,
     );
     expect(source).toMatch(
       /maySubscribeBeforeAuth[\s\S]*subscribeLocalPushUnderUserGesture[\s\S]*waitForAuthenticatedPushPrerequisites/,
     );
-    expect(source).toContain('subscribeLocalPushUnderUserGesture');
+    expect(source).toContain('runWithSubscribeQueue');
+    expect(source).not.toMatch(/const sessionPromise = ensureSupabaseSession\(\)/);
   });
 
   test('warmPushRegistrationStack preloads service worker and session', () => {

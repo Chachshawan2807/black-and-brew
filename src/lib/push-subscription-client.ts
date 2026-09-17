@@ -130,6 +130,14 @@ export function formatPushRegistrationError(code: string, isTh: boolean): string
       th: 'เซิร์ฟเวอร์ยังไม่ได้ตั้งค่า Push ติดต่อผู้ดูแลระบบ',
       en: 'Push is not configured on the server contact an administrator',
     },
+    browser_subscribe_failed: {
+      th: 'เบราว์เซอร์สร้าง Push endpoint ไม่ได้ ตรวจ VAPID ใน Vercel แล้วลองใหม่',
+      en: 'The browser could not create a push endpoint check VAPID on Vercel and retry',
+    },
+    push_prefs_disabled: {
+      th: 'เปิดการแจ้งเตือนอย่างน้อยหนึ่งประเภทก่อนลงทะเบียน',
+      en: 'Turn on at least one notification type before registering',
+    },
   };
 
   const entry = messages[code];
@@ -179,6 +187,7 @@ export function buildPushRegistrationSupportBundle(): string {
     `serverOk=${hasServerPushRegistration()}`,
     `pwa=${isInstalledPwa()}`,
     `pushApi=${isPushManagerSupported()}`,
+    `vapidClient=${isClientVapidPublicKeyConfigured()}`,
     endpointHost ? `host=${endpointHost}` : 'host=none',
   ]
     .filter(Boolean)
@@ -198,6 +207,17 @@ let maintenanceTimer: ReturnType<typeof setTimeout> | null = null;
 let maintenanceInFlight: Promise<void> | null = null;
 /** Serializes subscribe() Chrome Android throws InvalidStateError on concurrent calls. */
 let ensureQueue: Promise<unknown> = Promise.resolve();
+let subscribeQueue: Promise<unknown> = Promise.resolve();
+let userGesturePushRegistrationInFlight = false;
+
+function runWithSubscribeQueue<T>(task: () => Promise<T>): Promise<T> {
+  const run = subscribeQueue.then(task, task);
+  subscribeQueue = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
 
 export const PUSH_REGISTRATION_UPDATED_EVENT = 'bb-push-registration-updated';
 
@@ -280,6 +300,10 @@ function queuePushSubscriptionMaintenance(locale: string): void {
 }
 
 async function runPushSubscriptionMaintenance(locale: string): Promise<void> {
+  if (userGesturePushRegistrationInFlight) {
+    return;
+  }
+
   const prefs = loadNotificationPreferences();
   if (!wantsPushRegistration(prefs)) {
     localPushSubscription = null;
@@ -404,7 +428,21 @@ export function hasMatchingApplicationServerKey(
 
 function getVapidPublicKey(): string | null {
   const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
-  return key && key.length > 0 ? key : null;
+  if (!key || key.length === 0) return null;
+  if (/YOUR_VAPID|placeholder|changeme/i.test(key)) return null;
+  return key;
+}
+
+/** Client bundle exposes VAPID for subscribe(); used in Settings diagnostics. */
+export function isClientVapidPublicKeyConfigured(): boolean {
+  try {
+    const key = getVapidPublicKey();
+    if (!key) return false;
+    vapidPublicKeyToApplicationServerKey(key);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function subscriptionToPayload(subscription: PushSubscription): PushSubscriptionRegisterPayload | null {
@@ -674,34 +712,36 @@ async function subscribePushManager(
   registration: ServiceWorkerRegistration,
   vapidKey: string,
 ): Promise<PushSubscription> {
-  if (requiresUserGestureForPushSubscribe() && !isInstalledPwa()) {
-    throw new Error('push_requires_installed_pwa');
-  }
+  return runWithSubscribeQueue(async () => {
+    if (requiresUserGestureForPushSubscribe() && !isInstalledPwa()) {
+      throw new Error('push_requires_installed_pwa');
+    }
 
-  const active =
-    registration.active && registration.pushManager
-      ? registration
-      : await navigator.serviceWorker.ready;
-  const recoveredFirst = await recoverLocalPushSubscription(active);
-  if (recoveredFirst) return recoveredFirst;
+    const active =
+      registration.active && registration.pushManager
+        ? registration
+        : await navigator.serviceWorker.ready;
+    const recoveredFirst = await recoverLocalPushSubscription(active);
+    if (recoveredFirst) return recoveredFirst;
 
-  const keys = vapidApplicationServerKeyCandidates(vapidKey);
-  let firstError: unknown;
-  for (const applicationServerKey of keys) {
-    try {
-      return await active.pushManager.subscribe(toPushSubscribeOptions(applicationServerKey));
-    } catch (error) {
-      firstError = error;
-      const recovered = await recoverLocalPushSubscription(active);
-      if (recovered) return recovered;
-      if (classifyPushRegistrationError(error) === 'subscribe_in_progress') {
-        await new Promise((resolve) => setTimeout(resolve, 400));
-        const afterWait = await recoverLocalPushSubscription(active);
-        if (afterWait) return afterWait;
+    const keys = vapidApplicationServerKeyCandidates(vapidKey);
+    let firstError: unknown;
+    for (const applicationServerKey of keys) {
+      try {
+        return await active.pushManager.subscribe(toPushSubscribeOptions(applicationServerKey));
+      } catch (error) {
+        firstError = error;
+        const recovered = await recoverLocalPushSubscription(active);
+        if (recovered) return recovered;
+        if (classifyPushRegistrationError(error) === 'subscribe_in_progress') {
+          await new Promise((resolve) => setTimeout(resolve, 400));
+          const afterWait = await recoverLocalPushSubscription(active);
+          if (afterWait) return afterWait;
+        }
       }
     }
-  }
-  throw firstError instanceof Error ? firstError : new Error('subscribe_failed');
+    throw firstError instanceof Error ? firstError : new Error('subscribe_failed');
+  });
 }
 
 /**
@@ -771,13 +811,12 @@ async function ensurePushSubscriptionUnqueued(
 
   const prefs = loadNotificationPreferences();
   if (!wantsPushRegistration(prefs)) {
-    setPushRegistrationError(null);
+    setPushRegistrationError('push_prefs_disabled');
     return false;
   }
 
   const fromUserGesture = options.fromUserGesture === true;
   const registrationPromise = ensurePushServiceWorkerReady();
-  const sessionPromise = ensureSupabaseSession();
   const permissionPromise = ensureNotificationPermissionGranted();
 
   try {
@@ -805,8 +844,12 @@ async function ensurePushSubscriptionUnqueued(
       }
     }
 
-    const sessionOk = await sessionPromise;
+    const sessionOk = await ensureSupabaseSession();
     if (!sessionOk) {
+      if (existing) {
+        setPushRegistrationError('supabase_session_missing');
+        return false;
+      }
       setPushRegistrationError('supabase_session_missing');
       return false;
     }
@@ -987,9 +1030,22 @@ export type DevicePushRegistrationGestureResult = {
 export async function registerDevicePushFromUserGesture(
   locale: string,
 ): Promise<DevicePushRegistrationGestureResult> {
-  await subscribeLocalPushUnderUserGesture();
-  const deviceState = await reconcileDevicePushRegistration(locale, { fromUserGesture: true });
-  return { deviceState };
+  userGesturePushRegistrationInFlight = true;
+  try {
+    if (!isClientVapidPublicKeyConfigured()) {
+      setPushRegistrationError('vapid_not_configured');
+      return { deviceState: 'none' };
+    }
+
+    await ensurePushSubscription(locale, { fromUserGesture: true });
+    const deviceState = await reconcileDevicePushRegistration(locale, {
+      fromUserGesture: true,
+      skipEnsureFallback: true,
+    });
+    return { deviceState };
+  } finally {
+    userGesturePushRegistrationInFlight = false;
+  }
 }
 
 /**
@@ -1000,7 +1056,7 @@ export async function registerDevicePushFromUserGesture(
  */
 export async function reconcileDevicePushRegistration(
   locale: string,
-  options: { fromUserGesture?: boolean } = {},
+  options: { fromUserGesture?: boolean; skipEnsureFallback?: boolean } = {},
 ): Promise<DevicePushRegistrationState> {
   if (typeof window === 'undefined') return 'none';
 
@@ -1017,13 +1073,15 @@ export async function reconcileDevicePushRegistration(
     return 'none';
   }
 
-  const maySubscribeBeforeAuth =
-    getNotificationPermissionState() === 'granted' &&
-    !hasLocalPushSubscription() &&
-    (options.fromUserGesture === true || maySubscribeWithoutUserGesture());
+  if (!options.skipEnsureFallback) {
+    const maySubscribeBeforeAuth =
+      getNotificationPermissionState() === 'granted' &&
+      !hasLocalPushSubscription() &&
+      (options.fromUserGesture === true || maySubscribeWithoutUserGesture());
 
-  if (maySubscribeBeforeAuth) {
-    await subscribeLocalPushUnderUserGesture();
+    if (maySubscribeBeforeAuth) {
+      await subscribeLocalPushUnderUserGesture();
+    }
   }
 
   const authReady = await waitForAuthenticatedPushPrerequisites();
@@ -1090,6 +1148,21 @@ export async function reconcileDevicePushRegistration(
       return 'none';
     }
 
+    if (options.skipEnsureFallback) {
+      const recovered = await recoverLocalPushSubscription(registration);
+      if (recovered) {
+        localPushSubscription = recovered;
+        if (!getLastPushRegistrationError()) {
+          setPushRegistrationError('server_not_registered');
+        }
+        return 'local_only';
+      }
+      if (!getLastPushRegistrationError()) {
+        setPushRegistrationError('browser_subscribe_failed', 'no_push_endpoint_after_register');
+      }
+      return 'none';
+    }
+
     if (requiresUserGestureForPushSubscribe() && !options.fromUserGesture) {
       setPushRegistrationError('gesture_required');
       return 'none';
@@ -1114,8 +1187,8 @@ export async function reconcileDevicePushRegistration(
 
     if (!getLastPushRegistrationError()) {
       setPushRegistrationError(
-        'ensure_failed',
-        'subscribe_never_created_check_gesture_or_sw',
+        'browser_subscribe_failed',
+        'subscribe_never_created_check_vapid_sw',
       );
     }
     return 'none';
@@ -1127,7 +1200,7 @@ export async function reconcileDevicePushRegistration(
     }
     localPushSubscription = null;
     serverPushRegistrationConfirmed = false;
-    setPushRegistrationError(classifyPushRegistrationError(error));
+    setPushRegistrationError(classifyPushRegistrationError(error), error);
     return 'none';
   }
 }
