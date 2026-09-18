@@ -1350,6 +1350,10 @@ export default function InventoryClient({
           entityId: data.id,
           entityLabel: data.name,
           after: data,
+          metadata: {
+            notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+            notificationContext: 'inventory',
+          },
         });
         const historyRes = await recordItemAddHistory(data.id, Number(data.stock ?? 0), data.name);
         if (!historyRes.success) {
@@ -1388,7 +1392,11 @@ export default function InventoryClient({
           entityId: data.id,
           entityLabel: data.name,
           after: data,
-          metadata: { insertPosition: insertPos },
+          metadata: {
+            insertPosition: insertPos,
+            notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+            notificationContext: 'inventory',
+          },
         });
         const historyRes = await recordItemAddHistory(data.id, Number(data.stock ?? 0), data.name);
         if (!historyRes.success) {
@@ -1421,7 +1429,11 @@ export default function InventoryClient({
        * PPR-Friendly Update: 
        * Revalidate path to sync server state while keeping local filtering for Zero CLS.
        */
-      const res = await deleteInventoryItem(deleteId, { clientSessionId: getClientSessionId() });
+      const res = await deleteInventoryItem(deleteId, {
+        clientSessionId: getClientSessionId(),
+        notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+        notificationContext: 'inventory',
+      });
       if (!res.success) throw new Error(res.error);
 
       if (history.showHistoryModal) {
@@ -1747,6 +1759,7 @@ export default function InventoryClient({
         if (toDelete.length > 0) {
           const delResult = await deleteInventoryItemsBulk(toDelete, {
             clientSessionId: getClientSessionId(),
+            suppressNotification: true,
           });
           if (!delResult.success) throw new Error(delResult.error);
         }

@@ -101,6 +101,20 @@ describe('isNotifyableStockOperation', () => {
   });
 });
 
+function makeLifecycleRow(
+  action: DataChangeLogRow['action'],
+  metadata: Record<string, unknown> = {},
+): DataChangeLogRow {
+  return {
+    ...makeRow(metadata),
+    action,
+    field_changes: [],
+    old_value: action === 'DELETE' ? { name: 'Coffee', stock: 4, unit: 'ถุง' } : null,
+    new_value: action === 'CREATE' ? { name: 'Coffee', stock: 0, unit: 'ถุง' } : null,
+    entity_label: 'Coffee',
+  };
+}
+
 describe('isEligibleInventoryNotification', () => {
   test('allows quick action IN with valid source', () => {
     expect(
@@ -180,6 +194,39 @@ describe('isEligibleInventoryNotification', () => {
           operation: 'reorder_inventory_items',
         })
       )
+    ).toBe(false);
+  });
+
+  test('allows warehouse grid CREATE and DELETE lifecycle actions', () => {
+    expect(
+      isEligibleInventoryNotification(
+        makeLifecycleRow('CREATE', {
+          notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+        })
+      )
+    ).toBe(true);
+    expect(
+      isEligibleInventoryNotification(
+        makeLifecycleRow('DELETE', {
+          notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+        })
+      )
+    ).toBe(true);
+  });
+
+  test('mutes CREATE and DELETE without notification source', () => {
+    expect(isEligibleInventoryNotification(makeLifecycleRow('CREATE'))).toBe(false);
+    expect(isEligibleInventoryNotification(makeLifecycleRow('DELETE'))).toBe(false);
+  });
+
+  test('mutes BULK_DELETE even with warehouse notification source', () => {
+    expect(
+      isEligibleInventoryNotification({
+        ...makeLifecycleRow('BULK_DELETE', {
+          notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+        }),
+        entity_type: 'inventory_item',
+      })
     ).toBe(false);
   });
 });

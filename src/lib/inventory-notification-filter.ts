@@ -44,11 +44,21 @@ export function isNotifyableStockOperation(metadata?: Record<string, unknown>): 
   return false;
 }
 
+const INVENTORY_ITEM_LIFECYCLE_ACTIONS = new Set<DataChangeLogRow['action']>(['CREATE', 'DELETE']);
+
+/** Add / remove warehouse rows (distinct from IN/OUT ledger movements). */
+export function isNotifyableInventoryItemLifecycle(row: DataChangeLogRow): boolean {
+  if (!INVENTORY_ITEM_LIFECYCLE_ACTIONS.has(row.action)) return false;
+  return row.entity_type === 'inventory_item';
+}
+
 /** Strict source-based gate for desktop & mobile inventory notifications. */
 export function isEligibleInventoryNotification(row: DataChangeLogRow): boolean {
   if (row.module !== 'inventory' || row.status !== 'success') return false;
   if (isSuppressedInventoryNotification(row.metadata)) return false;
   if (!isAllowedInventoryNotificationSource(row.metadata)) return false;
-  if (!isNotifyableStockOperation(row.metadata)) return false;
+  if (!isNotifyableStockOperation(row.metadata) && !isNotifyableInventoryItemLifecycle(row)) {
+    return false;
+  }
   return true;
 }

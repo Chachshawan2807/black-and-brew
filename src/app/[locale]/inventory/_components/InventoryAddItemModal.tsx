@@ -22,6 +22,7 @@ import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { recordItemAddHistory } from '@/app/actions/inventory-actions';
+import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { cn } from '@/lib/utils';
 import { BB_FIELD_INPUT_MUTED } from '@/lib/ui-outlined-tokens';
@@ -114,6 +115,10 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
         entityId: data.id,
         entityLabel: data.name,
         after: data,
+        metadata: {
+          notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+          notificationContext: 'inventory',
+        },
       });
 
       const historyRes = await recordItemAddHistory(data.id, Number(data.stock ?? 0), data.name);

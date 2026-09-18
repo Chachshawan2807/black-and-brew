@@ -117,6 +117,24 @@ describe('summarizeFieldChanges', () => {
   });
 });
 
+describe('formatInventoryNotification DELETE', () => {
+  test('shows delete title and stock before removal', () => {
+    const n = formatInventoryNotification(
+      makeRow({
+        action: 'DELETE',
+        entity_label: 'นมอัลมอนด์',
+        field_changes: [],
+        old_value: { name: 'นมอัลมอนด์', stock: 4, unit: 'ขวด' },
+        metadata: { notificationSource: 'inventory_warehouse_grid' },
+      }),
+      'th'
+    );
+    expect(n.title).toBe('ลบรายการ: นมอัลมอนด์');
+    expect(n.summary).toBe('คงเหลือก่อนลบ 4 ขวด');
+    expect(n.priority).toBe('high');
+  });
+});
+
 describe('formatInventoryNotification CREATE', () => {
   test('uses readable summary without uuid for new items', () => {
     const n = formatInventoryNotification(
