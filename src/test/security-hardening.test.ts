@@ -86,4 +86,10 @@ describe('next.config security wiring', () => {
     expect(source).toContain('buildSecurityHeaders');
     expect(source).toContain('lib/security/headers');
   });
+
+  test('caps Server Action bodies so oversized uploads cannot hang the app', () => {
+    const source = readFileSync(resolve(process.cwd(), 'next.config.ts'), 'utf8');
+    expect(source).toContain('serverActions');
+    expect(source).toContain("bodySizeLimit: '8mb'");
+  });
 });

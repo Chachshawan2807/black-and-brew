@@ -28,6 +28,16 @@ describe('PWA proxy routing contract (prevents SW locale redirect regression)', 
     }
   });
 
+  test('proxy applies DOS inspection before API passthrough and locale middleware', () => {
+    const proxy = fs.readFileSync(path.join(ROOT, 'src/proxy.ts'), 'utf-8');
+    const dosIdx = proxy.indexOf('inspectRequestForDos');
+    const apiIdx = proxy.indexOf('passThroughApiRoutes(request)');
+    const intlIdx = proxy.indexOf('intlMiddleware(request)');
+    expect(dosIdx).toBeGreaterThan(-1);
+    expect(apiIdx).toBeGreaterThan(dosIdx);
+    expect(intlIdx).toBeGreaterThan(apiIdx);
+  });
+
   test('proxy passes public assets before next-intl middleware', () => {
     const proxy = fs.readFileSync(path.join(ROOT, 'src/proxy.ts'), 'utf-8');
     const passIdx = proxy.indexOf('passThroughPublicRootAssets');

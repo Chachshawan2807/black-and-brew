@@ -21,9 +21,12 @@ const nextConfig: NextConfig = {
   // Turbopack dev can also serve bare 404 for /th while production/webpack dev return 200; use `npm run dev` (webpack).
   // Keep both for production bundle size and PPR; skip in dev for responsive local iteration.
   cacheComponents: isProduction,
-  ...(isProduction
-    ? {
-        experimental: {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '8mb',
+    },
+    ...(isProduction
+      ? {
           optimizePackageImports: [
             'lucide-react',
             'date-fns',
@@ -38,9 +41,9 @@ const nextConfig: NextConfig = {
             '@radix-ui/react-tooltip',
             '@radix-ui/react-slot',
           ],
-        },
-      }
-    : {}),
+        }
+      : {}),
+  },
   async redirects() {
     return [
       {

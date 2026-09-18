@@ -14,7 +14,8 @@ import type {
 import { getWeekDateIsos } from '@/lib/proactive-insights/week-schedule';
 import { shouldIncludeBeanOrderInPendingInsights } from '@/lib/proactive-insights/pending-bean-order-eligibility';
 import { resolveBeanOrderSlipUploadedAt } from '@/lib/proactive-insights/resolve-bean-order-slip';
-import { bangkokIsoToThaiDisplay } from '@/lib/date-utils';
+import { bangkokIsoToThaiDisplay, getBangkokCalendarDayQueryBounds } from '@/lib/date-utils';
+import { buildWeekScheduleFromRange } from '@/lib/proactive-insights/build-week-schedule';
 
 /** Max bean orders scanned for pending-insight eligibility (was ai-data-gateway preset). */
 const BEAN_ORDERS_QUERY_LIMIT = 500;
@@ -149,25 +150,49 @@ async function fetchPublicHolidayDates(weekIsos: string[]): Promise<Set<string>>
 async function defaultFetchWeekSchedule(anchorDate: Date): Promise<WeeklyDaySchedule[]> {
   const anchorIso = format(anchorDate, 'yyyy-MM-dd');
   const weekIsos = getWeekDateIsos(anchorIso);
-  const holidayDates = await fetchPublicHolidayDates(weekIsos);
+  const admin = getSupabaseAdmin();
+  if (!admin || weekIsos.length === 0) return emptyWeekSchedule(anchorIso);
 
-  const results = await Promise.all(
-    weekIsos.map(async (dateIso, dayIndex) => {
-      const shifts = await fetchTodayShifts(parseISO(dateIso));
-      return {
-        dateIso,
-        dayIndex,
-        headcount: shifts.headcount,
-        leaveCount: countLeaveStaff(shifts.offStaff),
-        leaveStaff: shifts.offStaff
-          .filter((entry) => entry.shiftText.trim() === 'ลา')
-          .map((entry) => ({ name: entry.name })),
-        isPublicHoliday: holidayDates.has(dateIso),
-      };
-    }),
-  );
+  const { startInclusive } = getBangkokCalendarDayQueryBounds(weekIsos[0]);
+  const { endInclusive } = getBangkokCalendarDayQueryBounds(weekIsos[weekIsos.length - 1]);
 
-  return results;
+  const [holidayDates, profilesRes, shiftsRes] = await Promise.all([
+    fetchPublicHolidayDates(weekIsos),
+    admin
+      .from('profiles')
+      .select('id, full_name, schedule_order')
+      .order('schedule_order', { ascending: true }),
+    admin
+      .from('shifts')
+      .select('employee_id, status, metadata, start_time')
+      .gte('start_time', startInclusive)
+      .lte('start_time', endInclusive),
+  ]);
+
+  if (profilesRes.error) {
+    console.error('[proactive-insights] week profiles:', profilesRes.error.message, profilesRes.error.details);
+    return emptyWeekSchedule(anchorIso);
+  }
+  if (shiftsRes.error) {
+    console.error('[proactive-insights] week shifts:', shiftsRes.error.message, shiftsRes.error.details);
+    return emptyWeekSchedule(anchorIso);
+  }
+
+  return buildWeekScheduleFromRange({
+    weekIsos,
+    holidayDates,
+    profiles: (profilesRes.data ?? []) as {
+      id: string;
+      full_name: string;
+      schedule_order: number | null;
+    }[],
+    shifts: (shiftsRes.data ?? []) as {
+      employee_id: string | null;
+      status?: string | null;
+      metadata?: { location?: string | null; remark?: string | null } | null;
+      start_time?: string | null;
+    }[],
+  });
 }
 
 export const defaultOperationalSnapshotDeps: OperationalSnapshotDeps = {

@@ -1,7 +1,10 @@
 import { parseISO } from 'date-fns';
 import { fetchTodayShifts } from '@/app/actions/daily-report-actions';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
-import { compileOperationalSnapshot, fetchPendingBeanOrdersInsightSlice } from '@/lib/proactive-insights/compile-operational-snapshot';
+import {
+  compileOperationalSnapshot,
+  defaultOperationalSnapshotDeps,
+} from '@/lib/proactive-insights/compile-operational-snapshot';
 import {
   computeBranchWithdrawItems,
   computeItemsToOrder,
@@ -48,14 +51,8 @@ export async function fetchBeanOrdersSnapshotSlice(opts: {
   dateIso: string;
   locale: string;
 }): Promise<Pick<SecretarySnapshot, 'operational'>> {
-  const pendingBeanOrders = await fetchPendingBeanOrdersInsightSlice();
   const operational = await compileOperationalSnapshot(opts);
-  return {
-    operational: {
-      ...operational,
-      pendingBeanOrders,
-    },
-  };
+  return { operational };
 }
 
 export async function fetchMaintenanceSnapshotSlice(
@@ -73,9 +70,13 @@ export async function fetchScheduleSnapshotSlice(opts: {
   Pick<SecretarySnapshot, 'operational' | 'headcountToday' | 'isBranch2Day' | 'branch2Remark'>
 > {
   const date = parseISO(opts.dateIso);
+  const shiftsPromise = fetchTodayShifts(date);
   const [operational, shiftsBlock] = await Promise.all([
-    compileOperationalSnapshot(opts),
-    fetchTodayShifts(date),
+    compileOperationalSnapshot(opts, {
+      ...defaultOperationalSnapshotDeps,
+      fetchShifts: async () => shiftsPromise,
+    }),
+    shiftsPromise,
   ]);
 
   const branch2 = resolveSecretaryBranch2Day(shiftsBlock.otherDutyStaff);

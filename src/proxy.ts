@@ -1,6 +1,7 @@
 import createMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
 import { rewriteLocalePrefixedPublicAsset } from '@/lib/locale-prefixed-public-asset';
+import { inspectRequestForDos } from '@/lib/rate-limit/dos-guard';
 import { isPublicRootAssetPath } from '@/lib/pwa-public-asset-paths';
 import { routing } from './i18n/routing';
 
@@ -43,7 +44,10 @@ function passThroughApiRoutes(request: NextRequest): NextResponse | null {
   return null;
 }
 
-export default function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
+  const denied = await inspectRequestForDos(request);
+  if (denied) return denied;
+
   const apiPassthrough = passThroughApiRoutes(request);
   if (apiPassthrough) return apiPassthrough;
 
@@ -62,6 +66,7 @@ export default function proxy(request: NextRequest) {
 }
 
 export const proxyConfig = {
-  // next-intl: skip api, root _next, vercel internals, and dotted static files
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+  // Pages skip api/_next/_vercel/static files. API is matched separately so DOS
+  // limits apply without locale-prefixing cron/webhook routes.
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)', '/api/:path*'],
 };

@@ -33,8 +33,9 @@ function isUpstashConfigured(): boolean {
 function createMemoryRateLimiter(
   maxRequests: number,
   windowMs: number,
+  maxKeys?: number,
 ): DistributedRateLimiter {
-  const memory = new SlidingWindowRateLimiter(maxRequests, windowMs);
+  const memory = new SlidingWindowRateLimiter(maxRequests, windowMs, maxKeys);
 
   return {
     check: async (key) => memory.check(key),
@@ -91,12 +92,13 @@ export function createRateLimiter(options: {
   prefix: string;
   maxRequests: number;
   windowMs: number;
+  maxKeys?: number;
 }): DistributedRateLimiter {
   if (isUpstashConfigured()) {
     return createUpstashRateLimiter(options);
   }
 
-  return createMemoryRateLimiter(options.maxRequests, options.windowMs);
+  return createMemoryRateLimiter(options.maxRequests, options.windowMs, options.maxKeys);
 }
 
 export function isDistributedRateLimitEnabled(): boolean {

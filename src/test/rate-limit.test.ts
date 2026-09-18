@@ -102,4 +102,24 @@ describe('SlidingWindowRateLimiter', () => {
     expect(result.allowed).toBe(true);
     vi.useRealTimers();
   });
+
+  it('rejects a new key when the in-memory store is full of active windows', () => {
+    const limiter = new SlidingWindowRateLimiter(5, 60_000, 2);
+    expect(limiter.check('ip-a').allowed).toBe(true);
+    expect(limiter.check('ip-b').allowed).toBe(true);
+    expect(limiter.check('ip-c').allowed).toBe(false);
+    expect(limiter.check('ip-a').allowed).toBe(true);
+  });
+
+  it('accepts a new key after expired windows are pruned from a full store', () => {
+    vi.useFakeTimers();
+    const limiter = new SlidingWindowRateLimiter(5, 1_000, 2);
+    expect(limiter.check('ip-a').allowed).toBe(true);
+    expect(limiter.check('ip-b').allowed).toBe(true);
+    expect(limiter.check('ip-c').allowed).toBe(false);
+
+    vi.advanceTimersByTime(1_001);
+    expect(limiter.check('ip-c').allowed).toBe(true);
+    vi.useRealTimers();
+  });
 });

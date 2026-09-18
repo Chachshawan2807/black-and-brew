@@ -7,16 +7,36 @@
 export class SlidingWindowRateLimiter {
   private readonly maxRequests: number;
   private readonly windowMs: number;
+  private readonly maxKeys: number;
   /** key → sorted list of request timestamps (epoch ms) within the window */
   private readonly store = new Map<string, number[]>();
 
-  constructor(maxRequests: number, windowMs: number) {
+  constructor(maxRequests: number, windowMs: number, maxKeys = Number.POSITIVE_INFINITY) {
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
+    this.maxKeys = maxKeys;
+  }
+
+  private pruneExpired(now: number): void {
+    const windowStart = now - this.windowMs;
+    for (const [key, timestamps] of this.store) {
+      const fresh = timestamps.filter((t) => t > windowStart);
+      if (fresh.length === 0) this.store.delete(key);
+      else this.store.set(key, fresh);
+    }
+  }
+
+  private canAdmitKey(key: string, now: number): boolean {
+    if (this.store.has(key) || this.store.size < this.maxKeys) return true;
+    this.pruneExpired(now);
+    return this.store.has(key) || this.store.size < this.maxKeys;
   }
 
   check(key: string): { allowed: boolean; remaining: number; resetAt: number } {
     const now = Date.now();
+    if (!this.canAdmitKey(key, now)) {
+      return { allowed: false, remaining: 0, resetAt: now + this.windowMs };
+    }
     const windowStart = now - this.windowMs;
 
     // Evict timestamps older than the current window
@@ -42,6 +62,9 @@ export class SlidingWindowRateLimiter {
   /** Inspect limit state without recording a new attempt. */
   peek(key: string): { allowed: boolean; remaining: number; resetAt: number } {
     const now = Date.now();
+    if (!this.canAdmitKey(key, now)) {
+      return { allowed: false, remaining: 0, resetAt: now + this.windowMs };
+    }
     const windowStart = now - this.windowMs;
     const timestamps = (this.store.get(key) ?? []).filter((t) => t > windowStart);
 

@@ -27,16 +27,18 @@ describe('home secretary board load', () => {
     );
   });
 
-  test('home page starts server board fetch in parallel with auth check', () => {
+  test('home page starts board and member panel fetches before awaiting auth', () => {
     const source = readFileSync(homePagePath, 'utf-8');
     expect(source).toContain('HomeClientEntry');
     expect(source).toContain('loadSecretaryBoard');
     expect(source).toContain('loadHomeMemberPanel');
     expect(source).toContain('checkAuth');
-    expect(source).toMatch(/const boardPromise = loadSecretaryBoard/);
-    expect(source).toContain('loadHomeMemberPanel({ dateIso: workDateIso })');
-    expect(source).toMatch(/const authed = await checkAuth\(\)/);
-    expect(source).toMatch(/todayIsoBkk\(\)[\s\S]*Promise\.all\(\[\s*boardPromise/);
+    expect(source).toMatch(
+      /const boardPromise = loadSecretaryBoard[\s\S]*const memberPanelPromise = loadHomeMemberPanel[\s\S]*await checkAuth\(\)/,
+    );
+    expect(source).toMatch(
+      /Promise\.all\(\[\s*boardPromise,\s*memberPanelPromise/,
+    );
   });
 
   test('client home code does not import panel types from server actions', () => {

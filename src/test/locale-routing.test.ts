@@ -41,6 +41,8 @@ describe('locale routing (Thai-first ERP)', () => {
     expect(code).toContain('export const proxyConfig');
     expect(code).not.toMatch(/export const config\s*=/);
     expect(code).toMatch(/\(?!api\|_next\|_vercel/);
+    expect(code).toContain('/api/:path*');
+    expect(code).toContain('inspectRequestForDos');
   });
 
   test('proxy rewrites locale-prefixed static assets to root paths', () => {
