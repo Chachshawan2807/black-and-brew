@@ -334,44 +334,6 @@
       }
     }
   }
-
-  /*
-   * Opt-in vertical scrollbars on desktop for dense panels (e.g. notification inbox).
-   * Matches page scrollbar tokens; mobile keeps nested scrollbars hidden.
-   */
-  @media (min-width: 768px) {
-    .bb-scroll-y-themed {
-      scrollbar-width: thin;
-      scrollbar-color: color-mix(in srgb, var(--foreground) 42%, transparent) var(--background);
-    }
-
-    .bb-scroll-y-themed::-webkit-scrollbar {
-      display: block;
-      width: 10px;
-    }
-
-    .bb-scroll-y-themed::-webkit-scrollbar-track {
-      background: var(--background);
-    }
-
-    .bb-scroll-y-themed::-webkit-scrollbar-thumb {
-      background: color-mix(in srgb, var(--foreground) 42%, transparent);
-      border-radius: 9999px;
-      border: 2px solid var(--background);
-    }
-  }
-
-  @media (prefers-contrast: more) {
-    @media (min-width: 768px) {
-      .bb-scroll-y-themed {
-        scrollbar-color: var(--foreground) var(--background);
-      }
-
-      .bb-scroll-y-themed::-webkit-scrollbar-thumb {
-        background: var(--foreground);
-      }
-    }
-  }
 }
 
 
@@ -1414,6 +1376,45 @@
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
     overscroll-behavior: contain;
+  }
+
+  /*
+   * Opt-in vertical scrollbars on desktop (components layer beats base scrollbar hide).
+   * Use plain class bb-scroll-y-themed; do not prefix with md: (not a Tailwind utility).
+   */
+  @media (min-width: 768px) {
+    .bb-scroll-y-themed {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--foreground) 42%, transparent) var(--background);
+      scrollbar-gutter: stable;
+    }
+
+    .bb-scroll-y-themed::-webkit-scrollbar {
+      display: block;
+      width: 10px;
+    }
+
+    .bb-scroll-y-themed::-webkit-scrollbar-track {
+      background: var(--background);
+    }
+
+    .bb-scroll-y-themed::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--foreground) 42%, transparent);
+      border-radius: 9999px;
+      border: 2px solid var(--background);
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    @media (min-width: 768px) {
+      .bb-scroll-y-themed {
+        scrollbar-color: var(--foreground) var(--background);
+      }
+
+      .bb-scroll-y-themed::-webkit-scrollbar-thumb {
+        background: var(--foreground);
+      }
+    }
   }
 
   /* Nested / horizontal-only scrollers let vertical pans reach the page or parent scroller */

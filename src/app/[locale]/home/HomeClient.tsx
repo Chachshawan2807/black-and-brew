@@ -60,6 +60,10 @@ const SecretaryManualTaskDialog = dynamic(
   () => import('./_components/SecretaryManualTaskDialog'),
   { ssr: false },
 );
+const HomeShiftStatusSection = dynamic(
+  () => import('./_components/HomeShiftStatusSection'),
+  { ssr: false },
+);
 
 type HomeClientProps = {
   initialBoard: SecretaryBoard;
@@ -329,6 +333,8 @@ export default function HomeClient({
         )}
       </ul>
       </section>
+
+      <HomeShiftStatusSection dateIso={workDateIso} />
 
       {overlayTask ? (
         <SecretaryTaskOverlay

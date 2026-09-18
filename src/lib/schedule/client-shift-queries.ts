@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
-import { startOfDay, endOfDay } from 'date-fns';
+import { startOfDay, endOfDay, parseISO } from 'date-fns';
 import type { Shift } from '@/types';
 
 export type ClientShiftRow = Pick<
@@ -42,6 +42,11 @@ export async function fetchWeekShiftsFromClient(
   }
 
   return (data ?? []).map((shift) => normalizeClientShiftRow(shift as ClientShiftRow));
+}
+
+export async function fetchShiftsForDateIsoFromClient(dateIso: string): Promise<ClientShiftRow[] | null> {
+  const bkkDate = toZonedTime(parseISO(`${dateIso}T12:00:00+07:00`), 'Asia/Bangkok');
+  return fetchShiftsForBkkDayFromClient(bkkDate);
 }
 
 export async function fetchShiftsForBkkDayFromClient(bkkDate: Date): Promise<ClientShiftRow[] | null> {

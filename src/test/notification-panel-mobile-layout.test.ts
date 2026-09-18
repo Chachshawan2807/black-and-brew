@@ -63,9 +63,10 @@ describe('NotificationPanel mobile layout', () => {
 
   test('desktop notification list uses themed vertical scrollbar utility', () => {
     const code = readFile('components/notifications/NotificationPanel.tsx');
-    expect(code).toMatch(/bb-smooth-scroll md:bb-scroll-y-themed/);
+    expect(code).toMatch(/bb-smooth-scroll bb-scroll-y-themed/);
+    expect(code).not.toMatch(/md:bb-scroll-y-themed/);
     const css = readFile('app/[locale]/globals.css');
-    expect(css).toMatch(/\.bb-scroll-y-themed/);
+    expect(css).toMatch(/@layer components[\s\S]*\.bb-scroll-y-themed/);
     expect(css).toMatch(/var\(--foreground\)/);
     expect(css).toMatch(/var\(--background\)/);
   });
