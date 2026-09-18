@@ -9,6 +9,10 @@ export type ClientShiftRow = Pick<
   'id' | 'employee_id' | 'start_time' | 'end_time' | 'status' | 'metadata'
 >;
 
+/** Shared with ScheduleClient week refresh and home member panel day refresh. */
+export const CLIENT_SHIFT_COLUMNS =
+  'id, employee_id, start_time, end_time, status, metadata' as const;
+
 export function normalizeClientShiftRow<T extends ClientShiftRow>(shift: T): T {
   const datePart = shift.start_time.split('T')[0];
   return {
@@ -29,7 +33,7 @@ export async function fetchWeekShiftsFromClient(
 
   const { data, error } = await supabase
     .from('shifts')
-    .select('id, employee_id, start_time, end_time, status, metadata')
+    .select(CLIENT_SHIFT_COLUMNS)
     .gte('start_time', `${weekStart}T00:00:00`)
     .lte('start_time', `${weekEnd}T23:59:59`)
     .not('status', 'is', null)
@@ -60,7 +64,7 @@ export async function fetchShiftsForBkkDayFromClient(bkkDate: Date): Promise<Cli
 
   const { data, error } = await supabase
     .from('shifts')
-    .select('id, employee_id, start_time, end_time, status, metadata')
+    .select(CLIENT_SHIFT_COLUMNS)
     .gte('start_time', startUtc)
     .lte('start_time', endUtc)
     .not('status', 'is', null)

@@ -4,6 +4,11 @@ import {
   normalizeShiftLocation,
 } from '@/lib/schedule/format-daily-shifts';
 import {
+  createClientShiftDateLookup,
+  isScheduleGridShiftAssigned,
+  resolveScheduleGridShift,
+} from '@/lib/schedule/schedule-grid-parity';
+import {
   buildTimedShiftEndInstant,
   buildTimedShiftStartInstant,
   formatShiftClockLabel,
@@ -39,12 +44,6 @@ export interface HomeShiftStatusRow {
   timedWindowLabel?: string;
 }
 
-function findPrimaryWorkShift(employeeId: string, shifts: ClientShiftRow[]): ClientShiftRow | null {
-  const employeeShifts = shifts.filter((entry) => entry.employee_id === employeeId);
-  if (employeeShifts.some((entry) => entry.status === 'day_off')) return null;
-  return employeeShifts.find((entry) => entry.status !== 'day_off') ?? null;
-}
-
 function resolveSortTime(dateIso: string, shiftLabel: string): number {
   const timed = parseTimedShiftLabel(shiftLabel);
   if (!timed) return Number.MAX_SAFE_INTEGER;
@@ -57,10 +56,11 @@ export function buildHomeShiftStatusRows(
   dateIso: string,
 ): HomeShiftStatusRow[] {
   const rows: HomeShiftStatusRow[] = [];
+  const shiftDateLookup = createClientShiftDateLookup(shifts);
 
   for (const profile of profiles) {
-    const shift = findPrimaryWorkShift(profile.id, shifts);
-    if (!shift) continue;
+    const shift = resolveScheduleGridShift(shiftDateLookup, profile.id, dateIso);
+    if (!isScheduleGridShiftAssigned(shift)) continue;
 
     const shiftLabel = normalizeShiftLocation(shift.metadata?.location, shift.status);
     const category = categorizeShift(shiftLabel);

@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { BB_DATA_CARD } from '@/lib/ui-outlined-tokens';
 import type { ClientShiftRow } from '@/lib/schedule/client-shift-queries';
+import { SHIFT_TYPES_UPDATED_EVENT } from '@/lib/shift-type-config';
 
 type HomeShiftStatusSectionProps = {
   dateIso: string;
@@ -187,6 +188,12 @@ export default function HomeShiftStatusSection({
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [scheduleRefresh]);
+
+  useEffect(() => {
+    const onShiftTypesUpdated = () => scheduleRefresh();
+    window.addEventListener(SHIFT_TYPES_UPDATED_EVENT, onShiftTypesUpdated);
+    return () => window.removeEventListener(SHIFT_TYPES_UPDATED_EVENT, onShiftTypesUpdated);
   }, [scheduleRefresh]);
 
   useEffect(() => {
