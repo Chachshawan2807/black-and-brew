@@ -18,6 +18,16 @@ describe('Home page empty shell', () => {
   });
 });
 
+describe('Home secretary board desktop split', () => {
+  test('HomeClient uses two columns for tasks and shifts when sidebar is collapsed', () => {
+    const home = readFile('app/[locale]/home/HomeClient.tsx');
+    expect(home).toMatch(/useSidebarToggle/);
+    expect(home).toMatch(/desktopSplit/);
+    expect(home).toMatch(/md:grid md:grid-cols-2/);
+    expect(home).toMatch(/showWhenEmpty=\{desktopSplit\}/);
+  });
+});
+
 describe('Home desktop dashboard layout collapsed sidebar', () => {
   test('HomeOpsPanels keeps mobile tab panels hidden on desktop', () => {
     const panels = readFile('app/[locale]/_components/HomeOpsPanels.tsx');

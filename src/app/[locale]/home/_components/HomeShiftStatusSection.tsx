@@ -10,15 +10,21 @@ import {
   buildHomeShiftStatusRows,
   resolveTimedShiftCountdownView,
   type HomeShiftProfile,
+  type HomeShiftStatusRow,
 } from '@/lib/schedule/home-shift-status';
 import { formatCountdownClock } from '@/lib/schedule/shift-work-countdown';
-import { HomeSectionHeader } from '@/app/[locale]/_components/home-section-header';
+import {
+  HomeSectionBadge,
+  HomeSectionHeader,
+} from '@/app/[locale]/_components/home-section-header';
 import { cn } from '@/lib/utils';
 import { BB_DATA_CARD } from '@/lib/ui-outlined-tokens';
 import type { ClientShiftRow } from '@/lib/schedule/client-shift-queries';
 
 type HomeShiftStatusSectionProps = {
   dateIso: string;
+  /** Keep right column on desktop when sidebar is collapsed and there are no shifts */
+  showWhenEmpty?: boolean;
 };
 
 function useNowTick(enabled: boolean): Date {
@@ -33,10 +39,90 @@ function useNowTick(enabled: boolean): Date {
   return now;
 }
 
-/** Reserved so timed and non-timed shift cards share the same height. */
-const SHIFT_COUNTDOWN_SLOT = 'flex min-h-[1.375rem] items-center justify-center';
+const SHIFT_TIME_PILL =
+  'inline-flex max-w-full items-center rounded-full border border-black/10 bg-white/60 px-2 py-0.5 text-[10px] font-normal tabular-nums tracking-wide text-black/80';
 
-export default function HomeShiftStatusSection({ dateIso }: HomeShiftStatusSectionProps) {
+const SHIFT_DUTY_PILL =
+  'inline-flex max-w-full items-center rounded-full border border-black/10 bg-white/60 px-2 py-0.5 text-[10px] font-normal tracking-wide text-black/80';
+
+/** Fixed slots so timed and non-timed cards stay the same height. */
+const SHIFT_MIDDLE_SLOT = 'flex h-[1.375rem] shrink-0 items-center';
+
+const SHIFT_STATUS_PANEL =
+  'flex h-[2rem] shrink-0 w-full flex-col items-center justify-center rounded-xl border border-black/10 bg-white/55 px-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]';
+
+function ShiftStatusEmployeeCard({
+  row,
+  countdown,
+}: {
+  row: HomeShiftStatusRow;
+  countdown: ReturnType<typeof resolveTimedShiftCountdownView>;
+}) {
+  return (
+    <article
+      aria-label={`${row.fullName} กะ ${row.timedWindowLabel ?? row.shiftLabel}`}
+      className={cn(
+        row.colorClass,
+        'group relative flex w-[8.25rem] shrink-0 flex-col gap-1.5 overflow-hidden rounded-2xl border p-3 bb-shadow-sm ring-1 ring-inset ring-black/[0.04] bb-transition motion-reduce:transition-none hover:bb-shadow-md hover:brightness-[0.99]',
+      )}
+      style={row.colorStyle}
+    >
+      <p className="truncate text-[0.8125rem] font-normal leading-snug tracking-tight text-black">
+        {row.fullName}
+      </p>
+
+      <div className={SHIFT_MIDDLE_SLOT}>
+        {row.timedWindowLabel ? (
+          <span className={SHIFT_TIME_PILL}>{row.timedWindowLabel}</span>
+        ) : (
+          <span className={cn(SHIFT_DUTY_PILL, 'truncate')}>{row.shiftLabel}</span>
+        )}
+      </div>
+
+      <div className={SHIFT_STATUS_PANEL}>
+        {countdown ? (
+          countdown.phase === 'ended' ? (
+            <span className="text-[11px] font-normal leading-none text-black/75">เลิกงานแล้ว</span>
+          ) : (
+            <span
+              className="text-[0.9375rem] font-normal leading-none tabular-nums tracking-tight text-black"
+              aria-live="polite"
+            >
+              {formatCountdownClock(countdown.countdownMs)}
+            </span>
+          )
+        ) : (
+          <span
+            className="text-[0.9375rem] font-normal leading-none text-black/30 select-none"
+            aria-hidden
+          >
+            —
+          </span>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function ShiftStatusSectionHeader({ staffCount }: { staffCount: number }) {
+  return (
+    <HomeSectionHeader
+      compact
+      className="mb-0 border-b border-border/50 pb-3"
+      icon={
+        <CalendarClock className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} aria-hidden />
+      }
+      title="สถานะกะงาน"
+      subtitle="พนักงานที่มีกะในวันนี้"
+      meta={<HomeSectionBadge className="normal-case tracking-normal">{staffCount} คน</HomeSectionBadge>}
+    />
+  );
+}
+
+export default function HomeShiftStatusSection({
+  dateIso,
+  showWhenEmpty = false,
+}: HomeShiftStatusSectionProps) {
   const [profiles, setProfiles] = useState<HomeShiftProfile[]>([]);
   const [shifts, setShifts] = useState<ClientShiftRow[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -118,64 +204,32 @@ export default function HomeShiftStatusSection({ dateIso }: HomeShiftStatusSecti
   const hasTimedShift = rows.some((row) => row.isTimedShift);
   const now = useNowTick(hasTimedShift);
 
-  if (loaded && rows.length === 0) return null;
+  if (loaded && rows.length === 0) {
+    if (!showWhenEmpty) return null;
+    return (
+      <section
+        aria-label="สถานะกะงาน"
+        className={cn(BB_DATA_CARD, 'hidden min-w-0 space-y-3 p-3 sm:p-4 md:block')}
+      >
+        <ShiftStatusSectionHeader staffCount={0} />
+        <p className="mt-3 px-1 text-sm text-muted-foreground">ไม่มีกะในวันนี้</p>
+      </section>
+    );
+  }
 
   return (
-    <section aria-label="สถานะกะงาน" className={cn(BB_DATA_CARD, 'p-3 sm:p-4 space-y-3')}>
-      <HomeSectionHeader
-        compact
-        icon={
-          <CalendarClock className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} aria-hidden />
-        }
-        title="สถานะกะงาน"
-        subtitle="พนักงานที่มีกะในวันนี้"
-        meta={`${rows.length} คน`}
-      />
+    <section aria-label="สถานะกะงาน" className={cn(BB_DATA_CARD, 'min-w-0 p-3 sm:p-4')}>
+      <ShiftStatusSectionHeader staffCount={rows.length} />
 
       {!loaded ? (
-        <p className="text-sm text-muted-foreground px-1">กำลังโหลดสถานะกะ...</p>
+        <p className="mt-3 px-1 text-sm text-muted-foreground">กำลังโหลดสถานะกะ...</p>
       ) : (
-        <ul className="flex flex-wrap gap-2.5">
+        <ul className="mt-3 flex flex-wrap gap-2">
           {rows.map((row) => {
             const countdown = resolveTimedShiftCountdownView(row, now);
             return (
               <li key={row.profileId}>
-                <article
-                  aria-label={`${row.fullName} กะ ${row.timedWindowLabel ?? row.shiftLabel}`}
-                  className={cn(
-                    row.colorClass,
-                    'flex w-[8.25rem] shrink-0 flex-col gap-1.5 rounded-2xl border p-3 bb-shadow-sm ring-1 ring-black/5 bb-transition hover:-translate-y-0.5 touch-manipulation',
-                  )}
-                  style={row.colorStyle}
-                >
-                  <p className="truncate text-[0.8125rem] font-normal leading-snug text-black">
-                    {row.fullName}
-                  </p>
-
-                  <p
-                    className={cn(
-                      'min-h-[1rem] truncate text-[11px] text-black/75',
-                      row.timedWindowLabel && 'font-normal tabular-nums tracking-wide',
-                    )}
-                  >
-                    {row.timedWindowLabel ?? row.shiftLabel}
-                  </p>
-
-                  <div className={SHIFT_COUNTDOWN_SLOT} aria-hidden={!countdown}>
-                    {countdown ? (
-                      countdown.phase === 'ended' ? (
-                        <span className="text-[11px] text-black/70">เลิกงานแล้ว</span>
-                      ) : (
-                        <span
-                          className="text-[0.9375rem] font-normal tabular-nums tracking-tight text-black"
-                          aria-live="polite"
-                        >
-                          {formatCountdownClock(countdown.countdownMs)}
-                        </span>
-                      )
-                    ) : null}
-                  </div>
-                </article>
+                <ShiftStatusEmployeeCard row={row} countdown={countdown} />
               </li>
             );
           })}

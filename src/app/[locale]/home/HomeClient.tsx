@@ -51,6 +51,7 @@ import {
   registerHomeBoardPerfDevTools,
 } from '@/lib/perf/home-board-perf';
 import type { SecretaryTask } from '@/lib/secretary/types';
+import { useSidebarHydrated, useSidebarToggle } from '@/hooks/use-sidebar-toggle';
 
 const SecretaryTaskOverlay = dynamic(
   () => import('./_components/SecretaryTaskOverlay'),
@@ -113,6 +114,9 @@ export default function HomeClient({
   const [newDescription, setNewDescription] = useState('');
   const [isPending, startTransition] = useTransition();
   const [overlayTask, setOverlayTask] = useState<SecretaryBoardDisplayTask | null>(null);
+  const sidebarHydrated = useSidebarHydrated();
+  const sidebarIsOpen = useSidebarToggle((state) => state.isOpen);
+  const desktopSplit = sidebarHydrated && !sidebarIsOpen;
 
   const applyBoardSync = useCallback((payload: BoardSyncPayload) => {
     setBoard((prev) => {
@@ -247,7 +251,12 @@ export default function HomeClient({
   }, []);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-4">
+    <div
+      className={cn(
+        'mx-auto w-full px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-4',
+        desktopSplit ? 'max-w-6xl' : 'max-w-3xl',
+      )}
+    >
       <header>
         <h1 className="bb-page-title-compact text-balance">{workDateLabel}</h1>
       </header>
@@ -310,31 +319,43 @@ export default function HomeClient({
         />
       ) : null}
 
-      <section aria-label="รายการงาน" className={cn(BB_DATA_CARD, 'p-3 sm:p-4')}>
-      <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2.5">
-        {visibleTasks.length === 0 ? (
-          <li className="col-span-full list-none">
-            <HomePanelEmptyState
-              compact
-              icon={<ClipboardList size={22} strokeWidth={1.5} />}
-              title="ไม่มีงานในตัวกรองนี้"
-              subtitle="ลองเลือกตัวกรองอื่น หรือเพิ่มงานด้วยตนเอง"
-            />
-          </li>
-        ) : (
-          visibleTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onPreloadOpen={() => preloadSecretaryOverlayForTask(task)}
-              onOpen={() => setOverlayTask(task)}
-            />
-          ))
+      <div
+        className={cn(
+          'space-y-4',
+          desktopSplit && 'md:grid md:grid-cols-2 md:items-start md:gap-4 md:space-y-0',
         )}
-      </ul>
-      </section>
+      >
+        <section aria-label="รายการงาน" className={cn(BB_DATA_CARD, 'min-w-0 p-3 sm:p-4')}>
+          <ul
+            className={cn(
+              'grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2.5',
+              desktopSplit && 'md:grid-cols-3',
+            )}
+          >
+            {visibleTasks.length === 0 ? (
+              <li className="col-span-full list-none">
+                <HomePanelEmptyState
+                  compact
+                  icon={<ClipboardList size={22} strokeWidth={1.5} />}
+                  title="ไม่มีงานในตัวกรองนี้"
+                  subtitle="ลองเลือกตัวกรองอื่น หรือเพิ่มงานด้วยตนเอง"
+                />
+              </li>
+            ) : (
+              visibleTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onPreloadOpen={() => preloadSecretaryOverlayForTask(task)}
+                  onOpen={() => setOverlayTask(task)}
+                />
+              ))
+            )}
+          </ul>
+        </section>
 
-      <HomeShiftStatusSection dateIso={workDateIso} />
+        <HomeShiftStatusSection dateIso={workDateIso} showWhenEmpty={desktopSplit} />
+      </div>
 
       {overlayTask ? (
         <SecretaryTaskOverlay
