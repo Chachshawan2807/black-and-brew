@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DailyReportData } from '@/app/actions/daily-report-actions';
+import type { DailyReportData } from '@/lib/daily-report';
 import {
   buildDailyReportAltText,
   filterNotificationLeaveStaff,

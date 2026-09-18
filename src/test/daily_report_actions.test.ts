@@ -26,10 +26,8 @@ let mockShiftsError: Error | null = null;
 let mockInventoryItemsError: Error | null = null;
 let mockHolidaysError: Error | null = null;
 
-// Mock the entire supabase-js dependency BEFORE importing modules that use it
-vi.mock('@supabase/supabase-js', () => {
-  return {
-    createClient: vi.fn(() => ({
+vi.mock('@/lib/supabase-server', () => ({
+  getSupabaseAdmin: vi.fn(() => ({
       from: vi.fn((table) => {
         if (table === 'profiles') {
           return {
@@ -73,10 +71,9 @@ vi.mock('@supabase/supabase-js', () => {
         return {
           select: vi.fn().mockReturnThis(),
         };
-      })
-    }))
-  };
-});
+      }),
+  })),
+}));
 
 // Mock environment variables
 const originalEnv = process.env;
@@ -88,7 +85,7 @@ import {
   compileDailyReportData,
   resolveDailyReportSchedule,
   resolveDailyReportTargetIso,
-} from '@/app/actions/daily-report-actions';
+} from '@/lib/daily-report';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
 
 describe('Daily report protocol actions', () => {

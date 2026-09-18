@@ -5,7 +5,7 @@ import {
   fetchNextHoliday,
   fetchTodayShifts,
   type StaffShiftEntry,
-} from '@/app/actions/daily-report-actions';
+} from '@/lib/daily-report';
 import type {
   OperationalSnapshot,
   PendingBeanOrderInsight,

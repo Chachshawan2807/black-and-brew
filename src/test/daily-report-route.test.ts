@@ -34,8 +34,8 @@ vi.mock('@/lib/proactive-insights/evaluate-and-dispatch', () => ({
   evaluateAndDispatchInsights: (...args: unknown[]) => evaluateInsightsMock(...args),
 }));
 
-vi.mock('@/app/actions/daily-report-actions', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/app/actions/daily-report-actions')>();
+vi.mock('@/lib/daily-report', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/daily-report')>();
   return {
     ...actual,
     compileDailyReportData: vi.fn(

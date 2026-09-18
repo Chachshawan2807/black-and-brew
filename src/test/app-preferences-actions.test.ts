@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const mockFrom = vi.fn();
 const mockGateMutation = vi.fn();
+const mockRequireReadAccess = vi.fn();
 
 vi.mock('@/lib/policies/server-gate', () => ({
   gateMutation: () => mockGateMutation(),
+  requireReadAccess: () => mockRequireReadAccess(),
 }));
 
 vi.mock('@/lib/supabase-server', () => ({
@@ -17,6 +19,7 @@ describe('app preferences actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGateMutation.mockResolvedValue({ success: true });
+    mockRequireReadAccess.mockResolvedValue(null);
     process.env.NEXT_PUBLIC_STORE_BRANCH_ID = 'main';
   });
 

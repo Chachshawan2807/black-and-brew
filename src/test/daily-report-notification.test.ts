@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
-import type { DailyReportData } from '@/app/actions/daily-report-actions';
+import type { DailyReportData } from '@/lib/daily-report';
 import {
   dailyReportNotificationLogId,
   formatDailyReportNotification,

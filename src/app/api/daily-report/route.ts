@@ -6,7 +6,7 @@ import {
   parseDailyReportScheduleParam,
   resolveDailyReportSchedule,
   resolveDailyReportTargetIso,
-} from '@/app/actions/daily-report-actions';
+} from '@/lib/daily-report';
 import { getBangkokCalendarIso } from '@/lib/date-utils';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
 import {

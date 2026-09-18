@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { gateMutation } from '@/lib/policies/server-gate';
+import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { parseSidebarMenuOrder } from '@/lib/sidebar-menu-order';
 
@@ -20,6 +20,11 @@ export type SaveSidebarMenuOrderResult =
   | { success: false; error: string };
 
 export async function getSidebarMenuOrder(): Promise<SidebarMenuOrderResult> {
+  const authError = await requireReadAccess();
+  if (authError) {
+    return { success: false, error: authError };
+  }
+
   try {
     const { data, error } = await getSupabaseAdmin()
       .from('app_preferences')

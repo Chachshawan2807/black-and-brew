@@ -14,6 +14,7 @@ import { SESSION_FP_COOKIE } from '@/lib/auth-constants';
 
 import { computeActiveLoginSessions, type ActiveLoginSession } from '@/lib/login-session-status';
 
+import { requireReadAccess } from '@/lib/policies/server-gate';
 import { ensureServerSession, requireServiceRoleKey } from '@/lib/security/server-auth';
 import { resolveOptionalClientIp } from '@/lib/security/request-ip';
 import { getRevokedFingerprints } from '@/lib/session-revocation';
@@ -121,14 +122,6 @@ interface RecordLoginEventInput {
   accessLevel?: LoginAccessLevel | null;
 
   failureReason?: string | null;
-
-}
-
-async function ensureAuthenticated(): Promise<boolean> {
-
-  const auth = await ensureServerSession();
-
-  return auth.ok;
 
 }
 
@@ -283,6 +276,11 @@ export async function recordLoginEvent(input: RecordLoginEventInput): Promise<vo
 export async function fetchActiveLoginSessions(): Promise<
   { success: true; sessions: ActiveLoginSession[] } | { success: false; error: string }
 > {
+  const authError = await requireReadAccess();
+  if (authError) {
+    return { success: false, error: authError };
+  }
+
   const history = await fetchLoginHistory(200);
   if (!history.success) {
     return history;
@@ -306,6 +304,11 @@ export async function fetchLoginHistoryBundle(
   | { success: true; rows: LoginHistoryRow[]; sessions: ActiveLoginSession[] }
   | { success: false; error: string }
 > {
+  const authError = await requireReadAccess();
+  if (authError) {
+    return { success: false, error: authError };
+  }
+
   const history = await fetchLoginHistory(limit);
   if (!history.success) {
     return history;
@@ -329,11 +332,11 @@ export async function fetchLoginHistory(
 
 ): Promise<{ success: true; rows: LoginHistoryRow[] } | { success: false; error: string }> {
 
-  const authenticated = await ensureAuthenticated();
+  const authError = await requireReadAccess();
 
-  if (!authenticated) {
+  if (authError) {
 
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: authError };
 
   }
 

@@ -23,7 +23,12 @@ import type {
   SecretaryTaskPriority,
   SecretaryTaskStatus,
 } from '@/lib/secretary/types';
-import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
+import {
+  gateMutation,
+  requireMutationAccess,
+  requireReadAccess,
+} from '@/lib/policies/server-gate';
+import { ensureServerSession } from '@/lib/security/server-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { buildMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
@@ -111,6 +116,58 @@ export async function fetchSecretaryTasks(dateIso: string): Promise<{
   return querySecretaryTasks(dateIso);
 }
 
+/** Read-only PIN: load board data without derived-task writes. */
+async function fetchSecretaryBoardViewOnly(opts: {
+  dateIso: string;
+  locale: string;
+  plan: SecretaryBoardSyncPlan;
+  baseSnapshot?: SecretarySnapshot;
+}): Promise<{
+  tasks: SecretaryTask[];
+  snapshot?: SecretarySnapshot;
+  snapshotPatch?: SecretarySnapshotPatch;
+}> {
+  const { dateIso, locale, plan, baseSnapshot } = opts;
+
+  if (plan.kind === 'light') {
+    const tasksResult = await querySecretaryTasks(dateIso);
+    if (!tasksResult.success || !tasksResult.tasks) {
+      throw new Error(tasksResult.error ?? 'Failed to load tasks');
+    }
+    return { tasks: tasksResult.tasks };
+  }
+
+  if (plan.kind === 'scoped') {
+    const dataScopes = plan.scopes.filter(
+      (scope): scope is Exclude<typeof scope, 'tasks'> => scope !== 'tasks',
+    );
+    if (dataScopes.length > 0) {
+      const patch = await fetchSecretarySnapshotSlices({ dateIso, locale }, dataScopes);
+      const tasksResult = await querySecretaryTasks(dateIso);
+      if (!tasksResult.success || !tasksResult.tasks) {
+        throw new Error(tasksResult.error ?? 'Failed to load tasks');
+      }
+      const snapshot = baseSnapshot
+        ? mergeSecretarySnapshot(baseSnapshot, patch)
+        : buildSnapshotForDerive(dateIso, locale, patch);
+      return {
+        tasks: tasksResult.tasks,
+        snapshot,
+        snapshotPatch: patch,
+      };
+    }
+  }
+
+  const [snapshot, tasksResult] = await Promise.all([
+    fetchSecretarySnapshot({ dateIso, locale }),
+    querySecretaryTasks(dateIso),
+  ]);
+  if (!tasksResult.success || !tasksResult.tasks) {
+    throw new Error(tasksResult.error ?? 'Failed to load tasks');
+  }
+  return { tasks: tasksResult.tasks, snapshot };
+}
+
 export async function countPendingSecretaryTasks(dateIso: string): Promise<number> {
   const authError = await requireReadAccess();
   if (authError) return 0;
@@ -156,6 +213,11 @@ export async function syncDerivedSecretaryTasks(opts?: {
   snapshotPatch?: SecretarySnapshotPatch;
   error?: string;
 }> {
+  const authError = await requireMutationAccess();
+  if (authError) {
+    return { success: false, error: authError };
+  }
+
   try {
     const dateIso =
       opts?.dateIso ??
@@ -417,6 +479,23 @@ export async function syncAndFetchSecretaryBoard(opts?: {
 
   const plan = opts?.plan ?? { kind: 'full' as const, scopes: [] };
   const locale = opts?.locale ?? 'th';
+  const dateIso = opts?.dateIso ?? todayIsoBkk();
+
+  const session = await ensureServerSession();
+  if (session.ok && session.readOnly) {
+    try {
+      const view = await fetchSecretaryBoardViewOnly({
+        dateIso,
+        locale,
+        plan,
+        baseSnapshot: opts?.baseSnapshot,
+      });
+      return { success: true, ...view };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: message };
+    }
+  }
 
   try {
     if (plan.kind === 'light') {
@@ -613,6 +692,29 @@ export async function loadSecretaryBoard(opts?: {
   const locale = opts?.locale ?? 'th';
   const dateIso = opts?.dateIso ?? todayIsoBkk();
   const deferDerivedSync = opts?.deferDerivedSync ?? true;
+
+  const session = await ensureServerSession();
+  if (session.ok && session.readOnly && !deferDerivedSync) {
+    try {
+      const [snapshot, tasksResult] = await Promise.all([
+        fetchSecretarySnapshot({ dateIso, locale }),
+        querySecretaryTasks(dateIso),
+      ]);
+      if (!tasksResult.success || !tasksResult.tasks) {
+        return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
+      }
+      return {
+        success: true,
+        board: {
+          snapshot,
+          tasks: tasksResult.tasks,
+        },
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: message };
+    }
+  }
 
   try {
     if (deferDerivedSync) {

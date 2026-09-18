@@ -1,5 +1,5 @@
 import { parseISO } from 'date-fns';
-import { fetchTodayShifts } from '@/app/actions/daily-report-actions';
+import { fetchTodayShifts } from '@/lib/daily-report';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 import {
   compileOperationalSnapshot,

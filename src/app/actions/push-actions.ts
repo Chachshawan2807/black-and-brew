@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { requireReadAccess } from '@/lib/policies/server-gate';
 import { ensureServerSession, requireServiceRoleKey } from '@/lib/security/server-auth';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
@@ -289,8 +290,8 @@ export async function getPushDiagnostics(endpoint?: string): Promise<{
   latestEligibleLogAt: string | null;
   thisDeviceRegistered: boolean;
 }> {
-  const auth = await ensureServerSession();
-  if (!auth.ok) {
+  const authError = await requireReadAccess();
+  if (authError) {
     return {
       ok: false,
       subscriptionCount: 0,
@@ -372,8 +373,8 @@ export async function verifyDevicePushRegistration(endpoint: string): Promise<{
   status: 'registered' | 'missing' | 'unauthorized' | 'error';
   platform: 'apple' | 'fcm' | 'other' | 'unknown';
 }> {
-  const auth = await ensureServerSession();
-  if (!auth.ok) {
+  const authError = await requireReadAccess();
+  if (authError) {
     return { registered: false, status: 'unauthorized', platform: 'unknown' };
   }
 

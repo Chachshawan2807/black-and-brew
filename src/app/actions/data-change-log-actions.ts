@@ -14,6 +14,7 @@ import {
   resolveActorLabel,
   type ActorAccessLevel,
 } from '@/lib/data-change-log';
+import { requireReadAccess } from '@/lib/policies/server-gate';
 import { ensureServerSession, requireServiceRoleKey } from '@/lib/security/server-auth';
 import { resolveOptionalClientIp } from '@/lib/security/request-ip';
 import { dispatchInventoryWebPush, rowToDataChangeLogRow } from '@/lib/web-push';
@@ -109,11 +110,6 @@ const NOTIFICATION_CATCH_UP_MODULES = [
 
 const DATA_CHANGE_LOG_SELECT =
   'id, occurred_at, actor_id, actor_label, actor_access_level, action, module, entity_type, entity_id, entity_label, field_changes, old_value, new_value, source, ip_address, user_agent, status, error_message, metadata';
-
-async function ensureAuthenticated(): Promise<boolean> {
-  const auth = await ensureServerSession();
-  return auth.ok;
-}
 
 async function resolveActorContext(userAgent?: string | null): Promise<{
   actorId: string | null;
@@ -238,9 +234,9 @@ export async function recordDataChange(
 export async function fetchDataChangeLogs(
   options: FetchDataChangeLogsOptions = {}
 ): Promise<{ success: true; rows: DataChangeLogRow[] } | { success: false; error: string }> {
-  const authenticated = await ensureAuthenticated();
-  if (!authenticated) {
-    return { success: false, error: 'Unauthorized' };
+  const authError = await requireReadAccess();
+  if (authError) {
+    return { success: false, error: authError };
   }
 
   const limit = options.limit ?? 50;
@@ -303,9 +299,9 @@ export async function fetchDataChangeLogs(
 export async function fetchNotificationCatchUpLogs(
   options: { limit?: number } = {},
 ): Promise<{ success: true; rows: DataChangeLogRow[] } | { success: false; error: string }> {
-  const authenticated = await ensureAuthenticated();
-  if (!authenticated) {
-    return { success: false, error: 'Unauthorized' };
+  const authError = await requireReadAccess();
+  if (authError) {
+    return { success: false, error: authError };
   }
 
   const limit = options.limit ?? 150;

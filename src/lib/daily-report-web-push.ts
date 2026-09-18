@@ -1,4 +1,4 @@
-import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
+import type { DailyReportData, DailyReportSchedule } from '@/lib/daily-report';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
 import { formatScheduleNotificationDateDisplay } from '@/lib/date-utils';
 import { dailyReportNotificationLogId } from '@/lib/daily-report-notification';

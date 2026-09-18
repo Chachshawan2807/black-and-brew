@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { formatInTimeZone } from 'date-fns-tz';
 import { THAI_TIMEZONE } from '@/lib/timezone';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
-import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
+import type { DailyReportData, DailyReportSchedule } from '@/lib/daily-report';
 import {
   buildDailyReportAltText,
   buildDailyReportFieldSummary,
@@ -282,7 +282,7 @@ export async function refreshDailyReportNotificationsForDate(
   const bangkokTodayIso = getBangkokCalendarIso();
   const bangkokTomorrowIso = addBangkokCalendarDays(bangkokTodayIso, 1);
   const schedules: DailyReportSchedule[] = ['today', 'tomorrow'];
-  const { compileDailyReportDataForDate } = await import('@/app/actions/daily-report-actions');
+  const { compileDailyReportDataForDate } = await import('@/lib/daily-report');
   const supabase = getSupabaseAdmin();
   if (!supabase) return;
 

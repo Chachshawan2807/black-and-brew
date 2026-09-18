@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { DailyReportData } from '@/app/actions/daily-report-actions';
+import type { DailyReportData } from '@/lib/daily-report';
 import {
   buildDailyReportPushPayload,
   dedupeDailyReportPushSubscriptions,
