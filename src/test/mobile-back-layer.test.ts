@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   createMobileBackHistoryState,
   readMobileBackLayerId,
+  shouldDismissMobileBackLayerOnPopState,
   shouldSyncHistoryOnLayerClose,
 } from '@/lib/mobile-back-layer';
 
@@ -55,6 +56,25 @@ describe('mobile-back-layer', () => {
         false,
         createMobileBackHistoryState('notification-panel'),
         'mobile-nav-drawer',
+      ),
+    ).toBe(false);
+  });
+
+  test('shouldDismissMobileBackLayerOnPopState dismisses when history no longer tags this layer', () => {
+    expect(
+      shouldDismissMobileBackLayerOnPopState(
+        'quick-action-overlay',
+        createMobileBackHistoryState('notification-panel'),
+      ),
+    ).toBe(true);
+    expect(shouldDismissMobileBackLayerOnPopState('quick-action-overlay', null)).toBe(true);
+  });
+
+  test('shouldDismissMobileBackLayerOnPopState keeps layer when child overlay closed above', () => {
+    expect(
+      shouldDismissMobileBackLayerOnPopState(
+        'notification-panel',
+        createMobileBackHistoryState('notification-panel'),
       ),
     ).toBe(false);
   });

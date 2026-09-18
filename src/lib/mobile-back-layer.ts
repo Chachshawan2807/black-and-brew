@@ -35,3 +35,11 @@ export function shouldSyncHistoryOnLayerClose(
   if (dismissedByGesture || closingForNavigation) return false;
   return readMobileBackLayerId(historyState) === layerId;
 }
+
+/** After popstate, only dismiss when navigation left this layer (not when a child overlay closed above). */
+export function shouldDismissMobileBackLayerOnPopState(
+  layerId: MobileBackLayerId,
+  newHistoryState: unknown,
+): boolean {
+  return readMobileBackLayerId(newHistoryState) !== layerId;
+}

@@ -4,6 +4,7 @@ import { useEffect, useRef, type MutableRefObject } from 'react';
 import {
   createMobileBackHistoryState,
   type MobileBackLayerId,
+  shouldDismissMobileBackLayerOnPopState,
   shouldSyncHistoryOnLayerClose,
 } from '@/lib/mobile-back-layer';
 
@@ -36,7 +37,10 @@ export function useMobileBackLayer(
     dismissedByGestureRef.current = false;
     window.history.pushState(createMobileBackHistoryState(layerId), '');
 
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (!shouldDismissMobileBackLayerOnPopState(layerId, event.state)) {
+        return;
+      }
       dismissedByGestureRef.current = true;
       onDismissRef.current();
     };
