@@ -1,14 +1,32 @@
 export const MOBILE_BACK_STATE_KEY = 'bbMobileBack';
 
-export type MobileBackLayerId =
-  | 'mobile-nav-drawer'
-  | 'notification-panel'
-  | 'quick-action-overlay'
-  | 'schedule-overlay';
+export const MOBILE_BACK_LAYER_IDS = [
+  'mobile-nav-drawer',
+  'notification-panel',
+  'quick-action-overlay',
+  'schedule-overlay',
+  'inventory-overlay',
+  'home-overlay',
+  'dashboard-roster-overlay',
+  'dashboard-weekly-overlay',
+  'maintenance-overlay',
+  'branch-withdraw-overlay',
+  'inventory-count-overlay',
+  'bean-orders-overlay',
+] as const;
+
+export type MobileBackLayerId = (typeof MOBILE_BACK_LAYER_IDS)[number];
 
 export type MobileBackHistoryState = {
   [MOBILE_BACK_STATE_KEY]: MobileBackLayerId;
 };
+
+export function isMobileBackLayerId(value: unknown): value is MobileBackLayerId {
+  return (
+    typeof value === 'string' &&
+    (MOBILE_BACK_LAYER_IDS as readonly string[]).includes(value)
+  );
+}
 
 export function createMobileBackHistoryState(layerId: MobileBackLayerId): MobileBackHistoryState {
   return { [MOBILE_BACK_STATE_KEY]: layerId };
@@ -17,15 +35,7 @@ export function createMobileBackHistoryState(layerId: MobileBackLayerId): Mobile
 export function readMobileBackLayerId(state: unknown): MobileBackLayerId | null {
   if (!state || typeof state !== 'object') return null;
   const layerId = (state as MobileBackHistoryState)[MOBILE_BACK_STATE_KEY];
-  if (
-    layerId === 'mobile-nav-drawer' ||
-    layerId === 'notification-panel' ||
-    layerId === 'quick-action-overlay' ||
-    layerId === 'schedule-overlay'
-  ) {
-    return layerId;
-  }
-  return null;
+  return isMobileBackLayerId(layerId) ? layerId : null;
 }
 
 export function shouldSyncHistoryOnLayerClose(

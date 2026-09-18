@@ -106,7 +106,7 @@ import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
-import { useMobileBackLayer } from '@/hooks/use-mobile-back-layer';
+import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 import {
   SCHEDULE_GRID_TEMPLATE,
   SCHEDULE_TABLE_MIN_WIDTH,
@@ -645,58 +645,57 @@ export default function ScheduleClient({
   const [historyFilter, setHistoryFilter] = useState({ start: '', end: '' });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  const scheduleOverlayActive =
-    selectedCell !== null ||
-    showManagementModal ||
-    showAddEmployeeModal ||
-    showRegularHolidayModal ||
-    showShiftSettingsModal;
+  const scheduleOverlayLayers = useMemo(
+    () => [
+      {
+        active: selectedCell !== null,
+        dismiss: () => setSelectedCell(null),
+      },
+      {
+        active: showShiftSettingsModal,
+        dismiss: () => {
+          if (!shiftSettingsSaving) setShowShiftSettingsModal(false);
+        },
+      },
+      {
+        active: showManagementModal,
+        dismiss: () => {
+          if (editingHistoryId) {
+            setEditingHistoryId(null);
+            setOriginalHistoryRange(null);
+            setManagementForm({
+              employeeId: '',
+              shiftType: '6:30',
+              startDate: '',
+              endDate: '',
+              remark: '',
+            });
+          } else {
+            setShowManagementModal(false);
+          }
+        },
+      },
+      {
+        active: showAddEmployeeModal,
+        dismiss: () => setShowAddEmployeeModal(false),
+      },
+      {
+        active: showRegularHolidayModal,
+        dismiss: () => setShowRegularHolidayModal(false),
+      },
+    ],
+    [
+      selectedCell,
+      showShiftSettingsModal,
+      shiftSettingsSaving,
+      showManagementModal,
+      editingHistoryId,
+      showAddEmployeeModal,
+      showRegularHolidayModal,
+    ],
+  );
 
-  const dismissScheduleOverlay = useCallback(() => {
-    if (selectedCell) {
-      setSelectedCell(null);
-      return;
-    }
-    if (showShiftSettingsModal) {
-      if (!shiftSettingsSaving) {
-        setShowShiftSettingsModal(false);
-      }
-      return;
-    }
-    if (showManagementModal) {
-      if (editingHistoryId) {
-        setEditingHistoryId(null);
-        setOriginalHistoryRange(null);
-        setManagementForm({
-          employeeId: '',
-          shiftType: '6:30',
-          startDate: '',
-          endDate: '',
-          remark: '',
-        });
-      } else {
-        setShowManagementModal(false);
-      }
-      return;
-    }
-    if (showAddEmployeeModal) {
-      setShowAddEmployeeModal(false);
-      return;
-    }
-    if (showRegularHolidayModal) {
-      setShowRegularHolidayModal(false);
-    }
-  }, [
-    selectedCell,
-    showShiftSettingsModal,
-    shiftSettingsSaving,
-    showManagementModal,
-    editingHistoryId,
-    showAddEmployeeModal,
-    showRegularHolidayModal,
-  ]);
-
-  useMobileBackLayer('schedule-overlay', scheduleOverlayActive, dismissScheduleOverlay);
+  useMobileBackOverlayStack('schedule-overlay', scheduleOverlayLayers);
 
   const handleSaveShiftSettings = useCallback(async (entries: ShiftTypeEntry[]) => {
     if (blockIfReadOnly()) return;

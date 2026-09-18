@@ -44,6 +44,7 @@ import {
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import { getClientSessionId } from '@/lib/client-session';
 import { useMaxMd } from '@/hooks/use-max-md';
+import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { buildBranchWithdrawScrollBodyKeyboardStyle } from '@/lib/branch-withdraw-mobile-shell';
 import {
@@ -376,6 +377,7 @@ export default function BranchWithdrawClient({
   const previewDialogRef = useRef<HTMLDialogElement | null>(null);
   const historyLineDialogRef = useRef<HTMLDialogElement | null>(null);
   const addItemDialogRef = useRef<HTMLDialogElement | null>(null);
+  const [nativeDialogOpen, setNativeDialogOpen] = useState(false);
   const draftPersistSignatureRef = useRef<string | null>(null);
 
   const displayItemIdKey = useMemo(
@@ -444,13 +446,68 @@ export default function BranchWithdrawClient({
     [],
   );
 
+  const syncNativeDialogOpen = useCallback(() => {
+    const open =
+      Boolean(previewDialogRef.current?.open) ||
+      Boolean(saveResultDialogRef.current?.open) ||
+      Boolean(historyLineDialogRef.current?.open) ||
+      Boolean(addItemDialogRef.current?.open);
+    setNativeDialogOpen(open);
+  }, []);
+
   const openDialog = (dialog: HTMLDialogElement | null) => {
     openBranchWithdrawDialog(dialog);
+    syncNativeDialogOpen();
+    requestAnimationFrame(syncNativeDialogOpen);
   };
 
   const closeDialog = (dialog: HTMLDialogElement | null) => {
     closeBranchWithdrawDialog(dialog);
+    syncNativeDialogOpen();
+    requestAnimationFrame(syncNativeDialogOpen);
   };
+
+  useEffect(() => {
+    const refs = [previewDialogRef, saveResultDialogRef, historyLineDialogRef, addItemDialogRef];
+    const cleanups: (() => void)[] = [];
+    for (const ref of refs) {
+      const el = ref.current;
+      if (!el) continue;
+      const onClose = () => syncNativeDialogOpen();
+      el.addEventListener('close', onClose);
+      cleanups.push(() => el.removeEventListener('close', onClose));
+    }
+    return () => cleanups.forEach((fn) => fn());
+  }, [syncNativeDialogOpen]);
+
+  const branchWithdrawOverlayLayers = useMemo(
+    () => [
+      {
+        active: nativeDialogOpen || lineMessageDialog !== null,
+        dismiss: () => {
+          if (addItemDialogRef.current?.open) {
+            closeDialog(addItemDialogRef.current);
+            return;
+          }
+          if (previewDialogRef.current?.open) {
+            closeDialog(previewDialogRef.current);
+            return;
+          }
+          if (saveResultDialogRef.current?.open) {
+            closeDialog(saveResultDialogRef.current);
+            return;
+          }
+          if (historyLineDialogRef.current?.open || lineMessageDialog) {
+            setLineMessageDialog(null);
+            closeDialog(historyLineDialogRef.current);
+          }
+        },
+      },
+    ],
+    [lineMessageDialog, nativeDialogOpen],
+  );
+
+  useMobileBackOverlayStack('branch-withdraw-overlay', branchWithdrawOverlayLayers);
 
   const handleSaveDraft = useCallback(() => {
     if (isReadOnly) {

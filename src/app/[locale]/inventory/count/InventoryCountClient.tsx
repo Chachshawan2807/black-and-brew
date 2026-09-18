@@ -3,7 +3,7 @@
 import { SegmentTabBar } from '@/components/ui/segment-tab-bar';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import { PageLoadingState } from '@/components/ui/page-loading-state';
-import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ChevronLeft, CheckCircle2, ClipboardList, AlertCircle, RefreshCw, Undo2, Clock3, SlidersHorizontal } from '@/lib/icons';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,6 +43,7 @@ import {
 } from '@/lib/inventory-count-adjust-access';
 import { CountAdjustPinDialog } from '@/app/[locale]/inventory/count/_components/CountAdjustPinDialog';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 import { cn } from '@/lib/utils';
 import { BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
 import { bbPastelClass } from '@/lib/ui-outlined-tokens';
@@ -845,6 +846,18 @@ export default function InventoryCountClient({
       setAdjustPinOpen(true);
     }
   }, [adjustUnlocked, embedded, initialPageMode]);
+
+  const inventoryCountOverlayLayers = useMemo(
+    () => [
+      {
+        active: adjustPinOpen,
+        dismiss: () => setAdjustPinOpen(false),
+      },
+    ],
+    [adjustPinOpen],
+  );
+
+  useMobileBackOverlayStack('inventory-count-overlay', inventoryCountOverlayLayers);
 
   const [items, setItems] = useState<InventoryItem[]>(initialItems);
   const itemsRef = useRef(items);

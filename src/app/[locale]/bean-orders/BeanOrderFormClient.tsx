@@ -27,6 +27,7 @@ import {
   preloadPasteCustomerDialog,
 } from '@/lib/preload-bean-order-form-dialogs';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
+import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 import { AutocompleteTextField } from '@/app/[locale]/bean-orders/_components/AutocompleteTextField';
 import { BeanOrderSelect } from '@/app/[locale]/bean-orders/_components/BeanOrderSelect';
 import { BeanOrderPaymentFields } from '@/app/[locale]/bean-orders/_components/BeanOrderPaymentFields';
@@ -272,6 +273,30 @@ export default function BeanOrderFormClient({
   const [pasteError, setPasteError] = useState<string | null>(null);
   const [pasteData, setPasteData] = useState<ParsedBeanOrderCustomer | null>(null);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+
+  const beanOrderOverlayLayers = useMemo(
+    () => [
+      {
+        active: pasteOpen,
+        dismiss: () => {
+          setPasteOpen(false);
+          setPasteError(null);
+          setPasteData(null);
+        },
+      },
+      {
+        active: clearConfirmOpen,
+        dismiss: () => setClearConfirmOpen(false),
+      },
+      {
+        active: customerAddressPicker !== null,
+        dismiss: () => setCustomerAddressPicker(null),
+      },
+    ],
+    [pasteOpen, clearConfirmOpen, customerAddressPicker],
+  );
+
+  useMobileBackOverlayStack('bean-orders-overlay', beanOrderOverlayLayers);
 
   const pendingSlipPreview = useMemo(() => {
     if (!pendingSlipFile) return null;

@@ -8,6 +8,7 @@ import type { Shift, Profile } from '@/types';
 import { CalendarDays, Users, GripVertical } from '@/lib/icons';
 import { supabase } from '@/lib/supabase';
 import { useShiftRealtime } from '@/hooks/use-shift-realtime';
+import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 import { updateDashboardOrder } from '@/app/actions/shift-actions';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
@@ -193,6 +194,18 @@ export default function LiveShiftList({
     entries: LeaveDetailEntry[];
     variant: 'leave' | 'holiday';
   } | null>(null);
+
+  const dashboardWeeklyOverlayLayers = useMemo(
+    () => [
+      {
+        active: statDialog !== null,
+        dismiss: () => setStatDialog(null),
+      },
+    ],
+    [statDialog],
+  );
+
+  useMobileBackOverlayStack('dashboard-weekly-overlay', dashboardWeeklyOverlayLayers);
 
   const refreshShiftsForRange = useCallback(async () => {
     const { data, error } = await supabase

@@ -42,6 +42,7 @@ import {
   preloadSecretaryTaskOverlayShell,
 } from '@/lib/secretary/preload-secretary-overlay';
 import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
+import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 import { writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/home-actions';
@@ -247,6 +248,27 @@ export default function HomeClient({
     }));
     setOverlayTask((current) => (current?.id === taskId ? null : current));
   }, []);
+
+  const homeOverlayLayers = useMemo(
+    () => [
+      {
+        active: overlayTask !== null,
+        dismiss: () => setOverlayTask(null),
+      },
+      {
+        active: showCreateDialog,
+        dismiss: () => {
+          if (isPending) return;
+          setShowCreateDialog(false);
+          setNewTitle('');
+          setNewDescription('');
+        },
+      },
+    ],
+    [overlayTask, showCreateDialog, isPending],
+  );
+
+  useMobileBackOverlayStack('home-overlay', homeOverlayLayers);
 
   return (
     <div

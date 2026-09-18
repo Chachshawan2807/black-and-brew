@@ -25,6 +25,7 @@ import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
 import { cn } from '@/lib/utils';
 import { FloatingToast } from '@/components/ui/floating-alert';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 
 const MaintenanceModals = dynamic(() => import('./_components/MaintenanceModals'), { ssr: false });
 
@@ -78,6 +79,25 @@ export default function MaintenanceClient({
 
   const [isMounted, setIsMounted] = useState(false);
   const [isSubmitPending, startSubmitTransition] = useTransition();
+
+  const maintenanceOverlayLayers = useMemo(
+    () => [
+      {
+        active: isDeleteConfirmOpen,
+        dismiss: () => {
+          setIsDeleteConfirmOpen(false);
+          setRecordToDelete(null);
+        },
+      },
+      {
+        active: isModalOpen,
+        dismiss: () => setIsModalOpen(false),
+      },
+    ],
+    [isDeleteConfirmOpen, isModalOpen],
+  );
+
+  useMobileBackOverlayStack('maintenance-overlay', maintenanceOverlayLayers);
 
   const DEFAULT_WIDTHS = {
     date: 120,

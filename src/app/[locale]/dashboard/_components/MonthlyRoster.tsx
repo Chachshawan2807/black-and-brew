@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 import { flushSync } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { 
@@ -122,6 +123,22 @@ export default function MonthlyRoster({
     entries: LeaveDetailEntry[];
     variant: 'leave' | 'holiday';
   } | null>(null);
+
+  const dashboardRosterOverlayLayers = useMemo(
+    () => [
+      {
+        active: statDialog !== null,
+        dismiss: () => setStatDialog(null),
+      },
+      {
+        active: exportDialogOpen,
+        dismiss: () => setExportDialogOpen(false),
+      },
+    ],
+    [statDialog, exportDialogOpen],
+  );
+
+  useMobileBackOverlayStack('dashboard-roster-overlay', dashboardRosterOverlayLayers);
 
   const daysInInterval = useMemo(() => {
     try {

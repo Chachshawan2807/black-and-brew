@@ -22,10 +22,10 @@ describe('schedule modals above FAB stack', () => {
   });
 
   test('schedule overlays intercept mobile back before leaving the route', () => {
-    expect(scheduleClientCode).toContain('useMobileBackLayer');
+    expect(scheduleClientCode).toContain('useMobileBackOverlayStack');
     expect(scheduleClientCode).toContain("'schedule-overlay'");
     expect(scheduleClientCode).toContain('showManagementModal');
-    expect(scheduleClientCode).toContain('dismissScheduleOverlay');
+    expect(scheduleClientCode).toContain('scheduleOverlayLayers');
   });
 
   test('schedule modals portal to document.body and use shared above-FAB z-index', () => {

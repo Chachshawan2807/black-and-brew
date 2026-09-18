@@ -38,6 +38,7 @@ import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-fil
 import { getInventoryItemDisplayOrder } from '@/lib/inventory-grid-search';
 import { applyWithdrawRequiredItemOrder } from '@/lib/inventory-withdraw-required-items';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
+import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 import {
   loadFrequentItemsCache,
   saveFrequentItemsCache,
@@ -1059,6 +1060,53 @@ export default function InventoryClient({
     },
     onSaveError: () => setSavingState('idle'),
   });
+
+  const inventoryOverlayLayers = useMemo(
+    () => [
+      {
+        active: quickAction.bulkConfirmOpen,
+        dismiss: quickAction.cancelBulkSubmit,
+      },
+      {
+        active: deleteId !== null,
+        dismiss: () => setDeleteId(null),
+      },
+      {
+        active: quickAction.transactionDateModalOpen,
+        dismiss: quickAction.cancelTransactionDate,
+      },
+      {
+        active: history.showHistoryModal,
+        dismiss: () => history.setShowHistoryModal(false),
+      },
+      {
+        active: showWithdrawRequiredModal,
+        dismiss: () => setShowWithdrawRequiredModal(false),
+      },
+      {
+        active: showPurchaseOrderModal,
+        dismiss: () => setShowPurchaseOrderModal(false),
+      },
+      {
+        active: showAddModal,
+        dismiss: () => setShowAddModal(false),
+      },
+    ],
+    [
+      quickAction.bulkConfirmOpen,
+      quickAction.cancelBulkSubmit,
+      deleteId,
+      quickAction.transactionDateModalOpen,
+      quickAction.cancelTransactionDate,
+      history.showHistoryModal,
+      history.setShowHistoryModal,
+      showWithdrawRequiredModal,
+      showPurchaseOrderModal,
+      showAddModal,
+    ],
+  );
+
+  useMobileBackOverlayStack('inventory-overlay', inventoryOverlayLayers);
 
   const handleGridSearchEnter = useCallback(() => {
     if (visibleItems.length !== 1) return;
