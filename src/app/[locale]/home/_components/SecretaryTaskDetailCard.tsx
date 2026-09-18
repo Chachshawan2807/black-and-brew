@@ -31,7 +31,7 @@ export function SecretaryTaskDetailCard({
     <div
       className={cn(
         'flex min-h-0 flex-col rounded-2xl border p-2 bb-shadow-sm',
-        scheduleDayLabel ? 'aspect-square min-w-[7.25rem]' : 'aspect-square',
+        'aspect-square w-full min-w-0',
         resolveSecretaryBoardCardClass(module),
       )}
     >

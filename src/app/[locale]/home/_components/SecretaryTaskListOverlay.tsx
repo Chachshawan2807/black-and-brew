@@ -2,6 +2,7 @@
 
 import type { SecretaryAttentionListItem } from '@/lib/secretary/task-detail-overlay';
 import type { SecretaryModule } from '@/lib/secretary/types';
+import { resolveScheduleBoardGridClass } from '@/lib/secretary/schedule-board-grid-class';
 import { cn } from '@/lib/utils';
 import { SecretaryTaskDetailCard } from './SecretaryTaskDetailCard';
 import SecretaryTaskPanelShell, { SecretaryTaskDetailRow } from './SecretaryTaskPanelShell';
@@ -30,8 +31,7 @@ export default function SecretaryTaskListOverlay({
   maxWidthClass = 'max-w-lg',
 }: SecretaryTaskListOverlayProps) {
   const useBoardCards = layout === 'board-cards';
-  const scheduleCardCount = Math.min(Math.max(items.length, 1), 4);
-  const scheduleCardTrack = 'minmax(7.25rem,7.75rem)';
+  const scheduleGridClass = resolveScheduleBoardGridClass(items.length);
 
   return (
     <SecretaryTaskPanelShell
@@ -44,10 +44,10 @@ export default function SecretaryTaskListOverlay({
         <p className="px-1 py-10 text-center text-[13px] text-muted-foreground">{emptyMessage}</p>
       ) : useBoardCards ? (
         <ul
-          className="grid w-fit max-w-full gap-2 pb-1 sm:gap-2.5"
-          style={{
-            gridTemplateColumns: `repeat(${scheduleCardCount}, ${scheduleCardTrack})`,
-          }}
+          className={cn(
+            'grid w-full max-w-full gap-2 pb-1 sm:gap-2.5',
+            scheduleGridClass,
+          )}
         >
           {items.map((item) => (
             <li key={item.id} className="min-h-0 w-full list-none">

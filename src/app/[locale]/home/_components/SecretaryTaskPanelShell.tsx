@@ -72,7 +72,9 @@ export default function SecretaryTaskPanelShell({
         layoutClassName={SECRETARY_MODAL_LAYOUT_CLASS}
         panelClassName={cn(
           'flex min-h-0 flex-col overflow-hidden',
-          fitContent ? 'w-fit min-w-[min(100%,18rem)] max-w-[calc(100vw-2rem)]' : 'w-full',
+          fitContent
+            ? 'w-fit min-w-[min(100%,18rem)] max-w-[min(calc(100dvw-2rem),calc(100vw-env(safe-area-inset-left)-env(safe-area-inset-right)-2rem))]'
+            : 'w-full',
           SECRETARY_PANEL_MAX_HEIGHT,
           !fitContent && maxWidthClass,
         )}

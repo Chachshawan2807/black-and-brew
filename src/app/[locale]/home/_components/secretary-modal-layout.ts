@@ -1,5 +1,6 @@
 /** Shared centered modal placement for secretary task overlays. */
-export const SECRETARY_MODAL_LAYOUT_CLASS = 'items-center justify-center p-4 min-w-0 w-full';
+export const SECRETARY_MODAL_LAYOUT_CLASS =
+  'items-center justify-center min-w-0 w-full max-w-[100dvw] px-[max(1rem,env(safe-area-inset-left))] py-4 pr-[max(1rem,env(safe-area-inset-right))]';
 
 /** Mobile-safe centered shell: scroll when tall, keyboard-aware repositioning. */
 export const SECRETARY_MODAL_SCAFFOLD_PROPS = {
