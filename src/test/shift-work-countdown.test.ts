@@ -75,9 +75,8 @@ describe('home-shift-status', () => {
     ];
 
     const rows = buildHomeShiftStatusRows(profiles, shifts, '2026-09-18');
-    expect(rows.map((row) => row.profileId)).toEqual(['a', 'c']);
+    expect(rows.map((row) => row.profileId)).toEqual(['a']);
     expect(rows[0]?.isTimedShift).toBe(true);
-    expect(rows[1]?.isTimedShift).toBe(false);
 
     const timedView = resolveTimedShiftCountdownView(
       rows[0]!,

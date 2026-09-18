@@ -6,13 +6,14 @@ import { ClipboardList, Plus } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';
 import {
-  BB_BTN_OUTLINE_SM,
+  BB_BTN_MOTION,
   BB_CHIP_IDLE,
   BB_CHIP_SELECTED,
   BB_COUNT_BADGE_ACTIVE,
   BB_COUNT_BADGE_BASE,
   BB_COUNT_BADGE_IDLE,
   BB_DATA_CARD,
+  BB_FOCUS_RING,
 } from '@/lib/ui-outlined-tokens';
 import {
   formatSecretaryWorkDateLabel,
@@ -208,8 +209,6 @@ export default function HomeClient({
     }, { timeout: 3000 });
   }, [visibleTasks]);
 
-  const visibleTaskCount = consolidatedAllTasks.length;
-
   const workDateLabel = useMemo(
     () => formatSecretaryWorkDateLabel(workDateIso),
     [workDateIso],
@@ -261,45 +260,6 @@ export default function HomeClient({
         <h1 className="bb-page-title-compact text-balance">{workDateLabel}</h1>
       </header>
 
-      <div className={cn(BB_DATA_CARD, 'space-y-3 p-3 sm:p-4')}>
-        <div className="flex flex-wrap gap-2 items-center justify-start">
-          <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
-            <button
-              type="button"
-              onClick={() => setShowCreateDialog(true)}
-              onPointerEnter={preloadSecretaryManualTaskDialog}
-              onFocus={preloadSecretaryManualTaskDialog}
-              className={BB_BTN_OUTLINE_SM}
-            >
-              <Plus size={14} />
-              เพิ่มงาน
-            </button>
-          </HintTooltip>
-        </div>
-
-        <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">
-        <FilterChip
-          active={moduleFilter === 'all'}
-          onClick={() => setModuleFilter('all')}
-          label={`ทั้งหมด (${visibleTaskCount})`}
-          tip="แสดงงานทุกโมดูล"
-        />
-        {(Object.keys(MODULE_LABELS) as SecretaryTask['module'][]).map((module) => {
-          const count = moduleFilterCounts.get(module) ?? 0;
-          if (count === 0) return null;
-          return (
-            <FilterChip
-              key={module}
-              active={moduleFilter === module}
-              onClick={() => setModuleFilter(module)}
-              label={`${MODULE_LABELS[module]} (${count})`}
-              tip={MODULE_FILTER_TIPS[module]}
-            />
-          );
-        })}
-        </div>
-      </div>
-
       {showCreateDialog ? (
         <SecretaryManualTaskDialog
           open
@@ -325,7 +285,48 @@ export default function HomeClient({
           desktopSplit && 'md:grid md:grid-cols-2 md:items-start md:gap-4 md:space-y-0',
         )}
       >
-        <section aria-label="รายการงาน" className={cn(BB_DATA_CARD, 'min-w-0 p-3 sm:p-4')}>
+        <section
+          aria-label="รายการงาน"
+          className={cn(BB_DATA_CARD, 'min-w-0 space-y-3 p-3 sm:p-4')}
+        >
+          <div className="flex flex-wrap gap-2">
+            <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
+              <button
+                type="button"
+                onClick={() => setShowCreateDialog(true)}
+                onPointerEnter={preloadSecretaryManualTaskDialog}
+                onFocus={preloadSecretaryManualTaskDialog}
+                className={cn(
+                  'inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-2xl border-2 border-foreground/85 bg-card px-3 py-2 text-[13px] font-normal text-foreground bb-shadow-sm touch-manipulation',
+                  'hover:border-foreground hover:bg-muted/35',
+                  BB_BTN_MOTION,
+                  BB_FOCUS_RING,
+                )}
+              >
+                <span
+                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-xl border border-foreground/20 bg-muted/35"
+                  aria-hidden
+                >
+                  <Plus size={14} strokeWidth={2} />
+                </span>
+                เพิ่มงาน
+              </button>
+            </HintTooltip>
+            {(Object.keys(MODULE_LABELS) as SecretaryTask['module'][]).map((module) => {
+              const count = moduleFilterCounts.get(module) ?? 0;
+              if (count === 0) return null;
+              return (
+                <FilterChip
+                  key={module}
+                  active={moduleFilter === module}
+                  onClick={() => setModuleFilter(module)}
+                  label={`${MODULE_LABELS[module]} (${count})`}
+                  tip={MODULE_FILTER_TIPS[module]}
+                />
+              );
+            })}
+          </div>
+
           <ul
             className={cn(
               'grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2.5',

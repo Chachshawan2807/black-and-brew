@@ -112,8 +112,7 @@ function ShiftStatusSectionHeader({ staffCount }: { staffCount: number }) {
       icon={
         <CalendarClock className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} aria-hidden />
       }
-      title="สถานะกะงาน"
-      subtitle="พนักงานที่มีกะในวันนี้"
+      title="สมาชิกวันนี้"
       meta={<HomeSectionBadge className="normal-case tracking-normal">{staffCount} คน</HomeSectionBadge>}
     />
   );
@@ -208,7 +207,7 @@ export default function HomeShiftStatusSection({
     if (!showWhenEmpty) return null;
     return (
       <section
-        aria-label="สถานะกะงาน"
+        aria-label="สมาชิกวันนี้"
         className={cn(BB_DATA_CARD, 'hidden min-w-0 space-y-3 p-3 sm:p-4 md:block')}
       >
         <ShiftStatusSectionHeader staffCount={0} />
@@ -218,11 +217,11 @@ export default function HomeShiftStatusSection({
   }
 
   return (
-    <section aria-label="สถานะกะงาน" className={cn(BB_DATA_CARD, 'min-w-0 p-3 sm:p-4')}>
+    <section aria-label="สมาชิกวันนี้" className={cn(BB_DATA_CARD, 'min-w-0 p-3 sm:p-4')}>
       <ShiftStatusSectionHeader staffCount={rows.length} />
 
       {!loaded ? (
-        <p className="mt-3 px-1 text-sm text-muted-foreground">กำลังโหลดสถานะกะ...</p>
+        <p className="mt-3 px-1 text-sm text-muted-foreground">กำลังโหลดสมาชิกวันนี้...</p>
       ) : (
         <ul className="mt-3 flex flex-wrap gap-2">
           {rows.map((row) => {

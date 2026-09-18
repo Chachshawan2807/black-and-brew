@@ -64,11 +64,13 @@ export function buildHomeShiftStatusRows(
 
     const shiftLabel = normalizeShiftLocation(shift.metadata?.location, shift.status);
     const category = categorizeShift(shiftLabel);
-    if (category === 'off_or_leave') continue;
+    if (category !== 'front_store') continue;
 
-    const isTimedShift = category === 'front_store';
+    const timed = parseTimedShiftLabel(shiftLabel);
+    if (!timed) continue;
+
     const locationRaw = shift.metadata?.location ?? shiftLabel;
-    const timed = isTimedShift ? parseTimedShiftLabel(shiftLabel) : null;
+    const isTimedShift = true;
 
     rows.push({
       profileId: profile.id,
