@@ -61,6 +61,15 @@ describe('NotificationPanel mobile layout', () => {
     expect(code).toMatch(/flex-1 min-h-0 min-w-0 overflow-y-auto/);
   });
 
+  test('desktop notification list uses themed vertical scrollbar utility', () => {
+    const code = readFile('components/notifications/NotificationPanel.tsx');
+    expect(code).toMatch(/bb-smooth-scroll md:bb-scroll-y-themed/);
+    const css = readFile('app/[locale]/globals.css');
+    expect(css).toMatch(/\.bb-scroll-y-themed/);
+    expect(css).toMatch(/var\(--foreground\)/);
+    expect(css).toMatch(/var\(--background\)/);
+  });
+
   test('view-only iron rule is enforced in notification-panel-view-only.test.ts', () => {
     const ironRuleTest = readFile('test/notification-panel-view-only.test.ts');
     expect(ironRuleTest).toContain('Notification panel view-only iron rule');

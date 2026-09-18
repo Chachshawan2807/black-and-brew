@@ -254,7 +254,7 @@ export function NotificationPanel() {
                 </div>
               </header>
 
-              <div className="flex-1 min-h-0 min-w-0 overflow-y-auto bb-smooth-scroll px-3 py-3 space-y-4">
+              <div className="flex-1 min-h-0 min-w-0 overflow-y-auto bb-smooth-scroll md:bb-scroll-y-themed md:pr-0.5 px-3 py-3 space-y-4">
                 {groups.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-14 text-center px-4">
                     <div
