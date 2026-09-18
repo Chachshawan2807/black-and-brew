@@ -20,6 +20,8 @@ import {
   withReducedMotion,
 } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+import { ModalPortal } from '@/components/ui/modal-portal';
+import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import {
   BB_BTN_CLOSE,
   BB_BTN_ICON,
@@ -364,50 +366,55 @@ export function DeleteConfirmDialog({ onCancel, onConfirm }: DeleteConfirmDialog
   const { overlay, panel } = useInventoryMotion();
 
   return (
-    <motion.div
-      initial={overlay.initial}
-      animate={overlay.animate}
-      exit={overlay.exit}
-      transition={overlay.transition}
-      className={cn(
-        'fixed inset-0 z-50 flex items-center justify-center p-4',
-        INVENTORY_MODAL_OVERLAY,
-      )}
-    >
+    <ModalPortal>
       <motion.div
-        initial={panel.initial}
-        animate={panel.animate}
-        exit={panel.exit}
-        transition={panel.transition}
-        className={cn(INVENTORY_MODAL_PANEL, `${BB_RADIUS_SOFT} w-full max-w-sm p-6 text-center`)}
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="inventory-delete-title"
-        aria-describedby="inventory-delete-desc"
+        initial={overlay.initial}
+        animate={overlay.animate}
+        exit={overlay.exit}
+        transition={overlay.transition}
+        className={cn(
+          'fixed inset-0 flex items-center justify-center p-4',
+          INVENTORY_MODAL_OVERLAY,
+          INVENTORY_MODAL_Z_CLASS,
+        )}
+        onClick={onCancel}
       >
-        <InventoryModalCloseButton onClose={onCancel} label="ปิด" />
-        <InventoryIconBadge tone="warn" size="lg" className="mx-auto mb-4 mt-2">
-          <Trash2 className="w-5 h-5" strokeWidth={ICON_STROKE} />
-        </InventoryIconBadge>
-        <h3 id="inventory-delete-title" className="text-lg font-normal text-foreground mb-2">
-          ต้องการลบรายการนี้ใช่หรือไม่?
-        </h3>
-        <p id="inventory-delete-desc" className="text-sm font-normal text-muted-foreground mb-6">
-          ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้
-        </p>
-        <div className="flex gap-3">
-          <button type="button" onClick={onCancel} className={cn(INVENTORY_BTN_SECONDARY, 'flex-1 py-3')}>
-            ยกเลิก
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className={cn(BB_BTN_OUTLINE_DANGER, 'flex-1 py-3')}
-          >
-            ลบรายการ
-          </button>
-        </div>
+        <motion.div
+          initial={panel.initial}
+          animate={panel.animate}
+          exit={panel.exit}
+          transition={panel.transition}
+          className={cn(INVENTORY_MODAL_PANEL, `${BB_RADIUS_SOFT} w-full max-w-sm p-6 text-center`)}
+          onClick={(e) => e.stopPropagation()}
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="inventory-delete-title"
+          aria-describedby="inventory-delete-desc"
+        >
+          <InventoryModalCloseButton onClose={onCancel} label="ปิด" />
+          <InventoryIconBadge tone="warn" size="lg" className="mx-auto mb-4 mt-2">
+            <Trash2 className="w-5 h-5" strokeWidth={ICON_STROKE} />
+          </InventoryIconBadge>
+          <h3 id="inventory-delete-title" className="text-lg font-normal text-foreground mb-2">
+            ต้องการลบรายการนี้ใช่หรือไม่?
+          </h3>
+          <p id="inventory-delete-desc" className="text-sm font-normal text-muted-foreground mb-6">
+            ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้
+          </p>
+          <div className="flex gap-3">
+            <button type="button" onClick={onCancel} className={cn(INVENTORY_BTN_SECONDARY, 'flex-1 py-3')}>
+              ยกเลิก
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className={cn(BB_BTN_OUTLINE_DANGER, 'flex-1 py-3')}
+            >
+              ลบรายการ
+            </button>
+          </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </ModalPortal>
   );
 }
