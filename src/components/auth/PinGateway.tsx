@@ -202,10 +202,10 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     setIsAuthenticated(true);
     setShowEnrollment(false);
     ensureFullNotificationPreferencesOnAuth();
+    window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
     await ensureSupabaseSession();
     const locale = (params?.locale as string) || 'th';
     await registerPushAfterAuthentication(locale, { fromUserGesture: true });
-    window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
   }, [params?.locale]);
 
   const passkeySkipKey = (fingerprint: string) => `bb_passkey_skip_${fingerprint}`;

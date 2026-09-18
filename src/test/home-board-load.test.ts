@@ -60,18 +60,21 @@ describe('home secretary board load', () => {
     expect(source).toContain('skipInitialFullSync: true');
     expect(source).toContain('requestHomeBoardFullSync');
     expect(source).toContain('writeCachedSecretaryBoard');
+    expect(source).toContain('writeCachedHomeMemberPanel');
     expect(source).toMatch(
       /scheduleIdleWork\(\(\)\s*=>\s*requestHomeBoardFullSync\(\)/,
     );
   });
 
-  test('client entry polls checkAuth once then loads board and member panel', () => {
+  test('client entry loads board after PIN without a checkAuth poll loop', () => {
     const source = readFileSync(homeEntryPath, 'utf-8');
     expect(source).toContain('waitForPinReadAccess');
     expect(source).toContain('loadHomeMemberPanel');
+    expect(source).toContain('readCachedHomeMemberPanel');
     expect(source).toMatch(
-      /const authed = await waitForPinReadAccess\(\)[\s\S]*Promise\.all\(\[[\s\S]*loadSecretaryBoard[\s\S]*loadHomeMemberPanel/,
+      /Promise\.all\(\[[\s\S]*loadSecretaryBoard[\s\S]*loadHomeMemberPanel/,
     );
+    expect(source).not.toContain('SESSION_POLL_MS');
     expect(source).not.toMatch(
       /for\s*\([^)]*attempt[^)]*\)[\s\S]*loadSecretaryBoard/,
     );

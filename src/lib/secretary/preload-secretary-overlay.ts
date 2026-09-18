@@ -52,6 +52,25 @@ export function preloadSecretaryTaskOverlayShell(): void {
   void import('@/app/[locale]/home/_components/SecretaryTaskOverlay');
 }
 
+type MediaQuerySource = {
+  matchMedia: (query: string) => { matches: boolean };
+};
+
+/**
+ * Idle overlay warming competes with the home fetch on phones.
+ * Keep pointerdown warmup; skip the idle list preload on coarse pointers.
+ */
+export function shouldIdlePreloadSecretaryOverlays(
+  media: MediaQuerySource | null = typeof window === 'undefined' ? null : window,
+): boolean {
+  if (!media?.matchMedia) return true;
+  try {
+    return !media.matchMedia('(pointer: coarse)').matches;
+  } catch {
+    return true;
+  }
+}
+
 /** @internal Vitest only */
 export function resetSecretaryOverlayPreloadForTests(): void {
   preloadedChunks.clear();

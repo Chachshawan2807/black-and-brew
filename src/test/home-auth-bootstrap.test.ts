@@ -40,4 +40,12 @@ describe('home client auth bootstrap', () => {
       /serverSession\.verified[\s\S]*registerPushAfterAuthentication\(locale,\s*\{ fromUserGesture: true \}\)/,
     );
   });
+
+  test('completeAuthentication announces PIN success before waiting on push', () => {
+    const pin = readFileSync(pinGatewayPath, 'utf-8');
+    const complete = pin.slice(pin.indexOf('const completeAuthentication'));
+    expect(complete.indexOf("CustomEvent('bb-pin-authenticated')")).toBeLessThan(
+      complete.indexOf('registerPushAfterAuthentication'),
+    );
+  });
 });

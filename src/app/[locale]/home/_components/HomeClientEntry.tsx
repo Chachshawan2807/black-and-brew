@@ -9,17 +9,37 @@ import {
   registerHomeBoardPerfDevTools,
 } from '@/lib/perf/home-board-perf';
 import {
+  readCachedHomeMemberPanel,
   readCachedSecretaryBoard,
+  writeCachedHomeMemberPanel,
   writeCachedSecretaryBoard,
 } from '@/lib/secretary/home-board-cache';
 import HomeClient from '../HomeClient';
 import { HomePageLoadingSkeleton } from './HomePageLoadingSkeleton';
 
-const SESSION_POLL_MS = 150;
-const SESSION_POLL_MAX_ATTEMPTS = 20;
+const PIN_WAIT_MS = 15_000;
+const PIN_EVENT_MAX_AGE_MS = 2_000;
+
+let lastPinEventAt = 0;
+
+function rememberPinAuthenticated(): void {
+  lastPinEventAt = Date.now();
+}
+
+function pinEventIsFresh(): boolean {
+  return lastPinEventAt > 0 && Date.now() - lastPinEventAt < PIN_EVENT_MAX_AGE_MS;
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('bb-pin-authenticated', rememberPinAuthenticated);
+}
 
 type HomeClientEntryProps = {
   locale: string;
+};
+
+type LoadBoardOptions = {
+  skipPinWait?: boolean;
 };
 
 function isUnauthorizedBoardError(error?: string): boolean {
@@ -28,48 +48,47 @@ function isUnauthorizedBoardError(error?: string): boolean {
 }
 
 async function waitForPinReadAccess(): Promise<boolean> {
-  if (await checkAuth()) return true;
+  if (pinEventIsFresh()) return true;
 
   return new Promise((resolve) => {
-    let attempts = 0;
-    let pollTimer: ReturnType<typeof setTimeout> | null = null;
+    let settled = false;
 
-    const cleanup = () => {
-      if (pollTimer) clearTimeout(pollTimer);
+    const finish = (value: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
       window.removeEventListener('bb-pin-authenticated', onPinAuthenticated);
-    };
-
-    const poll = async () => {
-      if (await checkAuth()) {
-        cleanup();
-        resolve(true);
-        return;
-      }
-
-      attempts += 1;
-      if (attempts >= SESSION_POLL_MAX_ATTEMPTS) {
-        cleanup();
-        resolve(false);
-        return;
-      }
-
-      pollTimer = setTimeout(() => {
-        void poll();
-      }, SESSION_POLL_MS);
+      resolve(value);
     };
 
     const onPinAuthenticated = () => {
-      void poll();
+      finish(true);
     };
 
+    const timeout = window.setTimeout(() => {
+      finish(false);
+    }, PIN_WAIT_MS);
+
     window.addEventListener('bb-pin-authenticated', onPinAuthenticated);
-    pollTimer = setTimeout(() => {
-      void poll();
-    }, SESSION_POLL_MS);
+
+    void checkAuth().then((ok) => {
+      if (ok || pinEventIsFresh()) finish(true);
+    });
   });
 }
 
-/** Client fallback when server auth or board is still pending; uses session cache for instant paint. */
+function applyMemberPanel(
+  boardDate: string,
+  panel: HomeMemberPanelSnapshot | undefined,
+  setMemberPanel: (panel: HomeMemberPanelSnapshot) => void,
+): void {
+  if (!panel) return;
+  if (panel.dateIso !== boardDate) return;
+  writeCachedHomeMemberPanel(panel);
+  setMemberPanel(panel);
+}
+
+/** Client fallback when server auth or board is still pending; uses same-day cache for instant paint. */
 export function HomeClientEntry({ locale }: HomeClientEntryProps) {
   const boardFromCacheOnInitRef = useRef(false);
   const [board, setBoard] = useState<SecretaryBoard | null>(() => {
@@ -78,25 +97,31 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
     return cached;
   });
   const [memberPanel, setMemberPanel] = useState<HomeMemberPanelSnapshot | undefined>(
-    undefined,
+    () => {
+      const cachedBoard = readCachedSecretaryBoard(locale);
+      if (!cachedBoard) return undefined;
+      return readCachedHomeMemberPanel(cachedBoard.snapshot.dateIso) ?? undefined;
+    },
   );
   const [loadError, setLoadError] = useState<string | null>(null);
   const loadInFlightRef = useRef(false);
   const boardRef = useRef(board);
   boardRef.current = board;
 
-  const tryLoadBoard = useCallback(async () => {
+  const tryLoadBoard = useCallback(async (opts?: LoadBoardOptions) => {
     if (loadInFlightRef.current) return;
     loadInFlightRef.current = true;
     setLoadError(null);
 
     try {
-      const authed = await waitForPinReadAccess();
-      if (!authed) {
-        if (!boardRef.current) {
-          setLoadError('ไม่สามารถโหลดงานได้');
+      if (!opts?.skipPinWait) {
+        const authed = await waitForPinReadAccess();
+        if (!authed) {
+          if (!boardRef.current) {
+            setLoadError('ไม่สามารถโหลดงานได้');
+          }
+          return;
         }
-        return;
       }
 
       const [result, memberResult] = await Promise.all([
@@ -106,14 +131,38 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
       if (result.success && result.board) {
         writeCachedSecretaryBoard(result.board);
         setBoard(result.board);
+        const boardDate = result.board.snapshot.dateIso;
         if (memberResult.success && memberResult.panel) {
-          const boardDate = result.board.snapshot.dateIso;
           if (memberResult.panel.dateIso === boardDate) {
-            setMemberPanel(memberResult.panel);
+            applyMemberPanel(boardDate, memberResult.panel, setMemberPanel);
           } else {
             const aligned = await loadHomeMemberPanel({ dateIso: boardDate });
-            if (aligned.success && aligned.panel) setMemberPanel(aligned.panel);
+            if (aligned.success && aligned.panel) {
+              applyMemberPanel(boardDate, aligned.panel, setMemberPanel);
+            }
           }
+        } else {
+          const cachedPanel = readCachedHomeMemberPanel(boardDate);
+          if (cachedPanel) setMemberPanel(cachedPanel);
+        }
+        return;
+      }
+
+      if (isUnauthorizedBoardError(result.error) && opts?.skipPinWait) {
+        const authed = await waitForPinReadAccess();
+        if (!authed) return;
+        const [retryResult, retryMember] = await Promise.all([
+          loadSecretaryBoard({ locale }),
+          loadHomeMemberPanel(),
+        ]);
+        if (retryResult.success && retryResult.board) {
+          writeCachedSecretaryBoard(retryResult.board);
+          setBoard(retryResult.board);
+          applyMemberPanel(
+            retryResult.board.snapshot.dateIso,
+            retryMember.success ? retryMember.panel : undefined,
+            setMemberPanel,
+          );
         }
         return;
       }
@@ -147,7 +196,7 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState !== 'visible') return;
-      void tryLoadBoard();
+      void tryLoadBoard({ skipPinWait: Boolean(boardRef.current) });
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);

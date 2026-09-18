@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
+  readCachedHomeMemberPanel,
   readCachedSecretaryBoard,
+  writeCachedHomeMemberPanel,
   writeCachedSecretaryBoard,
 } from '@/lib/secretary/home-board-cache';
 import { buildMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
+import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryTask } from '@/lib/secretary/types';
 
@@ -33,9 +36,20 @@ function sampleTask(id: string): SecretaryTask {
   };
 }
 
+function samplePanel(dateIso: string): HomeMemberPanelSnapshot {
+  return {
+    dateIso,
+    profiles: [],
+    shifts: [],
+    tomorrowDateIso: dateIso,
+    tomorrowShifts: [],
+  };
+}
+
 describe('home board session cache', () => {
   beforeEach(() => {
     sessionStorage.clear();
+    localStorage.clear();
   });
 
   test('round-trips tasks for the current work date and locale', () => {
@@ -69,5 +83,26 @@ describe('home board session cache', () => {
     );
 
     expect(readCachedSecretaryBoard('th')).toBeNull();
+  });
+
+  test('survives a new session via localStorage and ignores yesterday', () => {
+    const dateIso = todayIsoBkk();
+    writeCachedSecretaryBoard({
+      snapshot: buildMinimalSecretaryBoardSnapshot(dateIso, 'th'),
+      tasks: [sampleTask('task-1')],
+    });
+    sessionStorage.clear();
+
+    expect(readCachedSecretaryBoard('th')?.tasks[0]?.id).toBe('task-1');
+  });
+
+  test('round-trips the same-day member panel', () => {
+    const dateIso = todayIsoBkk();
+    const panel = samplePanel(dateIso);
+    writeCachedHomeMemberPanel(panel);
+    sessionStorage.clear();
+
+    expect(readCachedHomeMemberPanel(dateIso)).toEqual(panel);
+    expect(readCachedHomeMemberPanel('2000-01-01')).toBeNull();
   });
 });

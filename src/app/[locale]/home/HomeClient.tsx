@@ -35,10 +35,11 @@ import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import {
   preloadSecretaryOverlayForTask,
   preloadSecretaryTaskOverlayShell,
+  shouldIdlePreloadSecretaryOverlays,
 } from '@/lib/secretary/preload-secretary-overlay';
 import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
 import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
-import { writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
+import { writeCachedHomeMemberPanel, writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/home-actions';
 import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
@@ -127,6 +128,12 @@ export default function HomeClient({
   }, [board]);
 
   useEffect(() => {
+    if (initialMemberPanel?.dateIso === workDateIso) {
+      writeCachedHomeMemberPanel(initialMemberPanel);
+    }
+  }, [initialMemberPanel, workDateIso]);
+
+  useEffect(() => {
     return scheduleIdleWork(() => requestHomeBoardFullSync(), { timeout: 1200 });
   }, []);
 
@@ -153,6 +160,7 @@ export default function HomeClient({
 
   useEffect(() => {
     if (consolidatedAllTasks.length === 0) return;
+    if (!shouldIdlePreloadSecretaryOverlays()) return;
 
     return scheduleIdleWork(() => {
       preloadSecretaryTaskOverlayShell();
