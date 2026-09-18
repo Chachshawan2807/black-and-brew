@@ -1,11 +1,7 @@
 import { format, parseISO } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
 import { createClient } from '@supabase/supabase-js';
-import {
-  fetchNextHoliday,
-  fetchTodayShifts,
-  type StaffShiftEntry,
-} from '@/lib/daily-report';
+import { fetchNextHoliday, fetchTodayShifts } from '@/lib/daily-report/queries';
+import type { StaffShiftEntry } from '@/lib/daily-report/types';
 import type {
   OperationalSnapshot,
   PendingBeanOrderInsight,
@@ -255,8 +251,4 @@ export async function compileOperationalSnapshot(
   };
 }
 
-/** Resolve Bangkok calendar date for the daily 07:00 ICT insight cron. */
-export function resolveInsightTargetDateIso(now: Date = new Date()): string {
-  const bkk = toZonedTime(now, 'Asia/Bangkok');
-  return format(bkk, 'yyyy-MM-dd');
-}
+export { resolveInsightTargetDateIso } from '@/lib/proactive-insights/resolve-insight-target-date';

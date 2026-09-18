@@ -4,7 +4,7 @@ import { sanitizeJsonValue } from '@/lib/data-change-log';
 import type { InventoryNotification, NotificationPriority } from '@/lib/notification-types';
 import type { Insight, InsightRuleId } from '@/lib/proactive-insights/types';
 import type { InsightTrigger } from '@/lib/proactive-insights/evaluate-and-dispatch';
-import { resolveInsightTargetDateIso } from '@/lib/proactive-insights/compile-operational-snapshot';
+import { resolveInsightTargetDateIso } from '@/lib/proactive-insights/resolve-insight-target-date';
 import {
   filterInsightForScheduleDisplay,
   parseMatchedRuleSnapshotsFromMetadata,

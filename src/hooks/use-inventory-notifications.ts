@@ -14,7 +14,7 @@ import { isEligibleInventoryNotification } from '@/lib/inventory-notification-fi
 import {
   formatDailyReportNotification,
   isEligibleDailyReportNotification,
-} from '@/lib/daily-report-notification';
+} from '@/lib/daily-report-notification-format';
 import {
   formatBeanOrderCreatedNotification,
   isEligibleBeanOrderCreatedNotification,

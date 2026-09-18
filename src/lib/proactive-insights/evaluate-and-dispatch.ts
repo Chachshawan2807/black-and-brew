@@ -1,7 +1,7 @@
 import { compileOperationalSnapshot } from '@/lib/proactive-insights/compile-operational-snapshot';
 import { buildDailyInsightDigest, evaluateInsightRules } from '@/lib/proactive-insights/rules';
 import type { Insight } from '@/lib/proactive-insights/types';
-import { resolveInsightTargetDateIso } from '@/lib/proactive-insights/compile-operational-snapshot';
+import { resolveInsightTargetDateIso } from '@/lib/proactive-insights/resolve-insight-target-date';
 import {
   isRealtimeInsightTrigger,
   shouldDispatchInsightNotification,

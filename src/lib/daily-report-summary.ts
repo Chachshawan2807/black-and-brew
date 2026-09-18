@@ -1,4 +1,4 @@
-import type { DailyReportData, StaffShiftEntry } from '@/lib/daily-report';
+import type { DailyReportData, StaffShiftEntry } from '@/lib/daily-report/types';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import { formatScheduleNotificationDateDisplay } from '@/lib/date-utils';
 
