@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { BB_DATA_CARD } from '@/lib/ui-outlined-tokens';
 import type { ClientShiftRow } from '@/lib/schedule/client-shift-queries';
+import { addCalendarDaysIsoBkk } from '@/lib/schedule/bkk-calendar-date';
 import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { SHIFT_TYPES_UPDATED_EVENT } from '@/lib/shift-type-config';
@@ -116,17 +117,50 @@ function ShiftStatusEmployeeCard({
   );
 }
 
-function ShiftStatusSectionHeader({ staffCount }: { staffCount: number }) {
+function ShiftStatusSectionHeader({
+  title,
+  staffCount,
+  className,
+}: {
+  title: string;
+  staffCount: number;
+  className?: string;
+}) {
   return (
     <HomeSectionHeader
       compact
-      className="mb-0 border-b border-border/50 pb-3"
+      className={cn('mb-0 border-b border-border/50 pb-3', className)}
       icon={
         <CalendarClock className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} aria-hidden />
       }
-      title="สมาชิกวันนี้"
+      title={title}
       meta={<HomeSectionBadge className="normal-case tracking-normal">{staffCount} คน</HomeSectionBadge>}
     />
+  );
+}
+
+function ShiftStatusMemberGrid({
+  rows,
+  now,
+}: {
+  rows: HomeShiftStatusRow[];
+  now: Date;
+}) {
+  if (rows.length === 0) {
+    return <p className="mt-3 px-1 text-sm text-muted-foreground">ไม่มีกะในวันนี้</p>;
+  }
+
+  return (
+    <ul className="mt-3 flex flex-wrap gap-2">
+      {rows.map((row) => {
+        const countdown = resolveTimedShiftCountdownView(row, now);
+        return (
+          <li key={row.profileId}>
+            <ShiftStatusEmployeeCard row={row} countdown={countdown} />
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -136,15 +170,20 @@ export default function HomeShiftStatusSection({
   showWhenEmpty = false,
 }: HomeShiftStatusSectionProps) {
   const seedPanel = panelMatchesDate(initialPanel, dateIso) ? initialPanel : undefined;
+  const tomorrowDateIso = useMemo(() => addCalendarDaysIsoBkk(dateIso, 1), [dateIso]);
   const [profiles, setProfiles] = useState<HomeShiftProfile[]>(() => seedPanel?.profiles ?? []);
   const [shifts, setShifts] = useState<ClientShiftRow[]>(() => seedPanel?.shifts ?? []);
+  const [tomorrowShifts, setTomorrowShifts] = useState<ClientShiftRow[]>(
+    () => seedPanel?.tomorrowShifts ?? [],
+  );
   const [loaded, setLoaded] = useState(() => Boolean(seedPanel));
   const profileDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshPanels = useCallback(async () => {
     try {
-      const [shiftRows, profileResult] = await Promise.all([
+      const [shiftRows, tomorrowShiftRows, profileResult] = await Promise.all([
         fetchShiftsForDateIsoFromClient(dateIso),
+        fetchShiftsForDateIsoFromClient(tomorrowDateIso),
         supabase
           .from('profiles')
           .select('id, full_name, schedule_order')
@@ -152,6 +191,7 @@ export default function HomeShiftStatusSection({
       ]);
 
       if (shiftRows !== null) setShifts(shiftRows);
+      if (tomorrowShiftRows !== null) setTomorrowShifts(tomorrowShiftRows);
       if (profileResult.data) setProfiles(profileResult.data as HomeShiftProfile[]);
     } catch (error) {
       if (error && typeof error === 'object' && 'message' in error) {
@@ -167,7 +207,7 @@ export default function HomeShiftStatusSection({
     } finally {
       setLoaded(true);
     }
-  }, [dateIso]);
+  }, [dateIso, tomorrowDateIso]);
 
   const { scheduleRefresh, runRefresh } = useDebouncedShiftRefresh({
     onRefresh: refreshPanels,
@@ -195,6 +235,7 @@ export default function HomeShiftStatusSection({
     if (panelMatchesDate(initialPanel, dateIso)) {
       setProfiles(initialPanel.profiles);
       setShifts(initialPanel.shifts);
+      setTomorrowShifts(initialPanel.tomorrowShifts);
       setLoaded(true);
       return;
     }
@@ -228,45 +269,64 @@ export default function HomeShiftStatusSection({
     };
   }, []);
 
-  const rows = useMemo(
+  const todayRows = useMemo(
     () => buildHomeShiftStatusRows(profiles, shifts, dateIso),
     [profiles, shifts, dateIso],
   );
+  const tomorrowRows = useMemo(
+    () => buildHomeShiftStatusRows(profiles, tomorrowShifts, tomorrowDateIso),
+    [profiles, tomorrowDateIso, tomorrowShifts],
+  );
 
-  const hasTimedShift = rows.some((row) => row.isTimedShift);
+  const hasTimedShift =
+    todayRows.some((row) => row.isTimedShift) || tomorrowRows.some((row) => row.isTimedShift);
   const now = useNowTick(hasTimedShift);
 
-  if (loaded && rows.length === 0) {
+  const hasAnyMembers = todayRows.length > 0 || tomorrowRows.length > 0;
+
+  if (loaded && !hasAnyMembers) {
     if (!showWhenEmpty) return null;
     return (
       <section
-        aria-label="สมาชิกวันนี้"
-        className={cn(BB_DATA_CARD, 'hidden min-w-0 space-y-3 p-3 sm:p-4 md:block')}
+        aria-label="สมาชิกวันนี้และพรุ่งนี้"
+        className={cn(BB_DATA_CARD, 'hidden min-w-0 space-y-5 p-3 sm:p-4 md:block')}
       >
-        <ShiftStatusSectionHeader staffCount={0} />
-        <p className="mt-3 px-1 text-sm text-muted-foreground">ไม่มีกะในวันนี้</p>
+        <div>
+          <ShiftStatusSectionHeader title="สมาชิกวันนี้" staffCount={0} />
+          <p className="mt-3 px-1 text-sm text-muted-foreground">ไม่มีกะในวันนี้</p>
+        </div>
+        <div>
+          <ShiftStatusSectionHeader title="สมาชิกพรุ่งนี้" staffCount={0} />
+          <p className="mt-3 px-1 text-sm text-muted-foreground">ไม่มีกะในวันพรุ่งนี้</p>
+        </div>
       </section>
     );
   }
 
   return (
-    <section aria-label="สมาชิกวันนี้" className={cn(BB_DATA_CARD, 'min-w-0 p-3 sm:p-4')}>
-      <ShiftStatusSectionHeader staffCount={rows.length} />
+    <section
+      aria-label="สมาชิกวันนี้และพรุ่งนี้"
+      className={cn(BB_DATA_CARD, 'min-w-0 space-y-5 p-3 sm:p-4')}
+    >
+      <div>
+        <ShiftStatusSectionHeader title="สมาชิกวันนี้" staffCount={todayRows.length} />
+        {!loaded ? (
+          <p className="mt-3 px-1 text-sm text-muted-foreground">กำลังโหลดสมาชิกวันนี้...</p>
+        ) : (
+          <ShiftStatusMemberGrid rows={todayRows} now={now} />
+        )}
+      </div>
 
-      {!loaded ? (
-        <p className="mt-3 px-1 text-sm text-muted-foreground">กำลังโหลดสมาชิกวันนี้...</p>
-      ) : (
-        <ul className="mt-3 flex flex-wrap gap-2">
-          {rows.map((row) => {
-            const countdown = resolveTimedShiftCountdownView(row, now);
-            return (
-              <li key={row.profileId}>
-                <ShiftStatusEmployeeCard row={row} countdown={countdown} />
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {loaded ? (
+        <div>
+          <ShiftStatusSectionHeader title="สมาชิกพรุ่งนี้" staffCount={tomorrowRows.length} />
+          {tomorrowRows.length === 0 ? (
+            <p className="mt-3 px-1 text-sm text-muted-foreground">ไม่มีกะในวันพรุ่งนี้</p>
+          ) : (
+            <ShiftStatusMemberGrid rows={tomorrowRows} now={now} />
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

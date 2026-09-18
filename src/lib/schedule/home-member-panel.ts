@@ -10,6 +10,8 @@ export type HomeMemberPanelSnapshot = {
   dateIso: string;
   profiles: HomeShiftProfile[];
   shifts: ClientShiftRow[];
+  tomorrowDateIso: string;
+  tomorrowShifts: ClientShiftRow[];
   leaveRows?: HomeOffOrLeaveRow[];
   dutySummary?: HomeDutySummary;
 };
