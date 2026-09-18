@@ -8,6 +8,10 @@ import {
   normalizeClientShiftRow,
   type ClientShiftRow,
 } from '@/lib/schedule/client-shift-queries';
+import {
+  buildHomeDutySummary,
+  buildHomeLeaveRows,
+} from '@/lib/schedule/home-day-roster';
 import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
 import type { HomeShiftProfile } from '@/lib/schedule/home-shift-status';
 
@@ -55,11 +59,16 @@ export async function fetchHomeMemberPanelFromServer(
     throw shiftsRes.error;
   }
 
+  const profiles = (profilesRes.data ?? []) as HomeShiftProfile[];
+  const shifts = (shiftsRes.data ?? []).map((row) =>
+    normalizeClientShiftRow(row as ClientShiftRow),
+  );
+
   return {
     dateIso,
-    profiles: (profilesRes.data ?? []) as HomeShiftProfile[],
-    shifts: (shiftsRes.data ?? []).map((row) =>
-      normalizeClientShiftRow(row as ClientShiftRow),
-    ),
+    profiles,
+    shifts,
+    leaveRows: buildHomeLeaveRows(profiles, shifts, dateIso),
+    dutySummary: buildHomeDutySummary(profiles, shifts, dateIso),
   };
 }
