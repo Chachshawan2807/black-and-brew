@@ -20,13 +20,24 @@ import {
 import { cn } from '@/lib/utils';
 import { BB_DATA_CARD } from '@/lib/ui-outlined-tokens';
 import type { ClientShiftRow } from '@/lib/schedule/client-shift-queries';
+import type { HomeMemberPanelSnapshot } from '@/lib/schedule/load-home-member-panel-server';
+import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { SHIFT_TYPES_UPDATED_EVENT } from '@/lib/shift-type-config';
 
 type HomeShiftStatusSectionProps = {
   dateIso: string;
+  /** SSR or entry-path snapshot; skips loading shell when date matches */
+  initialPanel?: HomeMemberPanelSnapshot;
   /** Keep right column on desktop when sidebar is collapsed and there are no shifts */
   showWhenEmpty?: boolean;
 };
+
+function panelMatchesDate(
+  panel: HomeMemberPanelSnapshot | undefined,
+  dateIso: string,
+): panel is HomeMemberPanelSnapshot {
+  return panel?.dateIso === dateIso;
+}
 
 function useNowTick(enabled: boolean): Date {
   const [now, setNow] = useState(() => new Date());
@@ -121,11 +132,13 @@ function ShiftStatusSectionHeader({ staffCount }: { staffCount: number }) {
 
 export default function HomeShiftStatusSection({
   dateIso,
+  initialPanel,
   showWhenEmpty = false,
 }: HomeShiftStatusSectionProps) {
-  const [profiles, setProfiles] = useState<HomeShiftProfile[]>([]);
-  const [shifts, setShifts] = useState<ClientShiftRow[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const seedPanel = panelMatchesDate(initialPanel, dateIso) ? initialPanel : undefined;
+  const [profiles, setProfiles] = useState<HomeShiftProfile[]>(() => seedPanel?.profiles ?? []);
+  const [shifts, setShifts] = useState<ClientShiftRow[]>(() => seedPanel?.shifts ?? []);
+  const [loaded, setLoaded] = useState(() => Boolean(seedPanel));
   const profileDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshPanels = useCallback(async () => {
@@ -179,8 +192,21 @@ export default function HomeShiftStatusSection({
   });
 
   useEffect(() => {
+    if (panelMatchesDate(initialPanel, dateIso)) {
+      setProfiles(initialPanel.profiles);
+      setShifts(initialPanel.shifts);
+      setLoaded(true);
+    } else if (dateIso !== initialPanel?.dateIso) {
+      setLoaded(false);
+    }
+  }, [initialPanel, dateIso]);
+
+  useEffect(() => {
+    if (panelMatchesDate(initialPanel, dateIso)) {
+      return scheduleIdleWork(() => runRefresh({ force: true }), { timeout: 2000 });
+    }
     runRefresh({ force: true });
-  }, [runRefresh, dateIso]);
+  }, [runRefresh, dateIso, initialPanel]);
 
   useEffect(() => {
     const onVisible = () => {

@@ -31,9 +31,18 @@ describe('home secretary board load', () => {
     const source = readFileSync(homePagePath, 'utf-8');
     expect(source).toContain('HomeClientEntry');
     expect(source).toContain('loadSecretaryBoard');
+    expect(source).toContain('loadHomeMemberPanel');
     expect(source).toContain('checkAuth');
     expect(source).toMatch(/const boardPromise = loadSecretaryBoard/);
+    expect(source).toMatch(/const memberPanelPromise = loadHomeMemberPanel/);
     expect(source).toMatch(/const authed = await checkAuth\(\)/);
+    expect(source).toMatch(/Promise\.all\(\[\s*boardPromise,\s*memberPanelPromise/);
+  });
+
+  test('HomeClient imports next/dynamic when lazy-loading overlays', () => {
+    const source = readFileSync(homeClientPath, 'utf-8');
+    expect(source).toMatch(/import dynamic from ['"]next\/dynamic['"]/);
+    expect(source).toContain('dynamic(');
   });
 
   test('HomeClient triggers background board sync after SSR hydrate', () => {
@@ -46,11 +55,12 @@ describe('home secretary board load', () => {
     );
   });
 
-  test('client entry polls checkAuth once then loads board', () => {
+  test('client entry polls checkAuth once then loads board and member panel', () => {
     const source = readFileSync(homeEntryPath, 'utf-8');
     expect(source).toContain('waitForPinReadAccess');
+    expect(source).toContain('loadHomeMemberPanel');
     expect(source).toMatch(
-      /const authed = await waitForPinReadAccess\(\)[\s\S]*const result = await loadSecretaryBoard/,
+      /const authed = await waitForPinReadAccess\(\)[\s\S]*Promise\.all\(\[[\s\S]*loadSecretaryBoard[\s\S]*loadHomeMemberPanel/,
     );
     expect(source).not.toMatch(
       /for\s*\([^)]*attempt[^)]*\)[\s\S]*loadSecretaryBoard/,

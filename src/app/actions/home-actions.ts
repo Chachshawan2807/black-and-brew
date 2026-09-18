@@ -27,6 +27,12 @@ import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { buildMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
+import {
+  fetchHomeMemberPanelFromServer,
+  type HomeMemberPanelSnapshot,
+} from '@/lib/schedule/load-home-member-panel-server';
+
+export type { HomeMemberPanelSnapshot };
 
 const TASK_SELECT =
   'id, task_type, title, description, priority, status, module, due_at, scheduled_date, assignee_profile_id, source_kind, source_ref, source_ref_hash, action_href, metadata, completed_at, completed_by, snoozed_until, active_session_started_at, created_at, updated_at';
@@ -574,6 +580,27 @@ export type SecretaryBoard = {
   snapshot: SecretarySnapshot;
   tasks: SecretaryTask[];
 };
+
+export async function loadHomeMemberPanel(opts?: {
+  dateIso?: string;
+}): Promise<{
+  success: boolean;
+  panel?: HomeMemberPanelSnapshot;
+  error?: string;
+}> {
+  const authError = await requireReadAccess();
+  if (authError) return { success: false, error: authError };
+
+  const dateIso = opts?.dateIso ?? todayIsoBkk();
+
+  try {
+    const panel = await fetchHomeMemberPanelFromServer(dateIso);
+    return { success: true, panel };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
+  }
+}
 
 export async function loadSecretaryBoard(opts?: {
   dateIso?: string;

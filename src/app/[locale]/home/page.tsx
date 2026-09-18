@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { checkAuth } from '@/app/actions/auth';
-import { loadSecretaryBoard } from '@/app/actions/home-actions';
+import { loadHomeMemberPanel, loadSecretaryBoard } from '@/app/actions/home-actions';
+import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import { HomeClientEntry } from './_components/HomeClientEntry';
 import { HomePageLoadingSkeleton } from './_components/HomePageLoadingSkeleton';
 import HomeClient from './HomeClient';
@@ -11,13 +12,21 @@ function isHomeAuthPending(error?: string): boolean {
 }
 
 async function HomeBoard({ locale }: { locale: string }) {
+  const workDateIso = todayIsoBkk();
   const boardPromise = loadSecretaryBoard({ locale });
+  const memberPanelPromise = loadHomeMemberPanel({ dateIso: workDateIso });
   const authed = await checkAuth();
   if (!authed) {
     return <HomeClientEntry locale={locale} />;
   }
 
-  const boardResult = await boardPromise;
+  const [boardResult, memberPanelResult] = await Promise.all([
+    boardPromise,
+    memberPanelPromise,
+  ]);
+
+  let initialMemberPanel = memberPanelResult.success ? memberPanelResult.panel : undefined;
+
   if (!boardResult.success || !boardResult.board) {
     if (isHomeAuthPending(boardResult.error)) {
       return <HomeClientEntry locale={locale} />;
@@ -29,8 +38,27 @@ async function HomeBoard({ locale }: { locale: string }) {
     );
   }
 
+  const boardDateIso = boardResult.board.snapshot.dateIso;
+  if (
+    initialMemberPanel &&
+    boardDateIso &&
+    initialMemberPanel.dateIso !== boardDateIso
+  ) {
+    const aligned = await loadHomeMemberPanel({ dateIso: boardDateIso });
+    if (aligned.success && aligned.panel) {
+      initialMemberPanel = aligned.panel;
+    } else {
+      initialMemberPanel = undefined;
+    }
+  }
+
   return (
-    <HomeClient initialBoard={boardResult.board} locale={locale} boardLoadSource="ssr" />
+    <HomeClient
+      initialBoard={boardResult.board}
+      initialMemberPanel={initialMemberPanel}
+      locale={locale}
+      boardLoadSource="ssr"
+    />
   );
 }
 

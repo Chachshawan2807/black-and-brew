@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { checkAuth } from '@/app/actions/auth';
-import { loadSecretaryBoard, type SecretaryBoard } from '@/app/actions/home-actions';
+import {
+  loadHomeMemberPanel,
+  loadSecretaryBoard,
+  type HomeMemberPanelSnapshot,
+  type SecretaryBoard,
+} from '@/app/actions/home-actions';
 import {
   homePerfStartSession,
   registerHomeBoardPerfDevTools,
@@ -76,6 +81,9 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
     boardFromCacheOnInitRef.current = cached !== null;
     return cached;
   });
+  const [memberPanel, setMemberPanel] = useState<HomeMemberPanelSnapshot | undefined>(
+    undefined,
+  );
   const [loadError, setLoadError] = useState<string | null>(null);
   const loadInFlightRef = useRef(false);
   const boardRef = useRef(board);
@@ -95,10 +103,22 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
         return;
       }
 
-      const result = await loadSecretaryBoard({ locale });
+      const [result, memberResult] = await Promise.all([
+        loadSecretaryBoard({ locale }),
+        loadHomeMemberPanel(),
+      ]);
       if (result.success && result.board) {
         writeCachedSecretaryBoard(result.board);
         setBoard(result.board);
+        if (memberResult.success && memberResult.panel) {
+          const boardDate = result.board.snapshot.dateIso;
+          if (memberResult.panel.dateIso === boardDate) {
+            setMemberPanel(memberResult.panel);
+          } else {
+            const aligned = await loadHomeMemberPanel({ dateIso: boardDate });
+            if (aligned.success && aligned.panel) setMemberPanel(aligned.panel);
+          }
+        }
         return;
       }
 
@@ -141,6 +161,7 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
     return (
       <HomeClient
         initialBoard={board}
+        initialMemberPanel={memberPanel}
         locale={locale}
         boardLoadSource={boardFromCacheOnInitRef.current ? 'session-cache' : 'client-fetch'}
       />

@@ -44,7 +44,8 @@ import {
 import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
 import { writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
-import type { SecretaryBoard } from '@/app/actions/home-actions';
+import type { HomeMemberPanelSnapshot, SecretaryBoard } from '@/app/actions/home-actions';
+import HomeShiftStatusSection from './_components/HomeShiftStatusSection';
 import type { HomeBoardLoadSource } from '@/lib/perf/home-board-perf';
 import {
   homePerfOnBoardVisible,
@@ -62,13 +63,9 @@ const SecretaryManualTaskDialog = dynamic(
   () => import('./_components/SecretaryManualTaskDialog'),
   { ssr: false },
 );
-const HomeShiftStatusSection = dynamic(
-  () => import('./_components/HomeShiftStatusSection'),
-  { ssr: false },
-);
-
 type HomeClientProps = {
   initialBoard: SecretaryBoard;
+  initialMemberPanel?: HomeMemberPanelSnapshot;
   locale: string;
   /** Where the first paint board came from (perf diagnostics only). */
   boardLoadSource?: HomeBoardLoadSource;
@@ -104,6 +101,7 @@ const MODULE_FILTER_TIPS: Record<SecretaryTask['module'], string> = {
 
 export default function HomeClient({
   initialBoard,
+  initialMemberPanel,
   locale,
   boardLoadSource = 'ssr',
 }: HomeClientProps) {
@@ -355,7 +353,13 @@ export default function HomeClient({
           </ul>
         </section>
 
-        <HomeShiftStatusSection dateIso={workDateIso} showWhenEmpty={desktopSplit} />
+        <HomeShiftStatusSection
+          dateIso={workDateIso}
+          initialPanel={
+            initialMemberPanel?.dateIso === workDateIso ? initialMemberPanel : undefined
+          }
+          showWhenEmpty={desktopSplit}
+        />
       </div>
 
       {overlayTask ? (

@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "6f23ea19cc1cd0136548ef2b82f6e05d58916338",
-    "indexed_at": "2026-09-18T08:03:52Z",
+    "commit": "338fd76f60dc9902104a98a3a604775c9b81592e",
+    "indexed_at": "2026-09-18T08:09:27Z",
     "project": "C-Projects-black-and-brew",
-    "nodes": 17667,
-    "edges": 43025,
-    "original_size": 43778048,
-    "compressed_size": 8767585,
+    "nodes": 17672,
+    "edges": 43065,
+    "original_size": 43843584,
+    "compressed_size": 8766102,
     "compression_level": 3
 }
