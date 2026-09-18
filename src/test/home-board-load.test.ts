@@ -34,9 +34,17 @@ describe('home secretary board load', () => {
     expect(source).toContain('loadHomeMemberPanel');
     expect(source).toContain('checkAuth');
     expect(source).toMatch(/const boardPromise = loadSecretaryBoard/);
-    expect(source).toMatch(/const memberPanelPromise = loadHomeMemberPanel/);
+    expect(source).toContain('loadHomeMemberPanel({ dateIso: workDateIso })');
     expect(source).toMatch(/const authed = await checkAuth\(\)/);
-    expect(source).toMatch(/Promise\.all\(\[\s*boardPromise,\s*memberPanelPromise/);
+    expect(source).toMatch(/todayIsoBkk\(\)[\s\S]*Promise\.all\(\[\s*boardPromise/);
+  });
+
+  test('client home code does not import panel types from server actions', () => {
+    const homeClient = readFileSync(homeClientPath, 'utf-8');
+    const homeEntry = readFileSync(homeEntryPath, 'utf-8');
+    expect(homeClient).not.toMatch(/HomeMemberPanelSnapshot[\s\S]*from ['"]@\/app\/actions\/home-actions['"]/);
+    expect(homeEntry).not.toMatch(/HomeMemberPanelSnapshot[\s\S]*from ['"]@\/app\/actions\/home-actions['"]/);
+    expect(homeClient).toContain('@/lib/schedule/home-member-panel');
   });
 
   test('HomeClient imports next/dynamic when lazy-loading overlays', () => {

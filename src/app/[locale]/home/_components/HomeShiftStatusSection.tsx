@@ -20,7 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { BB_DATA_CARD } from '@/lib/ui-outlined-tokens';
 import type { ClientShiftRow } from '@/lib/schedule/client-shift-queries';
-import type { HomeMemberPanelSnapshot } from '@/lib/schedule/load-home-member-panel-server';
+import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { SHIFT_TYPES_UPDATED_EVENT } from '@/lib/shift-type-config';
 
@@ -196,9 +196,9 @@ export default function HomeShiftStatusSection({
       setProfiles(initialPanel.profiles);
       setShifts(initialPanel.shifts);
       setLoaded(true);
-    } else if (dateIso !== initialPanel?.dateIso) {
-      setLoaded(false);
+      return;
     }
+    setLoaded(false);
   }, [initialPanel, dateIso]);
 
   useEffect(() => {

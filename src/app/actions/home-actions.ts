@@ -27,12 +27,8 @@ import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { buildMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
-import {
-  fetchHomeMemberPanelFromServer,
-  type HomeMemberPanelSnapshot,
-} from '@/lib/schedule/load-home-member-panel-server';
-
-export type { HomeMemberPanelSnapshot };
+import { fetchHomeMemberPanelFromServer } from '@/lib/schedule/load-home-member-panel-server';
+import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
 
 const TASK_SELECT =
   'id, task_type, title, description, priority, status, module, due_at, scheduled_date, assignee_profile_id, source_kind, source_ref, source_ref_hash, action_href, metadata, completed_at, completed_by, snoozed_until, active_session_started_at, created_at, updated_at';

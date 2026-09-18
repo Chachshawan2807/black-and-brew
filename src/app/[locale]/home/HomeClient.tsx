@@ -44,7 +44,8 @@ import {
 import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
 import { writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
-import type { HomeMemberPanelSnapshot, SecretaryBoard } from '@/app/actions/home-actions';
+import type { SecretaryBoard } from '@/app/actions/home-actions';
+import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
 import HomeShiftStatusSection from './_components/HomeShiftStatusSection';
 import type { HomeBoardLoadSource } from '@/lib/perf/home-board-perf';
 import {

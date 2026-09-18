@@ -2,12 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { checkAuth } from '@/app/actions/auth';
-import {
-  loadHomeMemberPanel,
-  loadSecretaryBoard,
-  type HomeMemberPanelSnapshot,
-  type SecretaryBoard,
-} from '@/app/actions/home-actions';
+import { loadHomeMemberPanel, loadSecretaryBoard, type SecretaryBoard } from '@/app/actions/home-actions';
+import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
 import {
   homePerfStartSession,
   registerHomeBoardPerfDevTools,

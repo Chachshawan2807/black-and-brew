@@ -12,17 +12,16 @@ function isHomeAuthPending(error?: string): boolean {
 }
 
 async function HomeBoard({ locale }: { locale: string }) {
-  const workDateIso = todayIsoBkk();
   const boardPromise = loadSecretaryBoard({ locale });
-  const memberPanelPromise = loadHomeMemberPanel({ dateIso: workDateIso });
   const authed = await checkAuth();
   if (!authed) {
     return <HomeClientEntry locale={locale} />;
   }
 
+  const workDateIso = todayIsoBkk();
   const [boardResult, memberPanelResult] = await Promise.all([
     boardPromise,
-    memberPanelPromise,
+    loadHomeMemberPanel({ dateIso: workDateIso }),
   ]);
 
   let initialMemberPanel = memberPanelResult.success ? memberPanelResult.panel : undefined;

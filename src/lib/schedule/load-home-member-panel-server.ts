@@ -8,13 +8,10 @@ import {
   normalizeClientShiftRow,
   type ClientShiftRow,
 } from '@/lib/schedule/client-shift-queries';
+import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
 import type { HomeShiftProfile } from '@/lib/schedule/home-shift-status';
 
-export type HomeMemberPanelSnapshot = {
-  dateIso: string;
-  profiles: HomeShiftProfile[];
-  shifts: ClientShiftRow[];
-};
+export type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
 
 export async function fetchHomeMemberPanelFromServer(
   dateIso: string,
