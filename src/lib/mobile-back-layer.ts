@@ -3,7 +3,8 @@ export const MOBILE_BACK_STATE_KEY = 'bbMobileBack';
 export type MobileBackLayerId =
   | 'mobile-nav-drawer'
   | 'notification-panel'
-  | 'quick-action-overlay';
+  | 'quick-action-overlay'
+  | 'schedule-overlay';
 
 export type MobileBackHistoryState = {
   [MOBILE_BACK_STATE_KEY]: MobileBackLayerId;
@@ -19,7 +20,8 @@ export function readMobileBackLayerId(state: unknown): MobileBackLayerId | null 
   if (
     layerId === 'mobile-nav-drawer' ||
     layerId === 'notification-panel' ||
-    layerId === 'quick-action-overlay'
+    layerId === 'quick-action-overlay' ||
+    layerId === 'schedule-overlay'
   ) {
     return layerId;
   }

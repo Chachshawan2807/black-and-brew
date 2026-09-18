@@ -100,6 +100,7 @@ describe('PWA sidebar navigation reliability', () => {
     const drawer = readFile('components/sidebar/MobileNavDrawer.tsx');
     const panel = readFile('components/notifications/NotificationPanel.tsx');
     const quickFab = readFile('app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx');
+    const schedule = readFile('app/[locale]/schedule/ScheduleClient.tsx');
 
     expect(hook).toContain('history.pushState');
     expect(hook).toContain('popstate');
@@ -109,5 +110,7 @@ describe('PWA sidebar navigation reliability', () => {
     expect(panel).toContain("'notification-panel'");
     expect(quickFab).toContain('useMobileBackLayer');
     expect(quickFab).toContain("'quick-action-overlay'");
+    expect(schedule).toContain('useMobileBackLayer');
+    expect(schedule).toContain("'schedule-overlay'");
   });
 });
