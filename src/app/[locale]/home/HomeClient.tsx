@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { ClipboardList, Plus } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -24,11 +25,10 @@ import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay'
 import { createManualSecretaryTask } from '@/app/actions/home-actions';
 import { resolveSecretaryCardTitleFontClass, splitSecretaryCardTitle } from '@/lib/secretary/format-card-title';
 import {
-  countConsolidatedSecretaryBoardTasks,
-  countConsolidatedSecretaryBoardTasksByModule,
-  filterConsolidatedSecretaryBoardTasks,
+  consolidateSecretaryBoardTasks,
   type SecretaryBoardDisplayTask,
 } from '@/lib/secretary/consolidate-board-tasks';
+import { filterVisibleSecretaryBoardTasks } from '@/lib/secretary/visible-board-tasks';
 import {
   publishHomeSidebarPendingCount,
   requestHomeBoardFullSync,
@@ -51,8 +51,15 @@ import {
   registerHomeBoardPerfDevTools,
 } from '@/lib/perf/home-board-perf';
 import type { SecretaryTask } from '@/lib/secretary/types';
-import SecretaryTaskOverlay from './_components/SecretaryTaskOverlay';
-import SecretaryManualTaskDialog from './_components/SecretaryManualTaskDialog';
+
+const SecretaryTaskOverlay = dynamic(
+  () => import('./_components/SecretaryTaskOverlay'),
+  { ssr: false },
+);
+const SecretaryManualTaskDialog = dynamic(
+  () => import('./_components/SecretaryManualTaskDialog'),
+  { ssr: false },
+);
 
 type HomeClientProps = {
   initialBoard: SecretaryBoard;
@@ -145,7 +152,7 @@ export default function HomeClient({
   }, [board]);
 
   useEffect(() => {
-    requestHomeBoardFullSync();
+    return scheduleIdleWork(() => requestHomeBoardFullSync(), { timeout: 1200 });
   }, []);
 
   useEffect(() => {
@@ -159,12 +166,28 @@ export default function HomeClient({
     });
   }, [boardLoadSource, initialBoard.tasks.length]);
 
-  const visibility = { workDateIso };
+  const visibility = useMemo(() => ({ workDateIso }), [workDateIso]);
 
-  const visibleTasks = useMemo(
-    () => filterConsolidatedSecretaryBoardTasks(board.tasks, moduleFilter, visibility),
-    [board.tasks, moduleFilter, workDateIso],
+  const consolidatedAllTasks = useMemo(
+    () =>
+      consolidateSecretaryBoardTasks(
+        filterVisibleSecretaryBoardTasks(board.tasks, 'all', visibility),
+      ),
+    [board.tasks, visibility],
   );
+
+  const visibleTasks = useMemo(() => {
+    if (moduleFilter === 'all') return consolidatedAllTasks;
+    return consolidatedAllTasks.filter((task) => task.module === moduleFilter);
+  }, [consolidatedAllTasks, moduleFilter]);
+
+  const moduleFilterCounts = useMemo(() => {
+    const counts = new Map<SecretaryTask['module'], number>();
+    for (const task of consolidatedAllTasks) {
+      counts.set(task.module, (counts.get(task.module) ?? 0) + 1);
+    }
+    return counts;
+  }, [consolidatedAllTasks]);
 
   useEffect(() => {
     if (visibleTasks.length === 0) return;
@@ -177,10 +200,7 @@ export default function HomeClient({
     }, { timeout: 3000 });
   }, [visibleTasks]);
 
-  const visibleTaskCount = useMemo(
-    () => countConsolidatedSecretaryBoardTasks(board.tasks, 'all', visibility),
-    [board.tasks, workDateIso],
-  );
+  const visibleTaskCount = consolidatedAllTasks.length;
 
   const workDateLabel = useMemo(
     () => formatSecretaryWorkDateLabel(workDateIso),
@@ -252,9 +272,7 @@ export default function HomeClient({
           tip="แสดงงานทุกโมดูล"
         />
         {(Object.keys(MODULE_LABELS) as SecretaryTask['module'][]).map((module) => {
-          const count = countConsolidatedSecretaryBoardTasksByModule(board.tasks, module, {
-            workDateIso,
-          });
+          const count = moduleFilterCounts.get(module) ?? 0;
           if (count === 0) return null;
           return (
             <FilterChip
@@ -269,22 +287,24 @@ export default function HomeClient({
         </div>
       </div>
 
-      <SecretaryManualTaskDialog
-        open={showCreateDialog}
-        mode="create"
-        title={newTitle}
-        description={newDescription}
-        isPending={isPending}
-        onTitleChange={setNewTitle}
-        onDescriptionChange={setNewDescription}
-        onClose={() => {
-          if (isPending) return;
-          setShowCreateDialog(false);
-          setNewTitle('');
-          setNewDescription('');
-        }}
-        onSave={handleAddTask}
-      />
+      {showCreateDialog ? (
+        <SecretaryManualTaskDialog
+          open
+          mode="create"
+          title={newTitle}
+          description={newDescription}
+          isPending={isPending}
+          onTitleChange={setNewTitle}
+          onDescriptionChange={setNewDescription}
+          onClose={() => {
+            if (isPending) return;
+            setShowCreateDialog(false);
+            setNewTitle('');
+            setNewDescription('');
+          }}
+          onSave={handleAddTask}
+        />
+      ) : null}
 
       <section aria-label="รายการงาน" className={cn(BB_DATA_CARD, 'p-3 sm:p-4')}>
       <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2.5">
@@ -310,15 +330,17 @@ export default function HomeClient({
       </ul>
       </section>
 
-      <SecretaryTaskOverlay
-        task={overlayTask}
-        snapshot={board.snapshot}
-        locale={locale}
-        onClose={() => setOverlayTask(null)}
-        onTaskUpdated={handleTaskUpdated}
-        onTaskDeleted={handleTaskDeleted}
-        isPending={isPending}
-      />
+      {overlayTask ? (
+        <SecretaryTaskOverlay
+          task={overlayTask}
+          snapshot={board.snapshot}
+          locale={locale}
+          onClose={() => setOverlayTask(null)}
+          onTaskUpdated={handleTaskUpdated}
+          onTaskDeleted={handleTaskDeleted}
+          isPending={isPending}
+        />
+      ) : null}
     </div>
   );
 }

@@ -41,8 +41,8 @@ describe('home secretary board load', () => {
     expect(source).toContain('skipInitialFullSync: true');
     expect(source).toContain('requestHomeBoardFullSync');
     expect(source).toContain('writeCachedSecretaryBoard');
-    expect(source).not.toMatch(
-      /scheduleIdleWork\(\(\)\s*=>\s*\{\s*requestHomeBoardFullSync\(\);/,
+    expect(source).toMatch(
+      /scheduleIdleWork\(\(\)\s*=>\s*requestHomeBoardFullSync\(\)/,
     );
   });
 

@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { SESSION_FP_COOKIE } from '@/lib/auth-constants';
@@ -25,7 +26,7 @@ function clearPinAuthCookies(cookieStore: Awaited<ReturnType<typeof cookies>>): 
  *
  * Returns `readOnly` so privileged endpoints can deny read-only PIN sessions.
  */
-export async function ensureServerSession(): Promise<ServerAuthResult> {
+export const ensureServerSession = cache(async (): Promise<ServerAuthResult> => {
   const cookieStore = await cookies();
   const token = cookieStore.get('sb-access-token')?.value;
   const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
@@ -57,7 +58,7 @@ export async function ensureServerSession(): Promise<ServerAuthResult> {
   }
 
   return { ok: true, userId: user.id, readOnly };
-}
+});
 
 /** Require SUPABASE_SERVICE_ROLE_KEY never fall back to anon key. */
 export function requireServiceRoleKey(): string {
