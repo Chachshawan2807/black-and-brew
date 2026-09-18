@@ -4,7 +4,7 @@ import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 
 /** Detail body for secretary task overlays. Snapshot is accepted for call-site compatibility. */
 export function resolveSecretaryTaskDetailText(
-  task: SecretaryTask,
+  task: Pick<SecretaryTask, 'task_type' | 'description' | 'source_ref'>,
   _snapshot?: Pick<SecretarySnapshot, 'operational' | 'itemsToOrder'>,
 ): string | null {
   const filtered = filterScheduleTaskDescription(

@@ -7,11 +7,6 @@ import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';
 import {
   BB_BTN_MOTION,
-  BB_CHIP_IDLE,
-  BB_CHIP_SELECTED,
-  BB_COUNT_BADGE_ACTIVE,
-  BB_COUNT_BADGE_BASE,
-  BB_COUNT_BADGE_IDLE,
   BB_DATA_CARD,
   BB_FOCUS_RING,
 } from '@/lib/ui-outlined-tokens';
@@ -73,34 +68,6 @@ type HomeClientProps = {
   boardLoadSource?: HomeBoardLoadSource;
 };
 
-type ModuleFilter = 'all' | SecretaryTask['module'];
-
-const MODULE_LABELS: Record<SecretaryTask['module'], string> = {
-  schedule: 'ตารางงาน',
-  dashboard: 'แดชบอร์ด',
-  inventory: 'คลัง',
-  inventory_count: 'ตรวจนับ',
-  inventory_accuracy: 'ความแม่นยำ',
-  branch_withdraw: 'เบิกสาขา 2',
-  bean_orders: 'ออเดอร์เมล็ดกาแฟ',
-  maintenance: 'ซ่อมบำรุง',
-  branch2: 'สาขา 2',
-  custom: 'งานเอง',
-};
-
-const MODULE_FILTER_TIPS: Record<SecretaryTask['module'], string> = {
-  schedule: 'งานจากตารางกะและการจัดคน',
-  dashboard: 'งานจากแดชบอร์ดภาพรวม',
-  inventory: 'งานสั่งซื้อและคลังสินค้า',
-  inventory_count: 'งานตรวจนับสต็อก',
-  inventory_accuracy: 'งานตรวจความแม่นยำสต็อก',
-  branch_withdraw: 'งานเบิกของไปสาขา 2',
-  bean_orders: 'งานออเดอร์เมล็ดกาแฟ',
-  maintenance: 'งานซ่อมบำรุงอุปกรณ์',
-  branch2: 'งานวันไปสาขา 2',
-  custom: 'งานที่เพิ่มเอง',
-};
-
 export default function HomeClient({
   initialBoard,
   initialMemberPanel,
@@ -109,7 +76,6 @@ export default function HomeClient({
 }: HomeClientProps) {
   const [board, setBoard] = useState(initialBoard);
   const [workDateIso, setWorkDateIso] = useState(() => initialBoard.snapshot.dateIso || todayIsoBkk());
-  const [moduleFilter, setModuleFilter] = useState<ModuleFilter>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
@@ -185,29 +151,16 @@ export default function HomeClient({
     [board.tasks, visibility],
   );
 
-  const visibleTasks = useMemo(() => {
-    if (moduleFilter === 'all') return consolidatedAllTasks;
-    return consolidatedAllTasks.filter((task) => task.module === moduleFilter);
-  }, [consolidatedAllTasks, moduleFilter]);
-
-  const moduleFilterCounts = useMemo(() => {
-    const counts = new Map<SecretaryTask['module'], number>();
-    for (const task of consolidatedAllTasks) {
-      counts.set(task.module, (counts.get(task.module) ?? 0) + 1);
-    }
-    return counts;
-  }, [consolidatedAllTasks]);
-
   useEffect(() => {
-    if (visibleTasks.length === 0) return;
+    if (consolidatedAllTasks.length === 0) return;
 
     return scheduleIdleWork(() => {
       preloadSecretaryTaskOverlayShell();
-      for (const task of visibleTasks.slice(0, 6)) {
+      for (const task of consolidatedAllTasks.slice(0, 6)) {
         preloadSecretaryOverlayForTask(task);
       }
     }, { timeout: 3000 });
-  }, [visibleTasks]);
+  }, [consolidatedAllTasks]);
 
   const workDateLabel = useMemo(
     () => formatSecretaryWorkDateLabel(workDateIso),
@@ -333,19 +286,6 @@ export default function HomeClient({
                 เพิ่มงาน
               </button>
             </HintTooltip>
-            {(Object.keys(MODULE_LABELS) as SecretaryTask['module'][]).map((module) => {
-              const count = moduleFilterCounts.get(module) ?? 0;
-              if (count === 0) return null;
-              return (
-                <FilterChip
-                  key={module}
-                  active={moduleFilter === module}
-                  onClick={() => setModuleFilter(module)}
-                  label={`${MODULE_LABELS[module]} (${count})`}
-                  tip={MODULE_FILTER_TIPS[module]}
-                />
-              );
-            })}
           </div>
 
           <ul
@@ -354,17 +294,17 @@ export default function HomeClient({
               desktopSplit && 'md:grid-cols-3',
             )}
           >
-            {visibleTasks.length === 0 ? (
+            {consolidatedAllTasks.length === 0 ? (
               <li className="col-span-full list-none">
                 <HomePanelEmptyState
                   compact
                   icon={<ClipboardList size={22} strokeWidth={1.5} />}
-                  title="ไม่มีงานในตัวกรองนี้"
-                  subtitle="ลองเลือกตัวกรองอื่น หรือเพิ่มงานด้วยตนเอง"
+                  title="ไม่มีงานวันนี้"
+                  subtitle="เพิ่มงานด้วยตนเองได้จากปุ่มด้านบน"
                 />
               </li>
             ) : (
-              visibleTasks.map((task) => (
+              consolidatedAllTasks.map((task) => (
                 <TaskCard
                   key={task.id}
                   task={task}
@@ -486,51 +426,5 @@ function TaskCard({
         </div>
       </HintTooltip>
     </li>
-  );
-}
-
-function parseFilterChipLabel(label: string): { text: string; count: string | null } {
-  const match = label.match(/^(.+)\s\((\d+)\)$/);
-  if (!match) return { text: label, count: null };
-  return { text: match[1]!.trim(), count: match[2]! };
-}
-
-function FilterChip({
-  active,
-  onClick,
-  label,
-  tip,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  tip: string;
-}) {
-  const { text, count } = parseFilterChipLabel(label);
-
-  return (
-    <HintTooltip tip={tip}>
-      <button
-        type="button"
-        onClick={onClick}
-        className={cn(
-          'inline-flex shrink-0 items-center justify-center gap-1.5 min-h-10 rounded-2xl border px-3 py-2 text-[13px] font-normal bb-transition touch-manipulation',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-          active ? BB_CHIP_SELECTED : BB_CHIP_IDLE,
-        )}
-      >
-        <span className="whitespace-nowrap">{text}</span>
-        {count ? (
-          <span
-            className={cn(
-              BB_COUNT_BADGE_BASE,
-              active ? BB_COUNT_BADGE_ACTIVE : BB_COUNT_BADGE_IDLE,
-            )}
-          >
-            {count}
-          </span>
-        ) : null}
-      </button>
-    </HintTooltip>
   );
 }

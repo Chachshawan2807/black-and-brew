@@ -45,6 +45,7 @@ describe('secretary mobile task overlays', () => {
     expect(code).toContain('SECRETARY_MODAL_LAYOUT_CLASS');
     expect(code).toContain('SECRETARY_MODAL_OVERLAY_CLASS');
     expect(code).toContain('overflow-y-auto overscroll-contain bb-smooth-scroll');
+    expect(code).toContain('titleOnlyHeader');
     expect(code).not.toContain('items-end');
   });
 
@@ -55,6 +56,37 @@ describe('secretary mobile task overlays', () => {
     );
     expect(code).toContain('SecretaryTaskPanelShell');
     expect(code).not.toContain('items-end');
+  });
+
+  test('text-only task info overlay renders a detail table', () => {
+    const code = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/home/_components/SecretaryTaskInfoOverlay.tsx'),
+      'utf-8',
+    );
+    expect(code).toContain('SecretaryTaskDetailTable');
+    expect(code).not.toContain('SecretaryTaskDetailRow');
+  });
+
+  test('schedule list overlay uses home-board card grid only for schedule review', () => {
+    const listOverlay = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/home/_components/SecretaryTaskListOverlay.tsx'),
+      'utf-8',
+    );
+    const taskOverlay = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/home/_components/SecretaryTaskOverlay.tsx'),
+      'utf-8',
+    );
+    expect(listOverlay).toContain("layout = 'rows'");
+    expect(listOverlay).toContain('SecretaryTaskDetailRow');
+    expect(listOverlay).toContain('SecretaryTaskDetailCard');
+    expect(taskOverlay).toMatch(
+      /overlayKind === 'schedule_review_list'[\s\S]*layout="board-cards"/,
+    );
+    const maintenanceBlock = taskOverlay.slice(
+      taskOverlay.indexOf("overlayKind === 'maintenance_list'"),
+      taskOverlay.indexOf("overlayKind === 'schedule_review_list'"),
+    );
+    expect(maintenanceBlock).not.toContain('layout="board-cards"');
   });
 
   test('purchase orders modal from inventory uses scrollable centered shell', () => {

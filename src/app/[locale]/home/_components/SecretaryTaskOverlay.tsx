@@ -17,7 +17,7 @@ import { buildBeanOrderListItems, resolveBeanOrderListEmptyMessage } from '@/lib
 import { buildScheduleReviewListItems } from '@/lib/secretary/build-schedule-review-list-items';
 import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import { preloadSecretaryOverlayForTask } from '@/lib/secretary/preload-secretary-overlay';
-import { resolveSecretaryTaskDetailText } from '@/lib/secretary/resolve-task-detail-text';
+import { buildTaskInfoListItems } from '@/lib/secretary/build-task-info-list-items';
 import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
 import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
@@ -126,6 +126,12 @@ export default function SecretaryTaskOverlay({
     [overlayKind, snapshot, task],
   );
 
+  const taskInfoListItems = useMemo(
+    () =>
+      task && overlayKind === 'task_info' ? buildTaskInfoListItems(task, snapshot) : [],
+    [overlayKind, snapshot, task],
+  );
+
   useEffect(() => {
     if (overlayKind && task) {
       preloadSecretaryOverlayForTask(task);
@@ -135,7 +141,6 @@ export default function SecretaryTaskOverlay({
   if (!task || !overlayKind || overlayKind === 'branch_withdraw_panel') return null;
 
   const pending = isPending || parentPending;
-  const taskDetailText = resolveSecretaryTaskDetailText(task, snapshot);
 
   const handleSaveManualTask = () => {
     const title = editTitle.trim();
@@ -254,6 +259,8 @@ export default function SecretaryTaskOverlay({
           items={scheduleReviewListItems}
           emptyMessage="ไม่มีรายละเอียดวันที่ต้องตรวจ"
           onClose={onClose}
+          layout="board-cards"
+          module="schedule"
         />
       </Suspense>
     );
@@ -288,10 +295,6 @@ export default function SecretaryTaskOverlay({
     );
   }
 
-  const infoItems = taskDetailText
-    ? [{ id: 'description', primary: taskDetailText }]
-    : [];
-
   return (
     <Suspense
       fallback={
@@ -306,7 +309,7 @@ export default function SecretaryTaskOverlay({
     >
       <SecretaryTaskInfoOverlay
         title={task.title}
-        items={infoItems}
+        items={taskInfoListItems}
         onClose={onClose}
       />
     </Suspense>

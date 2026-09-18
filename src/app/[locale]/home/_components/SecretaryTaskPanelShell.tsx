@@ -28,6 +28,8 @@ type SecretaryTaskPanelShellProps = {
   footer?: ReactNode;
   /** When false, body does not scroll (child manages scroll). Default true. */
   bodyScroll?: boolean;
+  /** Shrink panel width to header/body content (short schedule card grids). */
+  fitContent?: boolean;
   children: ReactNode;
 };
 
@@ -43,10 +45,12 @@ export default function SecretaryTaskPanelShell({
   zIndex = 220,
   footer,
   bodyScroll = true,
+  fitContent = false,
   children,
 }: SecretaryTaskPanelShellProps) {
   const showTitle = Boolean(title.trim());
   const hasVisibleHeader = showTitle || Boolean(subtitle);
+  const titleOnlyHeader = showTitle && !subtitle;
 
   useEffect(() => {
     if (!open) return;
@@ -67,16 +71,22 @@ export default function SecretaryTaskPanelShell({
         overlayClassName={cn(SECRETARY_MODAL_OVERLAY_CLASS, INVENTORY_MODAL_Z_CLASS)}
         layoutClassName={SECRETARY_MODAL_LAYOUT_CLASS}
         panelClassName={cn(
-          'flex w-full min-h-0 flex-col overflow-hidden',
+          'flex min-h-0 flex-col overflow-hidden',
+          fitContent ? 'w-fit min-w-[min(100%,18rem)] max-w-[calc(100vw-2rem)]' : 'w-full',
           SECRETARY_PANEL_MAX_HEIGHT,
-          maxWidthClass,
+          !fitContent && maxWidthClass,
         )}
         aria-label={ariaLabel ?? title}
       >
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
           {hasVisibleHeader ? (
-            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3.5">
-              <div className="min-w-0 flex-1 pt-0.5">
+            <div
+              className={cn(
+                'flex shrink-0 justify-between gap-3 border-b border-border px-4 py-3.5',
+                titleOnlyHeader ? 'items-center' : 'items-start',
+              )}
+            >
+              <div className="min-w-0 flex-1">
                 {showTitle ? (
                   <h2 className="truncate text-base font-normal tracking-tight text-foreground">
                     {title}
@@ -136,7 +146,7 @@ export default function SecretaryTaskPanelShell({
   );
 }
 
-/** Card-style detail row for read-only secretary list/info overlays. */
+/** Card-style detail row for read-only secretary list overlays. */
 export function SecretaryTaskDetailRow({ item }: { item: SecretaryAttentionListItem }) {
   return (
     <>
@@ -145,5 +155,44 @@ export function SecretaryTaskDetailRow({ item }: { item: SecretaryAttentionListI
         <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{item.secondary}</p>
       ) : null}
     </>
+  );
+}
+
+/** Compact table for read-only text-only secretary task info overlays. */
+export function SecretaryTaskDetailTable({ items }: { items: SecretaryAttentionListItem[] }) {
+  const hasSecondary = items.some((item) => Boolean(item.secondary?.trim()));
+
+  return (
+    <div className="overflow-x-auto pb-1">
+      <table className="w-full min-w-0 border-collapse text-[13px]">
+        {hasSecondary ? (
+          <thead>
+            <tr className="border-b border-border text-muted-foreground">
+              <th scope="col" className="px-3 py-2 text-left font-normal">รายการ</th>
+              <th scope="col" className="px-3 py-2 text-left font-normal">รายละเอียด</th>
+            </tr>
+          </thead>
+        ) : null}
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id} className="border-b border-border last:border-b-0">
+              <td
+                className={cn(
+                  'px-3 py-2.5 align-top text-foreground',
+                  !hasSecondary && 'text-[14px] leading-snug',
+                )}
+              >
+                {item.primary}
+              </td>
+              {hasSecondary ? (
+                <td className="px-3 py-2.5 align-top text-muted-foreground">
+                  {item.secondary ?? ''}
+                </td>
+              ) : null}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
