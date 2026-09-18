@@ -44,6 +44,23 @@ interface MenuProps {
   isOpen: boolean | undefined;
 }
 
+function menuItemBadgeClass(isOpen: boolean | undefined) {
+  return cn(
+    'inline-flex min-w-[1.25rem] items-center justify-center rounded-full border border-foreground/80 bg-card px-1.5 py-0.5 text-[10px] tabular-nums text-foreground shrink-0',
+    isOpen !== false && 'ml-auto',
+  );
+}
+
+function collapsedMenuButtonClass(isOpen: boolean | undefined, hasBadge: boolean) {
+  if (isOpen !== false) {
+    return 'flex-1 w-full justify-start';
+  }
+  if (hasBadge) {
+    return 'mx-auto flex-none w-auto min-w-0 max-w-full justify-center gap-0.5 px-1.5';
+  }
+  return 'mx-auto flex-none w-10 justify-center';
+}
+
 // ─── Static menu item (used as DragOverlay ghost + non-admin fallback) ───────
 
 function StaticMenuItem({
@@ -58,6 +75,7 @@ function StaticMenuItem({
   isOverlay?: boolean;
 }) {
   const { href, label, icon: Icon, active, submenus } = menu;
+  const hasBadge = (menu.badgeCount ?? 0) > 0;
 
   if (submenus.length > 0) {
     return (
@@ -82,21 +100,21 @@ function StaticMenuItem({
             <Button
               variant={active ? 'secondary' : 'ghost'}
               className={cn(
-                'h-10 font-normal antialiased flex-1',
-                isOpen === false ? 'w-10 mx-auto justify-center' : 'w-full justify-start'
+                'h-10 font-normal antialiased',
+                collapsedMenuButtonClass(isOpen, hasBadge),
               )}
               asChild
             >
               <NavPreloadLink href={href} onClick={onLinkClick}>
-                <span className={cn("text-foreground", isOpen === false ? '' : 'mr-4')}>
+                <span className={cn('text-foreground shrink-0', isOpen === false ? '' : 'mr-4')}>
                   <Icon size={18} strokeWidth={1.75} />
                 </span>
                 <p className={sidebarLabelClass(isOpen, 'text-foreground')}>
                   {label}
                 </p>
-                {menu.badgeCount ? (
-                  <span className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full border border-foreground/80 bg-card px-1.5 py-0.5 text-[10px] tabular-nums text-foreground">
-                    {menu.badgeCount > 99 ? '99+' : menu.badgeCount}
+                {hasBadge ? (
+                  <span className={menuItemBadgeClass(isOpen)}>
+                    {menu.badgeCount! > 99 ? '99+' : menu.badgeCount}
                   </span>
                 ) : null}
               </NavPreloadLink>
@@ -180,9 +198,9 @@ function SortableMenuItem({
                 <p className={sidebarLabelClass(isOpen, 'max-w-[170px] text-foreground')}>
                   {label}
                 </p>
-                {menu.badgeCount ? (
-                  <span className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full border border-foreground/80 bg-card px-1.5 py-0.5 text-[10px] tabular-nums text-foreground">
-                    {menu.badgeCount > 99 ? '99+' : menu.badgeCount}
+                {(menu.badgeCount ?? 0) > 0 ? (
+                  <span className={menuItemBadgeClass(isOpen)}>
+                    {menu.badgeCount! > 99 ? '99+' : menu.badgeCount}
                   </span>
                 ) : null}
               </NavPreloadLink>
