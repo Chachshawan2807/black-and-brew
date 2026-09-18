@@ -13,6 +13,8 @@ export const MOBILE_BACK_LAYER_IDS = [
   'branch-withdraw-overlay',
   'inventory-count-overlay',
   'bean-orders-overlay',
+  'bean-orders-slip-overlay',
+  'pwa-install-overlay',
 ] as const;
 
 export type MobileBackLayerId = (typeof MOBILE_BACK_LAYER_IDS)[number];

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useMobileBackLayer } from '@/hooks/use-mobile-back-layer';
 import { ZoomIn } from '@/lib/icons';
 import { getBeanOrderSlipSignedUrl } from '@/app/actions/bean-order-actions';
 import {
@@ -109,6 +110,8 @@ export function PaymentSlipViewer({
     setExpanded(false);
     setError(null);
   }
+
+  useMobileBackLayer('bean-orders-slip-overlay', expanded, handleClose);
 
   function formatUploadedAt(value: string): string {
     return new Date(value).toLocaleString('th-TH', {

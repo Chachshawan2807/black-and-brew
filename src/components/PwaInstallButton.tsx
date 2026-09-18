@@ -12,6 +12,7 @@ import {
   shouldShowPreparingState,
 } from '@/lib/pwa-install-flow';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
+import { useMobileBackLayer } from '@/hooks/use-mobile-back-layer';
 import type { PwaInstallMode } from '@/lib/pwa-install';
 import { cn } from '@/lib/utils';
 import { BB_BTN_CLOSE, BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
@@ -66,30 +67,40 @@ export function PwaInstallButton({
   const { visible, mode, promptInstall } = usePwaInstall();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPreparing, setIsPreparing] = useState(false);
+  const [iosGuideOpen, setIosGuideOpen] = useState(false);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     setPortalTarget(document.body);
   }, []);
 
+  const closeIosGuide = useCallback(() => {
+    dialogRef.current?.close();
+    setIosGuideOpen(false);
+  }, []);
+
   const openIosGuide = useCallback(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (!dialog.open) dialog.showModal();
-  }, []);
-
-  const closeIosGuide = useCallback(() => {
-    dialogRef.current?.close();
+    setIosGuideOpen(true);
   }, []);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
 
+    const onClose = () => setIosGuideOpen(false);
     const onCancel = () => dialog.close();
+    dialog.addEventListener('close', onClose);
     dialog.addEventListener('cancel', onCancel);
-    return () => dialog.removeEventListener('cancel', onCancel);
+    return () => {
+      dialog.removeEventListener('close', onClose);
+      dialog.removeEventListener('cancel', onCancel);
+    };
   }, []);
+
+  useMobileBackLayer('pwa-install-overlay', iosGuideOpen, closeIosGuide);
 
   if (!visible || (modeFilter != null && mode !== modeFilter)) return null;
 

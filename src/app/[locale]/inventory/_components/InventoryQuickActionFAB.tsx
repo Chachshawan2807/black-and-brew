@@ -206,15 +206,27 @@ export default function InventoryQuickActionFAB() {
   }, []);
 
   const dismissQuickOverlay = useCallback(() => {
+    if (quickAction.bulkConfirmOpen) {
+      quickAction.cancelBulkSubmit();
+      return;
+    }
     blurActiveElement();
     setIsOpen(false);
     setShowAddModal(false);
     setShowHistoryModal(false);
     setShowPurchaseOrderModal(false);
-  }, [setShowHistoryModal]);
+  }, [
+    quickAction.bulkConfirmOpen,
+    quickAction.cancelBulkSubmit,
+    setShowHistoryModal,
+  ]);
 
   const quickOverlayActive =
-    isPanelRendered || showAddModal || showHistoryModal || showPurchaseOrderModal;
+    isPanelRendered ||
+    showAddModal ||
+    showHistoryModal ||
+    showPurchaseOrderModal ||
+    quickAction.bulkConfirmOpen;
 
   useMobileBackLayer('quick-action-overlay', quickOverlayActive, dismissQuickOverlay);
   const hideQuickActionButton =

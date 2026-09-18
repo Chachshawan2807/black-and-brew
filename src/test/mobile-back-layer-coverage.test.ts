@@ -20,6 +20,8 @@ describe('mobile back overlay coverage', () => {
     expect(MOBILE_BACK_LAYER_IDS).toContain('branch-withdraw-overlay');
     expect(MOBILE_BACK_LAYER_IDS).toContain('inventory-count-overlay');
     expect(MOBILE_BACK_LAYER_IDS).toContain('bean-orders-overlay');
+    expect(MOBILE_BACK_LAYER_IDS).toContain('bean-orders-slip-overlay');
+    expect(MOBILE_BACK_LAYER_IDS).toContain('pwa-install-overlay');
   });
 
   test('feature clients wire useMobileBackOverlayStack', () => {
