@@ -62,9 +62,9 @@ import { generateText } from 'ai';
 const weightUnitSchema = z.enum(['g', 'kg']);
 const lineInputSchema = z.object({
   inventoryItemId: z.string().uuid(),
-  weightValue: z.number().min(0).optional().default(0),
+  weightValue: z.number().finite().min(0).max(Number.MAX_SAFE_INTEGER).optional().default(0),
   weightUnit: weightUnitSchema.optional().default('g'),
-  unitPricePerKg: z.number().min(0).optional().default(0),
+  unitPricePerKg: z.number().finite().min(0).max(Number.MAX_SAFE_INTEGER).optional().default(0),
 });
 
 const createOrderSchema = z.object({
@@ -77,8 +77,8 @@ const createOrderSchema = z.object({
   recipientAddress: z.string().optional().default(''),
   recipientProvince: z.string().optional(),
   recipientPostalCode: z.string().optional(),
-  discountBaht: z.number().min(0).default(0),
-  shippingBaht: z.number().min(0).default(0),
+  discountBaht: z.number().finite().min(0).max(Number.MAX_SAFE_INTEGER).default(0),
+  shippingBaht: z.number().finite().min(0).max(Number.MAX_SAFE_INTEGER).default(0),
   notes: z.string().optional(),
   lines: z.array(lineInputSchema).min(1, 'เลือกสินค้าอย่างน้อย 1 รายการ'),
 });

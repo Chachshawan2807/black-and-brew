@@ -33,7 +33,7 @@ import {
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { getClientSessionId } from '@/lib/client-session';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
-import { computePurchaseOrderDerivedState, filterInventoryItemsBySources, formatInventoryNumericDisplay, getInventoryGridSources, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
+import { computePurchaseOrderDerivedState, filterInventoryItemsBySources, formatInventoryNumericDisplay, getInventoryGridSources, getStockColorClass, inventoryIdsRemovedByUndoSync, mergeInventoryRealtimeUpdate, sanitizeStockValue } from '@/lib/inventory-stock';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { getInventoryItemDisplayOrder } from '@/lib/inventory-grid-search';
 import { applyWithdrawRequiredItemOrder } from '@/lib/inventory-withdraw-required-items';
@@ -1304,16 +1304,10 @@ export default function InventoryClient({
 
   function sanitizeInventoryItem(item: InventoryItem) {
     const sanitized = { ...item };
-    const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock', 'sort_order'];
+    const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock', 'sort_order'] as const;
 
     numericFields.forEach((field) => {
-      const key = field as keyof InventoryItem;
-      const val = sanitized[key];
-      if (val === '' || val === null || val === undefined || (typeof val !== 'number' && isNaN(Number(val)))) {
-        (sanitized as Record<string, number | string>)[key] = 0;
-      } else {
-        (sanitized as Record<string, number | string>)[key] = Number(val);
-      }
+      sanitized[field] = sanitizeStockValue(sanitized[field]);
     });
 
     // คง updated_at เดิมไว้ ไม่ลบทิ้ง เพื่อไม่ให้ Supabase reset เป็น NOW() (UTC)
@@ -1762,7 +1756,11 @@ export default function InventoryClient({
     }
   }
 
-  async function syncFullStateToDB(currentItems: InventoryItem[], currentCols: ColumnDef[]) {
+  async function syncFullStateToDB(
+    currentItems: InventoryItem[],
+    currentCols: ColumnDef[],
+    previousLocalIds: string[],
+  ) {
     if (blockIfReadOnly()) return;
     setSavingState('saving');
     setIsSyncing(true);
@@ -1800,17 +1798,14 @@ export default function InventoryClient({
         if (upsertErr) throw upsertErr;
       }
 
-      const { data: dbItems } = await supabase.from('inventory_items').select('id');
-      if (dbItems) {
-        const snapshotIds = sanitizedItems.map(i => i.id);
-        const toDelete = dbItems.filter(dbI => !snapshotIds.includes(dbI.id)).map(i => i.id);
-        if (toDelete.length > 0) {
-          const delResult = await deleteInventoryItemsBulk(toDelete, {
-            clientSessionId: getClientSessionId(),
-            suppressNotification: true,
-          });
-          if (!delResult.success) throw new Error(delResult.error);
-        }
+      const snapshotIds = sanitizedItems.map((item) => item.id);
+      const toDelete = inventoryIdsRemovedByUndoSync(previousLocalIds, snapshotIds);
+      if (toDelete.length > 0) {
+        const delResult = await deleteInventoryItemsBulk(toDelete, {
+          clientSessionId: getClientSessionId(),
+          suppressNotification: true,
+        });
+        if (!delResult.success) throw new Error(delResult.error);
       }
 
       const settings = {
@@ -1845,22 +1840,24 @@ export default function InventoryClient({
     if (blockIfReadOnly()) return;
     if (undoStack.length === 0 || isSyncing) return;
     const lastState = undoStack[undoStack.length - 1];
+    const previousLocalIds = itemsRef.current.map((item) => item.id);
     setUndoStack(prev => prev.slice(0, -1));
     setRedoStack(prev => [...prev, previousStateRef.current]);
     setItems(lastState.items);
     setColumns(lastState.cols);
-    await syncFullStateToDB(lastState.items, lastState.cols);
+    await syncFullStateToDB(lastState.items, lastState.cols, previousLocalIds);
   }
 
   async function handleRedo() {
     if (blockIfReadOnly()) return;
     if (redoStack.length === 0 || isSyncing) return;
     const nextState = redoStack[redoStack.length - 1];
+    const previousLocalIds = itemsRef.current.map((item) => item.id);
     setRedoStack(prev => prev.slice(0, -1));
     setUndoStack(prev => [...prev, previousStateRef.current]);
     setItems(nextState.items);
     setColumns(nextState.cols);
-    await syncFullStateToDB(nextState.items, nextState.cols);
+    await syncFullStateToDB(nextState.items, nextState.cols, previousLocalIds);
   }
 
   async function loadFrequentItems() {

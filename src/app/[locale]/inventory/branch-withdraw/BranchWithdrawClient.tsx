@@ -12,7 +12,7 @@ import {
 } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingIcon } from '@/components/ui/loading-icon';
-import { ChevronLeft, Copy, Eye, PackagePlus, Plus, Save, Search } from '@/lib/icons';
+import { ChevronLeft, Copy, Eye, ICON_STROKE, PackagePlus, Plus, Save, Search, Trash2 } from '@/lib/icons';
 import { CloseIcon } from '@/components/ui/close-icon';
 import {
   saveBranchWithdrawal,
@@ -135,6 +135,11 @@ const COPY_ICON_BUTTON_CLASS =
   'inline-flex min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center rounded-xl border border-border bg-background p-2 text-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 disabled:cursor-not-allowed disabled:opacity-50';
 const ITEM_ROW_BADGE_CLASS =
   'inline-flex rounded-md border border-border bg-background px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground md:text-xs';
+const MANUAL_ITEM_REMOVE_BUTTON_CLASS = cn(
+  'inline-flex touch-manipulation items-center justify-center rounded-md px-2 py-0.5',
+  INVENTORY_QUICK_ACTION_COLORS.out,
+  'hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15',
+);
 
 function WithdrawRowInputs({
   itemId,
@@ -257,11 +262,10 @@ const BranchWithdrawItemRow = memo(function BranchWithdrawItemRow({
               <button
                 type="button"
                 onClick={handleRemove}
-                className="inline-flex min-h-[32px] touch-manipulation items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 md:text-xs"
+                className={MANUAL_ITEM_REMOVE_BUTTON_CLASS}
                 aria-label={`ลบ ${item.name} ออกจากรายการ`}
               >
-                <CloseIcon size="xs" />
-                <span>ลบ</span>
+                <Trash2 className="h-4 w-4 shrink-0" strokeWidth={ICON_STROKE} aria-hidden />
               </button>
             ) : null}
           </div>

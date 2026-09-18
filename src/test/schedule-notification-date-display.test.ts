@@ -32,4 +32,9 @@ describe('formatScheduleNotificationDateDisplay', () => {
       else process.env.TZ = previousTz;
     }
   });
+
+  test('uses Bangkok calendar day for ISO timestamps after UTC midnight', () => {
+    expect(formatScheduleNotificationDateDisplay('2026-09-18T20:00:00.000Z')).toBe('19/09/2026 ส.');
+    expect(formatScheduleNotificationDateDisplay('2026-09-18')).toBe('18/09/2026 ศ.');
+  });
 });

@@ -10,6 +10,8 @@ export type InventoryStockFields = {
   source?: string;
   sort_order?: number;
   updated_at?: string;
+  /** Latest inventory_count_verifications.counted_at for this item (display only). */
+  last_counted_at?: string | null;
   [key: string]: unknown;
 };
 
@@ -24,7 +26,26 @@ export function mergeInventoryRealtimeUpdate<T extends InventoryStockFields>(
 export function sanitizeStockValue(value: unknown): number {
   if (value === '' || value === null || value === undefined) return 0;
   const num = Number(value);
-  return isNaN(num) ? 0 : num;
+  if (!Number.isFinite(num) || num < 0 || num > Number.MAX_SAFE_INTEGER) return 0;
+  return num;
+}
+
+/** Keep reorder upserts from inserting empty ghost rows for unknown ids. */
+export function filterReorderRowsToExistingIds<T extends { id: string }>(
+  rows: T[],
+  existingIds: Iterable<string>,
+): T[] {
+  const allowed = new Set(existingIds);
+  return rows.filter((row) => allowed.has(row.id));
+}
+
+/** Undo/redo may restore a local snapshot, but must not delete items added in other tabs. */
+export function inventoryIdsRemovedByUndoSync(
+  previousLocalIds: string[],
+  snapshotIds: string[],
+): string[] {
+  const keep = new Set(snapshotIds);
+  return previousLocalIds.filter((id) => !keep.has(id));
 }
 
 /** Inventory UI: always show numeric zero as "0" (never blank). */

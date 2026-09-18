@@ -7,9 +7,11 @@ import {
   formatInventoryNumericDisplay,
   mergeInventoryRealtimeUpdate,
   sanitizeStockValue,
+  filterReorderRowsToExistingIds,
+  inventoryIdsRemovedByUndoSync,
   BRANCH_WITHDRAW_ORDER_SOURCE,
 } from '@/lib/inventory-stock';
-import { parseLocalColumnWidths } from '@/app/[locale]/inventory/types';
+import { parseLocalColumnWidths, parseNumericFormValue } from '@/app/[locale]/inventory/types';
 
 describe('inventory stock sync utilities', () => {
   test('mergeInventoryRealtimeUpdate preserves fields when realtime payload is partial', () => {
@@ -115,6 +117,44 @@ describe('inventory stock sync utilities', () => {
     expect(sanitizeStockValue(null)).toBe(0);
     expect(sanitizeStockValue('12.5')).toBe(12.5);
     expect(sanitizeStockValue('abc')).toBe(0);
+  });
+
+  test('sanitizeStockValue rejects Infinity, negatives, and unsafe magnitudes', () => {
+    expect(sanitizeStockValue(Number.POSITIVE_INFINITY)).toBe(0);
+    expect(sanitizeStockValue(Number.NEGATIVE_INFINITY)).toBe(0);
+    expect(sanitizeStockValue(Number.NaN)).toBe(0);
+    expect(sanitizeStockValue(-3)).toBe(0);
+    expect(sanitizeStockValue('Infinity')).toBe(0);
+    expect(sanitizeStockValue('1e999')).toBe(0);
+    expect(sanitizeStockValue(Number.MAX_SAFE_INTEGER + 1)).toBe(0);
+  });
+
+  test('inventoryIdsRemovedByUndoSync only removes ids that this session just dropped', () => {
+    expect(
+      inventoryIdsRemovedByUndoSync(['keep-1', 'added-locally'], ['keep-1']),
+    ).toEqual(['added-locally']);
+    expect(
+      inventoryIdsRemovedByUndoSync(['keep-1'], ['keep-1']),
+    ).toEqual([]);
+  });
+
+  test('filterReorderRowsToExistingIds drops unknown item ids', () => {
+    expect(
+      filterReorderRowsToExistingIds(
+        [
+          { id: 'keep-1', sort_order: 1 },
+          { id: 'ghost-2', sort_order: 2 },
+        ],
+        ['keep-1'],
+      ),
+    ).toEqual([{ id: 'keep-1', sort_order: 1 }]);
+  });
+
+  test('parseNumericFormValue never serializes Infinity or NaN into stock writes', () => {
+    expect(parseNumericFormValue('Infinity')).toBe(0);
+    expect(parseNumericFormValue('abc')).toBe(0);
+    expect(parseNumericFormValue(-4)).toBe(0);
+    expect(parseNumericFormValue(8)).toBe(8);
   });
 
   test('formatInventoryNumericDisplay shows zero instead of blank', () => {

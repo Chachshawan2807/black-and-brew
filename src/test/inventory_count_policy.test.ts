@@ -77,7 +77,7 @@ describe('inventory count policy', () => {
 
   test('major overhaul migration resets accuracy history', () => {
     const sql = read(
-      'supabase/migrations/20260711164656_reset_accuracy_history_major_overhaul.sql',
+      'supabase/migrations/20260711164826_reset_accuracy_history_major_overhaul.sql',
     );
 
     expect(sql).toContain('DELETE FROM public.inventory_count_verifications');
@@ -103,10 +103,11 @@ describe('inventory count policy', () => {
   });
 
   test('high discrepancy items are ranked by top volume then sorted ascending', () => {
-    const actions = read('src/app/actions/inventory-actions.ts');
+    const report = read('src/lib/inventory-accuracy-report.ts');
 
-    expect(actions).toContain('return a.totalDiscrepancyQty - b.totalDiscrepancyQty');
-    expect(actions).toContain('.sort((a, b) => b.totalDiscrepancyQty - a.totalDiscrepancyQty)');
+    expect(report).toContain('export function sortHighDiscrepancyItems');
+    expect(report).toContain("sortBy === 'discrepancy'");
+    expect(report).toContain('compareNumbers');
   });
 
   test('accuracy report summary cards use inventory quick action pastel tones', () => {
@@ -119,13 +120,15 @@ describe('inventory count policy', () => {
   });
 
   test('high discrepancy list labels accuracy percentage and aligns metric columns', () => {
-    const accuracyPage = read('src/app/[locale]/inventory/accuracy/page.tsx');
+    const accuracyList = read(
+      'src/app/[locale]/inventory/accuracy/_components/HighDiscrepancyList.tsx',
+    );
 
-    expect(accuracyPage).toContain('รายการสินค้า');
-    expect(accuracyPage).toContain('คลาดเคลื่อน');
-    expect(accuracyPage).toContain('ความแม่นยำ');
-    expect(accuracyPage).toContain('md:grid-cols-[minmax(0,1fr)_6.5rem_5.5rem]');
-    expect(accuracyPage).not.toContain('md:justify-between');
+    expect(accuracyList).toContain('รายการสินค้า');
+    expect(accuracyList).toContain('คลาดเคลื่อน');
+    expect(accuracyList).toContain('ความแม่นยำ');
+    expect(accuracyList).toContain('md:grid-cols-[minmax(0,1fr)_6.5rem_5.5rem]');
+    expect(accuracyList).not.toContain('md:justify-between');
   });
 
   test('accuracy report shows dynamic gauge for withdraw-required accuracy', () => {

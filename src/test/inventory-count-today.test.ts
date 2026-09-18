@@ -1,12 +1,15 @@
 import { describe, expect, test } from 'vitest';
 import {
   applyItemTodayCount,
+  attachLatestInventoryCountTimes,
+  buildLatestCountedAtByItemId,
   buildTodayCountStatusFromLogs,
   buildTodayCountStatusFromVerifications,
   extractStockQtyFromCountLog,
   formatInventoryCountTime,
   getBangkokTodayUtcBounds,
   removeItemTodayCount,
+  shouldContinueLatestCountScan,
   type TodayCountSessionStatus,
 } from '@/lib/inventory-count-today';
 
@@ -21,6 +24,16 @@ describe('inventory count today status', () => {
         field_changes: [{ field: 'stock', old_value: 4, new_value: 7 }],
       }),
     ).toEqual({ countedQty: 7, systemStockQty: 4 });
+  });
+
+  test('extractStockQtyFromCountLog ignores non-finite stock values', () => {
+    expect(
+      extractStockQtyFromCountLog({
+        entity_id: 'item-1',
+        occurred_at: TODAY_ISO,
+        field_changes: [{ field: 'stock', old_value: 4, new_value: 'Infinity' }],
+      }),
+    ).toEqual({ countedQty: null, systemStockQty: 4 });
   });
 
   test('buildTodayCountStatusFromVerifications keeps latest row per item including matching stock', () => {
@@ -127,6 +140,90 @@ describe('inventory count today status', () => {
   test('formatInventoryCountTime renders Thai clock label', () => {
     expect(formatInventoryCountTime('2026-07-23T08:30:00.000Z')).toMatch(/น\.$/);
   });
+
+  test('buildLatestCountedAtByItemId keeps newest counted_at per item', () => {
+    expect(
+      buildLatestCountedAtByItemId([
+        { inventory_item_id: 'a', counted_at: '2026-09-18T00:10:00.000Z' },
+        { inventory_item_id: 'b', counted_at: '2026-09-18T00:05:00.000Z' },
+        { inventory_item_id: 'a', counted_at: '2026-09-14T00:00:00.000Z' },
+      ]),
+    ).toEqual({
+      a: '2026-09-18T00:10:00.000Z',
+      b: '2026-09-18T00:05:00.000Z',
+    });
+  });
+
+  test('attachLatestInventoryCountTimes merges last_counted_at onto inventory rows', () => {
+    const items = attachLatestInventoryCountTimes(
+      [{ id: 'a', name: 'Milk' }, { id: 'b', name: 'Sugar' }],
+      { a: '2026-09-18T00:10:00.000Z' },
+    );
+    expect(items[0].last_counted_at).toBe('2026-09-18T00:10:00.000Z');
+    expect(items[1].last_counted_at).toBeNull();
+  });
+
+  test('shouldContinueLatestCountScan pages until known items are filled or the last page', () => {
+    const seen = new Set(['a']);
+    expect(
+      shouldContinueLatestCountScan({
+        pageLength: 1000,
+        pageSize: 1000,
+        rowsScanned: 1000,
+        maxRows: 50000,
+        knownItemIds: ['a', 'b'],
+        seenItemIds: seen,
+      }),
+    ).toBe(true);
+    expect(
+      shouldContinueLatestCountScan({
+        pageLength: 1000,
+        pageSize: 1000,
+        rowsScanned: 2000,
+        maxRows: 50000,
+        knownItemIds: ['a', 'b'],
+        seenItemIds: new Set(['a', 'b']),
+      }),
+    ).toBe(false);
+    expect(
+      shouldContinueLatestCountScan({
+        pageLength: 12,
+        pageSize: 1000,
+        rowsScanned: 1012,
+        maxRows: 50000,
+        seenItemIds: seen,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('purchase order modal last count column', () => {
+  test('PurchaseOrdersModal loads counted_at from inventory_count_verifications', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const modal = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/PurchaseOrdersModal.tsx'),
+      'utf-8',
+    );
+
+    expect(modal).toContain('fetchLatestInventoryCountTimesClient');
+    expect(modal).toContain('ตรวจนับล่าสุด');
+    expect(modal).toContain('last_counted_at');
+    expect(modal).not.toMatch(/item\.updated_at[\s\S]*toLocaleString/);
+  });
+
+  test('latest count times paginate instead of silently dropping older items', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const client = fs.readFileSync(
+      path.resolve(__dirname, '../lib/inventory-latest-count-times-client.ts'),
+      'utf-8',
+    );
+
+    expect(client).toContain('shouldContinueLatestCountScan');
+    expect(client).toContain('.range(');
+    expect(client).not.toMatch(/\.limit\(INVENTORY_COUNT_VERIFICATION_SCAN_LIMIT\)/);
+  });
 });
 
 describe('fetchTodayInventoryCountStatus persistence source', () => {
@@ -166,6 +263,52 @@ describe('inventory count save verification persistence', () => {
 
     expect(criticalPath).toContain('inventory_count_verifications');
     expect(criticalPath).not.toMatch(/if\s*\(\s*countPolicy\s*===\s*'exact_count'\s*\)[\s\S]*inventory_count_verifications/);
+  });
+
+  test('count save updates stock before inserting a verification row', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const actionsCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/actions/inventory-actions.ts'),
+      'utf-8',
+    );
+
+    const fnStart = actionsCode.indexOf('export async function recordInventoryCountAndUpdateStock');
+    const fnEnd = actionsCode.indexOf('// === FETCH COUNT ACCURACY STATS ===', fnStart);
+    const fnBody = actionsCode.slice(fnStart, fnEnd === -1 ? undefined : fnEnd);
+    const afterIdx = fnBody.indexOf('after(async () => {');
+    const criticalPath = fnBody.slice(0, afterIdx);
+
+    expect(criticalPath).toMatch(
+      /set_inventory_stock[\s\S]*inventory_count_verifications[\s\S]*\.insert\(/,
+    );
+  });
+
+  test('count undo deletes the saved verification id instead of the latest row', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const actionsCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/actions/inventory-actions.ts'),
+      'utf-8',
+    );
+    const countPage = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/count/InventoryCountClient.tsx'),
+      'utf-8',
+    );
+
+    const fnStart = actionsCode.indexOf('export async function recordInventoryCountAndUpdateStock');
+    const fnEnd = actionsCode.indexOf('// === FETCH COUNT ACCURACY STATS ===', fnStart);
+    const fnBody = actionsCode.slice(fnStart, fnEnd === -1 ? undefined : fnEnd);
+    const afterIdx = fnBody.indexOf('after(async () => {');
+    const criticalPath = fnBody.slice(0, afterIdx);
+
+    expect(criticalPath).toContain('undoVerificationId');
+    expect(criticalPath).toMatch(/\.insert\([\s\S]*\.select\(['"]id['"]\)/);
+    expect(criticalPath).not.toMatch(
+      /inventory_count_verifications[\s\S]*\.order\(['"]counted_at['"][\s\S]*\.delete\(/,
+    );
+    expect(countPage).toContain('undoVerificationId');
+    expect(countPage).toContain('verificationId');
   });
 });
 

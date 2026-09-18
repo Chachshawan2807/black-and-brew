@@ -22,6 +22,7 @@ import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { recordItemAddHistory } from '@/app/actions/inventory-actions';
+import { sanitizeStockValue } from '@/lib/inventory-stock';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { cn } from '@/lib/utils';
@@ -71,10 +72,10 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
 
     const newItem: NewInventoryItemInput = {
       name: String(newItemData.name || ''),
-      stock: newItemData.stock === '' || newItemData.stock === undefined ? 0 : Number(newItemData.stock),
+      stock: sanitizeStockValue(newItemData.stock),
       order_qty: 0,
-      order_point: newItemData.order_point === '' || newItemData.order_point === undefined ? 0 : Number(newItemData.order_point),
-      target_stock: newItemData.target_stock === '' || newItemData.target_stock === undefined ? 0 : Number(newItemData.target_stock),
+      order_point: sanitizeStockValue(newItemData.order_point),
+      target_stock: sanitizeStockValue(newItemData.target_stock),
       unit: String(newItemData.unit || ''),
       source: String(newItemData.source || ''),
       sort_order: insertPos,

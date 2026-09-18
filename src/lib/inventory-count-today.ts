@@ -34,6 +34,59 @@ export type CountVerificationRow = {
   system_stock_qty: number;
 };
 
+/** Rows scanned when resolving latest count time per item (newest rows first). */
+export const INVENTORY_COUNT_VERIFICATION_SCAN_LIMIT = 5000;
+export const LATEST_COUNT_PAGE_SIZE = 1000;
+export const LATEST_COUNT_SCAN_MAX_ROWS = 50_000;
+
+export function shouldContinueLatestCountScan(params: {
+  pageLength: number;
+  pageSize: number;
+  rowsScanned: number;
+  maxRows: number;
+  knownItemIds?: string[];
+  seenItemIds: Iterable<string>;
+}): boolean {
+  if (params.pageLength <= 0) return false;
+  if (params.rowsScanned >= params.maxRows) return false;
+  if (params.pageLength < params.pageSize) return false;
+  if (params.knownItemIds && params.knownItemIds.length > 0) {
+    const seen = params.seenItemIds instanceof Set
+      ? params.seenItemIds
+      : new Set(params.seenItemIds);
+    return params.knownItemIds.some((id) => !seen.has(id));
+  }
+  return true;
+}
+
+export type LatestCountVerificationRow = Pick<
+  CountVerificationRow,
+  'inventory_item_id' | 'counted_at'
+>;
+
+/** First row per item_id when rows are ordered by counted_at descending. */
+export function buildLatestCountedAtByItemId(
+  rows: LatestCountVerificationRow[],
+): Record<string, string> {
+  const byItemId: Record<string, string> = {};
+  for (const row of rows) {
+    const itemId = row.inventory_item_id;
+    if (!itemId || byItemId[itemId]) continue;
+    byItemId[itemId] = row.counted_at;
+  }
+  return byItemId;
+}
+
+export function attachLatestInventoryCountTimes<T extends { id: string }>(
+  items: T[],
+  countedAtByItemId: Record<string, string>,
+): Array<T & { last_counted_at: string | null }> {
+  return items.map((item) => ({
+    ...item,
+    last_counted_at: countedAtByItemId[item.id] ?? null,
+  }));
+}
+
 export function getBangkokTodayUtcBounds(now = new Date()): { startUtc: string; endUtc: string } {
   const bkkNow = toZonedTime(now, THAI_TIMEZONE);
   return {
@@ -75,9 +128,9 @@ export function extractStockQtyFromCountLog(row: CountLogRow): {
       : Number(stockChange.old_value);
 
   return {
-    countedQty: countedQty === null || Number.isNaN(countedQty) ? null : countedQty,
+    countedQty: countedQty === null || !Number.isFinite(countedQty) ? null : countedQty,
     systemStockQty:
-      systemStockQty === null || Number.isNaN(systemStockQty) ? null : systemStockQty,
+      systemStockQty === null || !Number.isFinite(systemStockQty) ? null : systemStockQty,
   };
 }
 
@@ -97,12 +150,12 @@ export function buildTodayCountStatusFromVerifications(
 
     const countedQty = Number(row.counted_qty);
     const systemStockQty = Number(row.system_stock_qty);
-    if (Number.isNaN(countedQty)) continue;
+    if (!Number.isFinite(countedQty) || countedQty < 0) continue;
 
     perItem[itemId] = {
       countedAt: row.counted_at,
       countedQty,
-      systemStockQty: Number.isNaN(systemStockQty) ? null : systemStockQty,
+      systemStockQty: Number.isFinite(systemStockQty) ? systemStockQty : null,
     };
 
     if (!firstCountedAt || row.counted_at < firstCountedAt) {

@@ -20,4 +20,10 @@ describe('Date Compliance & Alignment Checks', () => {
     const d2 = '2026-05-19T00:00:00+00:00';
     expect(isSameThaiDay(d1, d2)).toBe(false);
   });
+
+  it('uses Bangkok calendar day for ISO timestamps after UTC midnight', () => {
+    const utcEvening = '2026-09-18T20:00:00.000Z';
+    expect(isSameThaiDay(utcEvening, '2026-09-19')).toBe(true);
+    expect(isSameThaiDay(utcEvening, '2026-09-18')).toBe(false);
+  });
 });

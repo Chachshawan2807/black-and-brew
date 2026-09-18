@@ -113,4 +113,30 @@ describe('POST /api/inventory/offline-mutation auth gate', () => {
     expect(body.retryable).toBe(false);
     expect(replayOfflineMutationMock).not.toHaveBeenCalled();
   });
+
+  test('rejects negative stock and non-uuid item ids', async () => {
+    requireMutationAccessMock.mockResolvedValue(null);
+
+    const negativeStock = await POST(
+      makeRequest({
+        id: '1',
+        createdAt: Date.now(),
+        kind: 'inventory_stock',
+        itemId: '550e8400-e29b-41d4-a716-446655440000',
+        stock: -5,
+        note: 'bad',
+        authSessionId: 'auth-a',
+      }),
+    );
+    const invalidId = await POST(
+      makeRequest({
+        ...fieldMutation,
+        itemId: 'not-a-uuid',
+      }),
+    );
+
+    expect(negativeStock.status).toBe(400);
+    expect(invalidId.status).toBe(400);
+    expect(replayOfflineMutationMock).not.toHaveBeenCalled();
+  });
 });

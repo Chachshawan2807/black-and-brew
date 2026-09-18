@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { fetchLatestInventoryCountTimesClient } from '@/lib/inventory-latest-count-times-client';
 import { preloadCaptureLibraries } from '@/lib/capture-element-png';
 import { motion } from 'framer-motion';
 import { CloseIcon } from '@/components/ui/close-icon';
@@ -71,6 +72,21 @@ export default function PurchaseOrdersModal({
   exportTableId = 'blackandbrew-po-table-export',
 }: PurchaseOrdersModalProps) {
   const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
+  const [lastCountedAtByItemId, setLastCountedAtByItemId] = useState<
+    Record<string, string>
+  >({});
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchLatestInventoryCountTimesClient().then((data) => {
+      if (cancelled || !data) return;
+      setLastCountedAtByItemId(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const viewportInsets = useVisualViewportInsets(!isExportMode);
   const modalBackdropStyle = getModalBackdropKeyboardAwareStyle({
     insets: viewportInsets,
@@ -275,11 +291,14 @@ export default function PurchaseOrdersModal({
                     isExportMode
                       ? "bg-slate-50/90 text-black/40"
                       : "sticky top-0 bg-card text-muted-foreground z-10",
-                  )}>อัปเดตล่าสุด</th>
+                  )}>ตรวจนับล่าสุด</th>
                 </tr>
               </thead>
               <tbody>
-                {itemsToShow.map((item, idx) => (
+                {itemsToShow.map((item, idx) => {
+                  const lastCountedAt =
+                    lastCountedAtByItemId[item.id] ?? item.last_counted_at;
+                  return (
                   <tr
                     key={item.id}
                     className={cn(
@@ -320,12 +339,17 @@ export default function PurchaseOrdersModal({
                       "py-2 sm:py-4 text-[12px] sm:text-[13px] text-center tabular-nums",
                       isExportMode ? "text-black/40" : "text-muted-foreground",
                     )}>
-                      {item.updated_at
-                        ? new Date(item.updated_at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Bangkok' })
+                      {lastCountedAt
+                        ? new Date(lastCountedAt).toLocaleString('th-TH', {
+                            dateStyle: 'short',
+                            timeStyle: 'short',
+                            timeZone: 'Asia/Bangkok',
+                          })
                         : '-'}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

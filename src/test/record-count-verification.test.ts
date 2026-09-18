@@ -49,6 +49,10 @@ vi.mock('@supabase/supabase-js', () => ({
   })),
 }));
 
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
+process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
+
 import { recordCountVerification } from '@/app/actions/inventory-actions';
 
 const ITEM_ID = '550e8400-e29b-41d4-a716-446655440000';

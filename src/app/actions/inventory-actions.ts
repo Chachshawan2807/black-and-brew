@@ -1,10 +1,11 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 import { after } from 'next/server';
 import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { filterReorderRowsToExistingIds, sanitizeStockValue } from '@/lib/inventory-stock';
 import { computeFieldChanges } from '@/lib/data-change-log';
 import {
   computeAggregateCountAccuracyPct,
@@ -15,6 +16,7 @@ import {
   buildTodayCountStatusFromLogs,
   buildTodayCountStatusFromVerifications,
   getBangkokTodayUtcBounds,
+  INVENTORY_COUNT_VERIFICATION_SCAN_LIMIT,
   mergeTodayCountStatuses,
   type TodayCountSessionStatus,
 } from '@/lib/inventory-count-today';
@@ -43,13 +45,12 @@ import {
   type InventoryTransactionFilterType,
 } from '@/lib/inventory-history-query';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-// ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAdminKey);
+function getDb() {
+  return getSupabaseAdmin();
+}
 
 async function fetchInventoryItemAuditMeta(itemId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await getDb()
     .from('inventory_items')
     .select('name, stock, order_point')
     .eq('id', itemId)
@@ -104,7 +105,7 @@ async function insertInventoryLifecycleTransaction(
   balanceAfter: number,
   note: string = ''
 ) {
-  const { error } = await supabase.from('inventory_transactions').insert({
+  const { error } = await getDb().from('inventory_transactions').insert({
     inventory_item_id: itemId,
     type,
     quantity,
@@ -133,7 +134,7 @@ export async function recordItemAddHistory(
     const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError };
 
-    const sanitizedStock = stock < 0 ? 0 : stock;
+    const sanitizedStock = sanitizeStockValue(stock);
     await insertInventoryLifecycleTransaction(
       itemId,
       'ADD',
@@ -190,10 +191,14 @@ function deferInventorySideEffects(label: string, work: () => Promise<void>) {
 }
 
 // === RECORD TRANSACTION (Atomic via RPC) ===
+const inventoryItemIdSchema = z.string().uuid();
+const finitePositiveQuantitySchema = z.number().finite().positive().max(Number.MAX_SAFE_INTEGER);
+const finiteNonNegativeStockSchema = z.number().finite().min(0).max(Number.MAX_SAFE_INTEGER);
+
 const transactionSchema = z.object({
-  productId: z.string().uuid().or(z.string()),
+  productId: inventoryItemIdSchema,
   type: z.enum(['IN', 'OUT']),
-  quantity: z.number().positive(),
+  quantity: finitePositiveQuantitySchema,
   note: z.string().optional()
 });
 
@@ -217,7 +222,7 @@ export async function recordTransaction(
       return { success: false, error: 'Quantity must be greater than 0' };
     }
 
-    const { data, error } = await supabase.rpc('record_inventory_transaction', {
+    const { data, error } = await getDb().rpc('record_inventory_transaction', {
       p_product_id: productId,
       p_type: type,
       p_quantity: quantity,
@@ -292,9 +297,9 @@ export async function recordTransaction(
 }
 
 const bulkTransactionEntrySchema = z.object({
-  itemId: z.string().uuid().or(z.string()),
+  itemId: inventoryItemIdSchema,
   type: z.enum(['IN', 'OUT']),
-  quantity: z.number().positive(),
+  quantity: finitePositiveQuantitySchema,
 });
 
 const bulkTransactionsSchema = z.object({
@@ -332,7 +337,7 @@ export async function recordBulkInventoryTransactions(
     const results: BulkInventoryTransactionResult[] = await Promise.all(
       parsed.data.entries.map(async (entry) => {
         try {
-          const { data, error } = await supabase.rpc('record_inventory_transaction', {
+          const { data, error } = await getDb().rpc('record_inventory_transaction', {
             p_product_id: entry.itemId,
             p_type: entry.type,
             p_quantity: entry.quantity,
@@ -440,8 +445,8 @@ export async function recordBulkInventoryTransactions(
 
 // === SET ABSOLUTE STOCK (Warehouse cell edit + Stock-taking) ===
 const stockUpdateSchema = z.object({
-  itemId: z.string().uuid(),
-  stock: z.number().min(0),
+  itemId: inventoryItemIdSchema,
+  stock: finiteNonNegativeStockSchema,
   note: z.string().optional(),
 });
 
@@ -469,7 +474,7 @@ export async function updateInventoryStock(
     let oldStock: number | null = null;
     const recordHistory = options?.recordHistory ?? true;
 
-    const { data, error } = await supabase.rpc('set_inventory_stock', {
+    const { data, error } = await getDb().rpc('set_inventory_stock', {
       p_item_id: itemId,
       p_new_stock: stock,
       p_note: note,
@@ -479,7 +484,7 @@ export async function updateInventoryStock(
     if (error) {
       const rpcMissing = error.message?.includes('set_inventory_stock') || error.code === '42883';
       if (rpcMissing) {
-        const { error: updateErr } = await supabase
+        const { error: updateErr } = await getDb()
           .from('inventory_items')
           .update({ stock, updated_at: new Date().toISOString() })
           .eq('id', itemId);
@@ -532,16 +537,14 @@ export async function updateInventoryStock(
 }
 
 const inventoryFieldUpdateSchema = z.object({
-  itemId: z.string().uuid(),
+  itemId: inventoryItemIdSchema,
   field: z.enum(['name', 'order_qty', 'order_point', 'target_stock', 'unit', 'source', 'count_policy']),
   value: z.union([z.string(), z.number()]),
 });
 
 function sanitizeInventoryFieldValue(field: z.infer<typeof inventoryFieldUpdateSchema>['field'], value: string | number) {
   if (['order_qty', 'order_point', 'target_stock'].includes(field)) {
-    const num = value === '' || value === null || value === undefined ? 0 : Number(value);
-    if (Number.isNaN(num)) return 0;
-    return num;
+    return sanitizeStockValue(value);
   }
 
   if (field === 'count_policy') {
@@ -569,7 +572,7 @@ export async function updateInventoryItemField(
     const sanitizedValue = sanitizeInventoryFieldValue(parsed.data.field, parsed.data.value);
     const previousFieldValue = auditOptions?.previousFieldValue ?? null;
 
-    const { data: updatedItem, error } = await supabase
+    const { data: updatedItem, error } = await getDb()
       .from('inventory_items')
       .update({ [parsed.data.field]: sanitizedValue, updated_at: new Date().toISOString() })
       .eq('id', itemId)
@@ -614,8 +617,8 @@ export async function updateInventoryItemField(
 
 const inventoryReorderSchema = z.array(
   z.object({
-    id: z.string().uuid(),
-    sort_order: z.number().int().positive(),
+    id: inventoryItemIdSchema,
+    sort_order: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
   }),
 ).min(1);
 
@@ -632,9 +635,27 @@ export async function reorderInventoryItems(
       return { success: false, error: 'Invalid inventory reorder payload' };
     }
 
-    const { error } = await supabase
+    const { data: existingRows, error: existingError } = await getDb()
       .from('inventory_items')
-      .upsert(parsed.data);
+      .select('id')
+      .in('id', parsed.data.map((item) => item.id));
+
+    if (existingError) {
+      console.error('[reorderInventoryItems] Supabase Error:', existingError.message, existingError.details);
+      return { success: false, error: existingError.message };
+    }
+
+    const rows = filterReorderRowsToExistingIds(
+      parsed.data,
+      (existingRows ?? []).map((row) => row.id),
+    );
+    if (rows.length === 0) {
+      return { success: false, error: 'Invalid inventory reorder payload' };
+    }
+
+    const { error } = await getDb()
+      .from('inventory_items')
+      .upsert(rows);
 
     if (error) {
       console.error('[reorderInventoryItems] Supabase Error:', error.message, error.details);
@@ -649,7 +670,7 @@ export async function reorderInventoryItems(
         metadata: withAuditMetadata(
           {
             operation: 'reorder_inventory_items',
-            itemIds: parsed.data.map((item) => item.id),
+            itemIds: rows.map((item) => item.id),
           },
           auditOptions,
         ),
@@ -677,7 +698,7 @@ export async function saveWithdrawRequiredItemOrder(itemIds: string[]) {
       return { success: false, error: 'Invalid withdraw required order payload' };
     }
 
-    const { error } = await supabase.from('inventory_config').upsert({
+    const { error } = await getDb().from('inventory_config').upsert({
       id: 'withdraw_required_order',
       settings: { order: parsed.data },
     });
@@ -716,7 +737,7 @@ export async function deleteInventoryItem(itemId: string, auditOptions?: Invento
     const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError };
 
-    const { data: itemBeforeDelete } = await supabase
+    const { data: itemBeforeDelete } = await getDb()
       .from('inventory_items')
       .select('id, name, stock, unit')
       .eq('id', itemId)
@@ -732,7 +753,7 @@ export async function deleteInventoryItem(itemId: string, auditOptions?: Invento
     );
 
     // Step 2: Proceed with Delete using Service Role (Admin Client)
-    const { error } = await supabase
+    const { error } = await getDb()
       .from('inventory_items')
       .delete()
       .eq('id', itemId);
@@ -783,7 +804,7 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
     const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError, deleted: 0 };
 
-    const { data: itemsBeforeDelete } = await supabase
+    const { data: itemsBeforeDelete } = await getDb()
       .from('inventory_items')
       .select('id, name, stock')
       .in('id', itemIds);
@@ -801,7 +822,7 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
       }),
     );
 
-    const { error } = await supabase
+    const { error } = await getDb()
       .from('inventory_items')
       .delete()
       .in('id', itemIds);
@@ -876,7 +897,7 @@ export async function fetchTransactionHistory(
       ? optionsOrItemId
       : { itemId: optionsOrItemId, limit: legacyLimit, offset: 0 };
 
-  return fetchTransactionHistoryPage(supabase, options);
+  return fetchTransactionHistoryPage(getDb(), options);
 }
 
 // === FETCH IN/OUT ACTIVITY SNAPSHOT (gap warning) ===
@@ -900,7 +921,7 @@ export async function fetchInventoryInOutActivitySnapshot() {
       THAI_TIMEZONE,
     ).toISOString();
 
-    const { count, error } = await supabase
+    const { count, error } = await getDb()
       .from('inventory_transactions')
       .select('id', { count: 'exact', head: true })
       .in('type', ['IN', 'OUT'])
@@ -936,7 +957,7 @@ export async function fetchFrequentItems() {
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getDb()
       .from('inventory_transactions')
       .select('inventory_item_id')
       .order('created_at', { ascending: false })
@@ -953,7 +974,7 @@ export async function fetchFrequentItems() {
     const topIds = rankFrequentItemIds(data as FrequentTxRow[]);
     if (topIds.length === 0) return { success: true, data: [] };
 
-    const { data: itemsData, error: itemsError } = await supabase
+    const { data: itemsData, error: itemsError } = await getDb()
       .from('inventory_items')
       .select('id, name')
       .in('id', topIds);
@@ -984,11 +1005,11 @@ export async function fetchComprehensiveInventoryData() {
 
   try {
     const [itemsResult, txResult] = await Promise.all([
-      supabase
+      getDb()
         .from('inventory_items')
         .select('id, name, stock, order_point, target_stock, order_qty, unit, source, sort_order, updated_at')
         .order('name'),
-      supabase
+      getDb()
         .from('inventory_transactions')
         .select('id, inventory_item_id, type, quantity, note, created_at')
         .order('created_at', { ascending: false })
@@ -1143,9 +1164,9 @@ export type InventoryAccuracyReportResult = CountAccuracyStatsResult & {
 };
 
 const countVerificationSchema = z.object({
-  itemId: z.string().uuid(),
-  countedQty: z.number().min(0),
-  systemStockQty: z.number().min(0),
+  itemId: inventoryItemIdSchema,
+  countedQty: finiteNonNegativeStockSchema,
+  systemStockQty: finiteNonNegativeStockSchema,
 });
 
 // === RECORD COUNT VERIFICATION ===
@@ -1155,7 +1176,7 @@ export async function recordCountVerification(itemId: string, countedQty: number
     const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError };
 
-    const { data: itemRow, error: itemError } = await supabase
+    const { data: itemRow, error: itemError } = await getDb()
       .from('inventory_items')
       .select('stock, count_policy')
       .eq('id', itemId)
@@ -1190,7 +1211,7 @@ export async function recordCountVerification(itemId: string, countedQty: number
 
     const matched = isCountMatch(countedQty, baselineStock);
 
-    const { error } = await supabase.from('inventory_count_verifications').insert({
+    const { error } = await getDb().from('inventory_count_verifications').insert({
       inventory_item_id: itemId,
       counted_qty: countedQty,
       system_stock_qty: baselineStock,
@@ -1226,10 +1247,12 @@ export type InventoryCountSaveResult = {
   systemStockQty?: number;
   countedQty?: number;
   newStock?: number;
+  verificationId?: string;
 };
 
 export type InventoryCountSaveOptions = InventoryAuditOptions & {
   isUndo?: boolean;
+  undoVerificationId?: string;
 };
 
 /** Count-page save: capture the pre-count baseline before updating stock. */
@@ -1242,7 +1265,7 @@ export async function recordInventoryCountAndUpdateStock(
     const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError };
 
-    const { data: itemRow, error: itemError } = await supabase
+    const { data: itemRow, error: itemError } = await getDb()
       .from('inventory_items')
       .select('name, stock, order_point, count_policy')
       .eq('id', itemId)
@@ -1269,49 +1292,9 @@ export async function recordInventoryCountAndUpdateStock(
       ? isCountMatch(countedQty, baselineStock)
       : false;
 
-    if (options?.isUndo) {
-      const { data: latestVerifs, error: lookupError } = await supabase
-        .from('inventory_count_verifications')
-        .select('id')
-        .eq('inventory_item_id', itemId)
-        .order('counted_at', { ascending: false })
-        .limit(1);
-
-      if (lookupError) {
-        console.error('[recordInventoryCountAndUpdateStock] Undo Lookup Error:', lookupError.message);
-      } else if (latestVerifs && latestVerifs.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('inventory_count_verifications')
-          .delete()
-          .eq('id', latestVerifs[0].id);
-
-        if (deleteError) {
-          console.error('[recordInventoryCountAndUpdateStock] Undo Delete Error:', deleteError.message);
-        }
-      }
-    } else {
-      const { error: verificationError } = await supabase
-        .from('inventory_count_verifications')
-        .insert({
-          inventory_item_id: itemId,
-          counted_qty: countedQty,
-          system_stock_qty: baselineStock,
-          matched,
-        });
-
-      if (verificationError) {
-        console.error(
-          '[recordInventoryCountAndUpdateStock] Supabase Error:',
-          verificationError.message,
-          verificationError.details,
-        );
-        return { success: false, error: verificationError.message };
-      }
-    }
-
     let newStock = countedQty;
     if (baselineStock !== countedQty) {
-      const { data, error } = await supabase.rpc('set_inventory_stock', {
+      const { data, error } = await getDb().rpc('set_inventory_stock', {
         p_item_id: itemId,
         p_new_stock: countedQty,
         p_note: 'Stock-taking count',
@@ -1321,7 +1304,7 @@ export async function recordInventoryCountAndUpdateStock(
       if (error) {
         const rpcMissing = error.message?.includes('set_inventory_stock') || error.code === '42883';
         if (rpcMissing) {
-          const { error: updateErr } = await supabase
+          const { error: updateErr } = await getDb()
             .from('inventory_items')
             .update({ stock: countedQty, updated_at: new Date().toISOString() })
             .eq('id', itemId);
@@ -1336,6 +1319,42 @@ export async function recordInventoryCountAndUpdateStock(
         }
       } else {
         newStock = data?.new_stock ?? countedQty;
+      }
+    }
+
+    let verificationId: string | undefined;
+    if (options?.isUndo) {
+      const undoVerificationId = z.string().uuid().safeParse(options.undoVerificationId);
+      if (undoVerificationId.success) {
+        const { error: deleteError } = await getDb()
+          .from('inventory_count_verifications')
+          .delete()
+          .eq('id', undoVerificationId.data);
+
+        if (deleteError) {
+          console.error('[recordInventoryCountAndUpdateStock] Undo Delete Error:', deleteError.message);
+        }
+      }
+    } else {
+      const { data: inserted, error: verificationError } = await getDb()
+        .from('inventory_count_verifications')
+        .insert({
+          inventory_item_id: itemId,
+          counted_qty: countedQty,
+          system_stock_qty: baselineStock,
+          matched,
+        })
+        .select('id')
+        .maybeSingle();
+
+      if (verificationError) {
+        console.error(
+          '[recordInventoryCountAndUpdateStock] Supabase Error:',
+          verificationError.message,
+          verificationError.details,
+        );
+      } else if (typeof inserted?.id === 'string') {
+        verificationId = inserted.id;
       }
     }
 
@@ -1386,6 +1405,7 @@ export async function recordInventoryCountAndUpdateStock(
       systemStockQty: baselineStock,
       countedQty,
       newStock,
+      verificationId,
     };
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -1398,9 +1418,6 @@ export async function recordInventoryCountAndUpdateStock(
 }
 
 // === FETCH COUNT ACCURACY STATS ===
-/** Recent verification rows scanned for accuracy aggregation (newest first). */
-const COUNT_ACCURACY_VERIFICATION_LIMIT = 5000;
-
 export async function fetchCountAccuracyStats(): Promise<{
   success: boolean;
   data?: CountAccuracyStatsResult;
@@ -1415,12 +1432,12 @@ export async function fetchCountAccuracyStats(): Promise<{
 
   try {
     const [verificationsResult, exactItemsResult] = await Promise.all([
-      supabase
+      getDb()
         .from('inventory_count_verifications')
         .select('inventory_item_id, matched, system_stock_qty, counted_qty, counted_at')
         .order('counted_at', { ascending: false })
-        .limit(COUNT_ACCURACY_VERIFICATION_LIMIT),
-      supabase
+        .limit(INVENTORY_COUNT_VERIFICATION_SCAN_LIMIT),
+      getDb()
         .from('inventory_items')
         .select('id, name, count_policy')
         .eq('count_policy', 'exact_count'),
@@ -1539,13 +1556,13 @@ export async function fetchTodayInventoryCountStatus(): Promise<{
   try {
     const { startUtc, endUtc } = getBangkokTodayUtcBounds();
     const [verificationsResult, logsResult, itemsResult] = await Promise.all([
-      supabase
+      getDb()
         .from('inventory_count_verifications')
         .select('inventory_item_id, counted_at, counted_qty, system_stock_qty')
         .gte('counted_at', startUtc)
         .lte('counted_at', endUtc)
         .order('counted_at', { ascending: false }),
-      supabase
+      getDb()
         .from('data_change_logs')
         .select('entity_id, occurred_at, field_changes')
         .eq('module', 'inventory')
@@ -1555,7 +1572,7 @@ export async function fetchTodayInventoryCountStatus(): Promise<{
         .gte('occurred_at', startUtc)
         .lte('occurred_at', endUtc)
         .order('occurred_at', { ascending: false }),
-      supabase.from('inventory_items').select('id', { count: 'exact', head: true }),
+      getDb().from('inventory_items').select('id', { count: 'exact', head: true }),
     ]);
 
     const { data: rows, error } = verificationsResult;

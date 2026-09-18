@@ -1,15 +1,13 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { computeFieldChanges } from '@/lib/data-change-log';
 import { gateMutation } from '@/lib/policies/server-gate';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabaseAdmin = createClient(supabaseUrl, supabaseAdminKey);
+const supabaseAdmin = getSupabaseAdmin();
 
 async function ensureAuthorized() {
   return gateMutation();

@@ -1,5 +1,5 @@
-import { addDays, format, parse, parseISO } from 'date-fns';
-import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { addDays, parse } from 'date-fns';
+import { fromZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { THAI_TIMEZONE } from './timezone';
 
 const THAI_DAY_ABBREVS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'] as const;
@@ -30,13 +30,24 @@ function parseCalendarParts(input: Date | string): CalendarParts | null {
       };
     }
 
-    const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
-    if (isoMatch) {
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+    if (dateOnly) {
       return {
-        y: Number(isoMatch[1]),
-        m: Number(isoMatch[2]),
-        d: Number(isoMatch[3]),
+        y: Number(dateOnly[1]),
+        m: Number(dateOnly[2]),
+        d: Number(dateOnly[3]),
       };
+    }
+
+    if (/T|\d{2}:\d{2}/.test(trimmed) || /[zZ]|[+-]\d{2}:\d{2}$/.test(trimmed)) {
+      const instant = new Date(trimmed);
+      if (!Number.isNaN(instant.getTime())) {
+        return {
+          y: Number(formatInTimeZone(instant, THAI_TIMEZONE, 'yyyy')),
+          m: Number(formatInTimeZone(instant, THAI_TIMEZONE, 'MM')),
+          d: Number(formatInTimeZone(instant, THAI_TIMEZONE, 'dd')),
+        };
+      }
     }
 
     const parsedSlash = parse(trimmed, THAI_DISPLAY_DATE_FORMAT, new Date());
@@ -158,13 +169,13 @@ export function formatToThai(date: Date | string, formatStr: string) {
 }
 
 export function isSameThaiDay(date1: Date | string, date2: Date | string) {
-  const getLocalDateStr = (d: Date | string) => {
-    if (typeof d === 'string') {
-      const match = d.match(/^\d{4}-\d{2}-\d{2}/);
-      if (match) return match[0];
-    }
-    const dObj = typeof d === 'string' ? parseISO(d) : d;
-    return format(toZonedTime(dObj, THAI_TIMEZONE), 'yyyy-MM-dd');
-  };
-  return getLocalDateStr(date1) === getLocalDateStr(date2);
+  return thaiCalendarDate(date1) === thaiCalendarDate(date2);
+}
+
+function thaiCalendarDate(value: Date | string): string {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  }
+  return getBangkokCalendarIso(typeof value === 'string' ? new Date(value) : value);
 }

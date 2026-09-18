@@ -439,14 +439,21 @@ function createEmptyTodayStatus(totalItems: number): TodayCountSessionStatus {
   };
 }
 
+type ItemRecentVerification = {
+  matched: boolean;
+  systemStockQty: number;
+  countedQty: number;
+  id?: string;
+};
+
 function buildInitialLastVerification(
   todayStatus: TodayCountSessionStatus | null | undefined,
   accuracyStats: CountAccuracyStatsResult | null | undefined,
   items: InventoryItem[],
-): Record<string, { matched: boolean; systemStockQty: number; countedQty: number }> {
+): Record<string, ItemRecentVerification> {
   if (!todayStatus) return {};
 
-  const result: Record<string, { matched: boolean; systemStockQty: number; countedQty: number }> = {};
+  const result: Record<string, ItemRecentVerification> = {};
 
   for (const item of items) {
     const todayRow = todayStatus.perItem[item.id];
@@ -563,7 +570,7 @@ type CountItemRowProps = {
   isActive: boolean;
   isDimmed: boolean;
   animateEntrance: boolean;
-  recentVerification?: { matched: boolean; systemStockQty: number; countedQty: number };
+  recentVerification?: ItemRecentVerification;
   todayCount?: ItemTodayCountRecord;
   undoEntry?: UndoEntry;
   onSave: (id: string, value: number) => Promise<void>;
@@ -877,7 +884,7 @@ export default function InventoryCountClient({
   );
   const todayStatusRef = useRef(todayStatus);
   const [lastVerification, setLastVerification] = useState<
-    Record<string, { matched: boolean; systemStockQty: number; countedQty: number }>
+    Record<string, ItemRecentVerification>
   >(() => buildInitialLastVerification(initialTodayStatus, initialAccuracyStats, initialItems));
   const lastVerificationRef = useRef(lastVerification);
   // Per-item undo state: maps itemId → UndoEntry. Cleared after one use.
@@ -1059,6 +1066,7 @@ export default function InventoryCountClient({
         suppressNotification: true,
         notificationContext: 'inventory_count',
         isUndo,
+        undoVerificationId: undoPrior?.id,
       } satisfies InventoryCountSaveOptions);
 
       if (!verification.success) {
@@ -1086,6 +1094,7 @@ export default function InventoryCountClient({
             matched: isCountMatch(countedQty, systemStockQty),
             systemStockQty,
             countedQty,
+            id: verification.verificationId,
           },
         }));
       } else {
@@ -1102,6 +1111,7 @@ export default function InventoryCountClient({
             matched,
             systemStockQty,
             countedQty,
+            id: verification.verificationId,
           },
         }));
 

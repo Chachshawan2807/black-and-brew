@@ -121,6 +121,13 @@ describe('inventory save performance', () => {
     expect(branchWithdrawClient).not.toContain('router.refresh()');
   });
 
+  test('undo redo sync does not bulk-delete items missing from the snapshot', () => {
+    expect(inventoryClient).toContain('inventoryIdsRemovedByUndoSync');
+    expect(inventoryClient).not.toMatch(
+      /dbItems\.filter\(dbI => !snapshotIds\.includes\(dbI\.id\)\)/,
+    );
+  });
+
   test('warehouse field edit uses one inventory_items query on the critical path', () => {
     const critical = criticalPathBeforeAfter('updateInventoryItemField', inventoryActions);
     expect((critical.match(/from\('inventory_items'\)/g) ?? []).length).toBe(1);
@@ -139,9 +146,9 @@ describe('inventory save performance', () => {
   });
 
   test('fetchCountAccuracyStats bounds verification scan', () => {
-    expect(inventoryActions).toContain('COUNT_ACCURACY_VERIFICATION_LIMIT');
+    expect(inventoryActions).toContain('INVENTORY_COUNT_VERIFICATION_SCAN_LIMIT');
     expect(inventoryActions).toMatch(
-      /inventory_count_verifications[\s\S]*\.limit\(COUNT_ACCURACY_VERIFICATION_LIMIT\)/,
+      /inventory_count_verifications[\s\S]*\.limit\(INVENTORY_COUNT_VERIFICATION_SCAN_LIMIT\)/,
     );
   });
 
@@ -157,5 +164,12 @@ describe('inventory save performance', () => {
     expect(inventoryClient).toContain('itemsRef');
     expect(inventoryClient).toMatch(/const totalItems = itemsRef\.current\.length/);
     expect(inventoryClient).toMatch(/previousFieldValue:/);
+  });
+
+  test('stock mutations reject non-uuid ids and require a service-role client', () => {
+    expect(inventoryActions).not.toContain('.uuid().or(z.string())');
+    expect(inventoryActions).toContain('getSupabaseAdmin');
+    expect(inventoryActions).toContain('filterReorderRowsToExistingIds');
+    expect(inventoryActions).toMatch(/z\.number\(\)[\s\S]*\.finite\(\)/);
   });
 });

@@ -1,3 +1,5 @@
+import { sanitizeStockValue } from '@/lib/inventory-stock';
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -91,9 +93,7 @@ export function formatNumericFormValue(value: NumericFormValue | null | undefine
 }
 
 export function parseNumericFormValue(value: NumericFormValue | null | undefined): number {
-  if (value === '' || value === null || value === undefined) return 0;
-  const num = Number(value);
-  return Number.isNaN(num) ? 0 : num;
+  return sanitizeStockValue(value);
 }
 
 export function buildColumnsFromSettings(
