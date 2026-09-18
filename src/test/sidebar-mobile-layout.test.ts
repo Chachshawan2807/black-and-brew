@@ -67,6 +67,19 @@ describe('Mobile sidebar layout Modern Web Guidance alignment', () => {
     expect(menu).toMatch(/useMobileNavDrawer/);
   });
 
+  test('collapsed desktop sidebar centers icon hit targets symmetrically', () => {
+    const sidebar = readFile('components/sidebar/Sidebar.tsx');
+    expect(sidebar).toMatch(/sidebarOpen \? 'pl-2 pr-3' : 'px-2'/);
+
+    const menu = readFile('components/sidebar/Menu.tsx');
+    expect(menu).toMatch(/gap-0 px-0/);
+    expect(menu).toMatch(/isOpen === false \? 'items-center px-0' : 'items-start px-2'/);
+    expect(menu).toMatch(/isOpen !== false \? \(/);
+
+    const collapse = readFile('components/sidebar/CollapseMenuButton.tsx');
+    expect(collapse).toMatch(/size-10 mx-auto justify-center gap-0 px-0/);
+  });
+
   test('main content region uses container query root for responsive layout', () => {
     const layout = readFile('components/sidebar/SidebarLayout.tsx');
     expect(layout).toMatch(/bb-main-container/);

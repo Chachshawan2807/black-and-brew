@@ -124,19 +124,25 @@ export function CollapseMenuButton({
                 variant={active ? "secondary" : "ghost"}
                 className={cn(
                   "mb-1 h-10",
-                  isOpen === false ? "w-10 mx-auto justify-center" : "w-full justify-start"
+                  isOpen === false
+                    ? "size-10 mx-auto justify-center gap-0 px-0"
+                    : "w-full justify-start",
                 )}
               >
-                <div className="w-full items-center flex justify-between">
-                  <div className="flex items-center">
-                    <span className={cn("text-foreground", isOpen === false ? "" : "mr-4")}>
-                      <Icon size={18} strokeWidth={1.75} />
-                    </span>
-                    <p className={sidebarLabelClass(isOpen, "text-foreground")}>
-                      {label}
-                    </p>
+                {isOpen === false ? (
+                  <Icon size={18} strokeWidth={1.75} className="text-foreground" />
+                ) : (
+                  <div className="w-full items-center flex justify-between">
+                    <div className="flex items-center">
+                      <span className="mr-4 text-foreground">
+                        <Icon size={18} strokeWidth={1.75} />
+                      </span>
+                      <p className={sidebarLabelClass(isOpen, "text-foreground")}>
+                        {label}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </Button>
             </DropdownMenuTrigger>
           </TooltipTrigger>

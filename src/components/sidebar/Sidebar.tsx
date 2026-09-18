@@ -78,7 +78,12 @@ export function Sidebar() {
           : 'md:w-[280px]'
       )}
     >
-      <div className="relative h-full flex flex-col overflow-visible pl-2 pr-3 py-4 bg-[var(--sidebar-surface)] md:bg-transparent w-full">
+      <div
+        className={cn(
+          'relative h-full flex flex-col overflow-visible py-4 bg-[var(--sidebar-surface)] md:bg-transparent w-full',
+          sidebarOpen ? 'pl-2 pr-3' : 'px-2',
+        )}
+      >
         <div
           className={cn(
             'relative z-[120] mb-4 flex items-center overflow-visible transition-[justify-content] [transition-duration:var(--bb-duration-slow)] [transition-timing-function:var(--bb-ease-out)] motion-reduce:transition-none',
