@@ -63,7 +63,13 @@ const FabStackHideToggle = dynamic(
   { ssr: false },
 );
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  ssrVerified = false,
+}: {
+  children: ReactNode;
+  ssrVerified?: boolean;
+}) {
   return (
     <>
       <PwaShellSync />
@@ -72,7 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <RoutePrefetchOnIdle />
         <ViewTransitionNavigation />
         <PointerClickThroughGuard />
-        <PinGateway>
+        <PinGateway ssrVerified={ssrVerified}>
           <PushSubscriptionManager />
           <LazyNotificationProvider>
             <FloatingOverlayProvider>

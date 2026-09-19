@@ -185,7 +185,7 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
   useEffect(() => {
     registerHomeBoardPerfDevTools();
     homePerfStartSession('entry');
-    void tryLoadBoard();
+    void tryLoadBoard({ skipPinWait: boardFromCacheOnInitRef.current });
   }, [tryLoadBoard]);
 
   useEffect(() => {

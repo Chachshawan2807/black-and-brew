@@ -71,11 +71,11 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: PWA_SHELL_BOOTSTRAP_SCRIPT }}
         />
         <ThemeProvider>
-          <AppShellLoader>
-            <Suspense fallback={<RouteLoadingSkeleton label="กำลังโหลด..." />}>
+          <Suspense fallback={<RouteLoadingSkeleton label="กำลังโหลด..." />}>
+            <AppShellLoader>
               <I18nProvider locale={locale}>{children}</I18nProvider>
-            </Suspense>
-          </AppShellLoader>
+            </AppShellLoader>
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>

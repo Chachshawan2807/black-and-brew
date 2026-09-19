@@ -55,6 +55,7 @@ vi.mock('@/lib/client-device-info', () => ({
 // Mock supabase session helper
 vi.mock('@/lib/supabase-session', () => ({
   ensureSupabaseSession: vi.fn(async () => true),
+  refreshSupabaseAccessToken: vi.fn(async () => true),
 }));
 
 describe('PinGateway Persistent Authentication', () => {
@@ -119,6 +120,17 @@ describe('PinGateway Persistent Authentication', () => {
 
     expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
     expect(await screen.findByText('เข้าสู่ระบบ')).toBeInTheDocument();
+  });
+
+  test('should paint app shell immediately when SSR PIN cookie is already verified', () => {
+    render(
+      <PinGateway ssrVerified>
+        <div data-testid="protected-content">Secret Dashboard</div>
+      </PinGateway>
+    );
+
+    expect(screen.getByTestId('protected-content')).toBeInTheDocument();
+    expect(screen.queryByText('เข้าสู่ระบบ')).not.toBeInTheDocument();
   });
 
   test('should render app shell instead of login while server session is being verified', async () => {

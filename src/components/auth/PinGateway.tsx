@@ -75,7 +75,13 @@ const COPY = {
   },
 } as const;
 
-export default function PinGateway({ children }: { children: React.ReactNode }) {
+export default function PinGateway({
+  children,
+  ssrVerified = false,
+}: {
+  children: React.ReactNode;
+  ssrVerified?: boolean;
+}) {
   const params = useParams();
   const locale = params?.locale === 'en' ? 'en' : 'th';
   const t = COPY[locale];
@@ -87,7 +93,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   const [isMounted, setIsMounted] = useState(false);
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
   const [hadClientSession, setHadClientSession] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(ssrVerified);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
@@ -529,7 +535,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     }
   };
 
-  if (!isMounted) {
+  if (!isMounted && !ssrVerified) {
     return null;
   }
 

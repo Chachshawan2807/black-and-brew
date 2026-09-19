@@ -37,6 +37,7 @@ import {
   shouldIdlePreloadSecretaryOverlays,
 } from '@/lib/secretary/preload-secretary-overlay';
 import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
+import { isCoarsePointer } from '@/hooks/use-coarse-pointer';
 import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 import { writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
@@ -129,6 +130,11 @@ export function HomeTaskBoard({
   }, [board]);
 
   useEffect(() => {
+    if (isCoarsePointer()) {
+      return scheduleIdleWork(() => {
+        requestHomeBoardFullSync();
+      }, { timeout: 2500 });
+    }
     requestHomeBoardFullSync();
   }, []);
 
