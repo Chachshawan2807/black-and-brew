@@ -21,10 +21,11 @@ describe('Home page empty shell', () => {
 describe('Home secretary board desktop split', () => {
   test('HomeClient uses two columns for tasks and shifts when sidebar is collapsed', () => {
     const home = readFile('app/[locale]/home/HomeClient.tsx');
+    const frame = readFile('app/[locale]/home/_components/HomeDashboardFrame.tsx');
     expect(home).toMatch(/useSidebarToggle/);
-    expect(home).toMatch(/desktopSplit/);
-    expect(home).toMatch(/md:grid md:grid-cols-2/);
-    expect(home).toMatch(/showWhenEmpty=\{desktopSplit\}/);
+    expect(frame).toMatch(/desktopSplit/);
+    expect(frame).toMatch(/md:grid md:grid-cols-2/);
+    expect(frame).toMatch(/showWhenEmpty=\{desktopSplit\}/);
   });
 });
 

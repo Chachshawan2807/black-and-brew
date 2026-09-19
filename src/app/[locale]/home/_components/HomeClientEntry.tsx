@@ -124,51 +124,54 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
         }
       }
 
-      const [result, memberResult] = await Promise.all([
-        loadSecretaryBoard({ locale }),
-        loadHomeMemberPanel(),
-      ]);
-      if (result.success && result.board) {
-        writeCachedSecretaryBoard(result.board);
-        setBoard(result.board);
-        const boardDate = result.board.snapshot.dateIso;
-        if (memberResult.success && memberResult.panel) {
-          if (memberResult.panel.dateIso === boardDate) {
-            applyMemberPanel(boardDate, memberResult.panel, setMemberPanel);
-          } else {
+      const boardPromise = loadSecretaryBoard({ locale });
+      const panelPromise = loadHomeMemberPanel();
+      const boardResult = await boardPromise;
+      if (boardResult.success && boardResult.board) {
+        writeCachedSecretaryBoard(boardResult.board);
+        setBoard(boardResult.board);
+        const boardDate = boardResult.board.snapshot.dateIso;
+        void panelPromise.then(async (memberResult) => {
+          if (memberResult.success && memberResult.panel) {
+            if (memberResult.panel.dateIso === boardDate) {
+              applyMemberPanel(boardDate, memberResult.panel, setMemberPanel);
+              return;
+            }
             const aligned = await loadHomeMemberPanel({ dateIso: boardDate });
             if (aligned.success && aligned.panel) {
               applyMemberPanel(boardDate, aligned.panel, setMemberPanel);
             }
+            return;
           }
-        } else {
           const cachedPanel = readCachedHomeMemberPanel(boardDate);
           if (cachedPanel) setMemberPanel(cachedPanel);
-        }
+        });
         return;
       }
 
-      if (isUnauthorizedBoardError(result.error) && opts?.skipPinWait) {
+      if (isUnauthorizedBoardError(boardResult.error) && opts?.skipPinWait) {
         const authed = await waitForPinReadAccess();
         if (!authed) return;
-        const [retryResult, retryMember] = await Promise.all([
-          loadSecretaryBoard({ locale }),
-          loadHomeMemberPanel(),
-        ]);
+        const retryBoardPromise = loadSecretaryBoard({ locale });
+        const retryPanelPromise = loadHomeMemberPanel();
+        const retryResult = await retryBoardPromise;
         if (retryResult.success && retryResult.board) {
-          writeCachedSecretaryBoard(retryResult.board);
-          setBoard(retryResult.board);
-          applyMemberPanel(
-            retryResult.board.snapshot.dateIso,
-            retryMember.success ? retryMember.panel : undefined,
-            setMemberPanel,
-          );
+          const retryBoard = retryResult.board;
+          writeCachedSecretaryBoard(retryBoard);
+          setBoard(retryBoard);
+          void retryPanelPromise.then((retryMember) => {
+            applyMemberPanel(
+              retryBoard.snapshot.dateIso,
+              retryMember.success ? retryMember.panel : undefined,
+              setMemberPanel,
+            );
+          });
         }
         return;
       }
 
-      if (!isUnauthorizedBoardError(result.error) && !boardRef.current) {
-        setLoadError(result.error ?? 'ไม่สามารถโหลดงานได้');
+      if (!isUnauthorizedBoardError(boardResult.error) && !boardRef.current) {
+        setLoadError(boardResult.error ?? 'ไม่สามารถโหลดงานได้');
       }
     } catch (error) {
       if (boardRef.current) return;

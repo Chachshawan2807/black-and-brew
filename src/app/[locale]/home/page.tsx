@@ -4,63 +4,78 @@ import { checkAuth } from '@/app/actions/auth';
 import { loadHomeMemberPanel, loadSecretaryBoard } from '@/app/actions/home-actions';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import { HomeClientEntry } from './_components/HomeClientEntry';
-import { HomePageLoadingSkeleton } from './_components/HomePageLoadingSkeleton';
-import HomeClient from './HomeClient';
+import {
+  HomeDashboardFrame,
+  HomeShiftPane,
+} from './_components/HomeDashboardFrame';
+import {
+  HomePageLoadingSkeleton,
+  HomeShiftPanelSkeleton,
+  HomeTaskCardsSkeleton,
+} from './_components/HomePageLoadingSkeleton';
+import { HomeTaskBoard } from './HomeClient';
 
-function isHomeAuthPending(error?: string): boolean {
-  if (!error) return true;
-  return error.toLowerCase().includes('unauthorized');
-}
-
-async function HomeBoard({ locale }: { locale: string }) {
-  await connection();
-  const workDateIso = todayIsoBkk();
-  const boardPromise = loadSecretaryBoard({ locale });
-  const memberPanelPromise = loadHomeMemberPanel({ dateIso: workDateIso });
-  const authed = await checkAuth();
-  if (!authed) {
-    return <HomeClientEntry locale={locale} />;
-  }
-
-  const [boardResult, memberPanelResult] = await Promise.all([
-    boardPromise,
-    memberPanelPromise,
-  ]);
-
-  let initialMemberPanel = memberPanelResult.success ? memberPanelResult.panel : undefined;
-
+async function HomeTasksSlot({
+  locale,
+  boardPromise,
+}: {
+  locale: string;
+  boardPromise: ReturnType<typeof loadSecretaryBoard>;
+}) {
+  const boardResult = await boardPromise;
   if (!boardResult.success || !boardResult.board) {
-    if (isHomeAuthPending(boardResult.error)) {
-      return <HomeClientEntry locale={locale} />;
-    }
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 text-[14px] text-muted-foreground">
+      <div className="px-1 py-4 text-[14px] text-muted-foreground">
         ไม่สามารถโหลดงานได้{boardResult.error ? `: ${boardResult.error}` : ''}
       </div>
     );
   }
 
-  const boardDateIso = boardResult.board.snapshot.dateIso;
-  if (
-    initialMemberPanel &&
-    boardDateIso &&
-    initialMemberPanel.dateIso !== boardDateIso
-  ) {
-    const aligned = await loadHomeMemberPanel({ dateIso: boardDateIso });
-    if (aligned.success && aligned.panel) {
-      initialMemberPanel = aligned.panel;
-    } else {
-      initialMemberPanel = undefined;
-    }
-  }
-
   return (
-    <HomeClient
+    <HomeTaskBoard
       initialBoard={boardResult.board}
-      initialMemberPanel={initialMemberPanel}
       locale={locale}
       boardLoadSource="ssr"
     />
+  );
+}
+
+async function HomeShiftsSlot({
+  dateIso,
+  panelPromise,
+}: {
+  dateIso: string;
+  panelPromise: ReturnType<typeof loadHomeMemberPanel>;
+}) {
+  const memberPanelResult = await panelPromise;
+  return (
+    <HomeShiftPane
+      dateIso={dateIso}
+      initialPanel={memberPanelResult.success ? memberPanelResult.panel : undefined}
+    />
+  );
+}
+
+async function HomeBoard({ locale }: { locale: string }) {
+  await connection();
+  const workDateIso = todayIsoBkk();
+  const authedPromise = checkAuth();
+  const boardPromise = loadSecretaryBoard({ locale, dateIso: workDateIso });
+  const memberPanelPromise = loadHomeMemberPanel({ dateIso: workDateIso });
+  const authed = await authedPromise;
+  if (!authed) {
+    return <HomeClientEntry locale={locale} />;
+  }
+
+  return (
+    <HomeDashboardFrame workDateIso={workDateIso}>
+      <Suspense fallback={<HomeTaskCardsSkeleton />}>
+        <HomeTasksSlot locale={locale} boardPromise={boardPromise} />
+      </Suspense>
+      <Suspense fallback={<HomeShiftPanelSkeleton />}>
+        <HomeShiftsSlot dateIso={workDateIso} panelPromise={memberPanelPromise} />
+      </Suspense>
+    </HomeDashboardFrame>
   );
 }
 

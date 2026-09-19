@@ -11,7 +11,6 @@ import {
   BB_FOCUS_RING,
 } from '@/lib/ui-outlined-tokens';
 import {
-  formatSecretaryWorkDateLabel,
   resolveSecretaryBoardCardClass,
   SECRETARY_MODULE_BOARD_TAGS,
 } from '@/lib/secretary/board-card-surface';
@@ -39,11 +38,11 @@ import {
 } from '@/lib/secretary/preload-secretary-overlay';
 import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
 import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
-import { writeCachedHomeMemberPanel, writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
+import { writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/home-actions';
 import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
-import HomeShiftStatusSection from './_components/HomeShiftStatusSection';
+import { HomeDashboardFrame, HomeShiftPane } from './_components/HomeDashboardFrame';
 import type { HomeBoardLoadSource } from '@/lib/perf/home-board-perf';
 import {
   homePerfOnBoardVisible,
@@ -61,20 +60,22 @@ const SecretaryManualTaskDialog = dynamic(
   () => import('./_components/SecretaryManualTaskDialog'),
   { ssr: false },
 );
-type HomeClientProps = {
+type HomeTaskBoardProps = {
   initialBoard: SecretaryBoard;
-  initialMemberPanel?: HomeMemberPanelSnapshot;
   locale: string;
   /** Where the first paint board came from (perf diagnostics only). */
   boardLoadSource?: HomeBoardLoadSource;
 };
 
-export default function HomeClient({
+type HomeClientProps = HomeTaskBoardProps & {
+  initialMemberPanel?: HomeMemberPanelSnapshot;
+};
+
+export function HomeTaskBoard({
   initialBoard,
-  initialMemberPanel,
   locale,
   boardLoadSource = 'ssr',
-}: HomeClientProps) {
+}: HomeTaskBoardProps) {
   const [board, setBoard] = useState(initialBoard);
   const [workDateIso, setWorkDateIso] = useState(() => initialBoard.snapshot.dateIso || todayIsoBkk());
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -128,13 +129,7 @@ export default function HomeClient({
   }, [board]);
 
   useEffect(() => {
-    if (initialMemberPanel?.dateIso === workDateIso) {
-      writeCachedHomeMemberPanel(initialMemberPanel);
-    }
-  }, [initialMemberPanel, workDateIso]);
-
-  useEffect(() => {
-    return scheduleIdleWork(() => requestHomeBoardFullSync(), { timeout: 1200 });
+    requestHomeBoardFullSync();
   }, []);
 
   useEffect(() => {
@@ -169,11 +164,6 @@ export default function HomeClient({
       }
     }, { timeout: 3000 });
   }, [consolidatedAllTasks]);
-
-  const workDateLabel = useMemo(
-    () => formatSecretaryWorkDateLabel(workDateIso),
-    [workDateIso],
-  );
 
   const handleAddTask = () => {
     const title = newTitle.trim();
@@ -232,16 +222,7 @@ export default function HomeClient({
   useMobileBackOverlayStack('home-overlay', homeOverlayLayers);
 
   return (
-    <div
-      className={cn(
-        'mx-auto w-full px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-4',
-        desktopSplit ? 'max-w-6xl' : 'max-w-3xl',
-      )}
-    >
-      <header>
-        <h1 className="bb-page-title-compact text-balance">{workDateLabel}</h1>
-      </header>
-
+    <>
       {showCreateDialog ? (
         <SecretaryManualTaskDialog
           open
@@ -261,77 +242,62 @@ export default function HomeClient({
         />
       ) : null}
 
-      <div
-        className={cn(
-          'space-y-4',
-          desktopSplit && 'md:grid md:grid-cols-2 md:items-start md:gap-4 md:space-y-0',
-        )}
+      <section
+        aria-label="รายการงาน"
+        className={cn(BB_DATA_CARD, 'min-w-0 space-y-3 p-3 sm:p-4')}
       >
-        <section
-          aria-label="รายการงาน"
-          className={cn(BB_DATA_CARD, 'min-w-0 space-y-3 p-3 sm:p-4')}
-        >
-          <div className="flex flex-wrap gap-2">
-            <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
-              <button
-                type="button"
-                onClick={() => setShowCreateDialog(true)}
-                onPointerEnter={preloadSecretaryManualTaskDialog}
-                onFocus={preloadSecretaryManualTaskDialog}
-                className={cn(
-                  'inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-2xl border-2 border-foreground/85 bg-card px-3 py-2 text-[13px] font-normal text-foreground bb-shadow-sm touch-manipulation',
-                  'hover:border-foreground hover:bg-muted/35',
-                  BB_BTN_MOTION,
-                  BB_FOCUS_RING,
-                )}
+        <div className="flex flex-wrap gap-2">
+          <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
+            <button
+              type="button"
+              onClick={() => setShowCreateDialog(true)}
+              onPointerEnter={preloadSecretaryManualTaskDialog}
+              onFocus={preloadSecretaryManualTaskDialog}
+              className={cn(
+                'inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-2xl border-2 border-foreground/85 bg-card px-3 py-2 text-[13px] font-normal text-foreground bb-shadow-sm touch-manipulation',
+                'hover:border-foreground hover:bg-muted/35',
+                BB_BTN_MOTION,
+                BB_FOCUS_RING,
+              )}
+            >
+              <span
+                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-xl border border-foreground/20 bg-muted/35"
+                aria-hidden
               >
-                <span
-                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-xl border border-foreground/20 bg-muted/35"
-                  aria-hidden
-                >
-                  <Plus size={14} strokeWidth={2} />
-                </span>
-                เพิ่มงาน
-              </button>
-            </HintTooltip>
-          </div>
+                <Plus size={14} strokeWidth={2} />
+              </span>
+              เพิ่มงาน
+            </button>
+          </HintTooltip>
+        </div>
 
-          <ul
-            className={cn(
-              'grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2.5',
-              desktopSplit && 'md:grid-cols-3',
-            )}
-          >
-            {consolidatedAllTasks.length === 0 ? (
-              <li className="col-span-full list-none">
-                <HomePanelEmptyState
-                  compact
-                  icon={<ClipboardList size={22} strokeWidth={1.5} />}
-                  title="ไม่มีงานวันนี้"
-                  subtitle="เพิ่มงานด้วยตนเองได้จากปุ่มด้านบน"
-                />
-              </li>
-            ) : (
-              consolidatedAllTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onPreloadOpen={() => preloadSecretaryOverlayForTask(task)}
-                  onOpen={() => setOverlayTask(task)}
-                />
-              ))
-            )}
-          </ul>
-        </section>
-
-        <HomeShiftStatusSection
-          dateIso={workDateIso}
-          initialPanel={
-            initialMemberPanel?.dateIso === workDateIso ? initialMemberPanel : undefined
-          }
-          showWhenEmpty={desktopSplit}
-        />
-      </div>
+        <ul
+          className={cn(
+            'grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2.5',
+            desktopSplit && 'md:grid-cols-3',
+          )}
+        >
+          {consolidatedAllTasks.length === 0 ? (
+            <li className="col-span-full list-none">
+              <HomePanelEmptyState
+                compact
+                icon={<ClipboardList size={22} strokeWidth={1.5} />}
+                title="ไม่มีงานวันนี้"
+                subtitle="เพิ่มงานด้วยตนเองได้จากปุ่มด้านบน"
+              />
+            </li>
+          ) : (
+            consolidatedAllTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onPreloadOpen={() => preloadSecretaryOverlayForTask(task)}
+                onOpen={() => setOverlayTask(task)}
+              />
+            ))
+          )}
+        </ul>
+      </section>
 
       {overlayTask ? (
         <SecretaryTaskOverlay
@@ -344,7 +310,26 @@ export default function HomeClient({
           isPending={isPending}
         />
       ) : null}
-    </div>
+    </>
+  );
+}
+
+export default function HomeClient({
+  initialBoard,
+  initialMemberPanel,
+  locale,
+  boardLoadSource = 'ssr',
+}: HomeClientProps) {
+  const workDateIso = initialBoard.snapshot.dateIso || todayIsoBkk();
+  return (
+    <HomeDashboardFrame workDateIso={workDateIso}>
+      <HomeTaskBoard
+        initialBoard={initialBoard}
+        locale={locale}
+        boardLoadSource={boardLoadSource}
+      />
+      <HomeShiftPane dateIso={workDateIso} initialPanel={initialMemberPanel} />
+    </HomeDashboardFrame>
   );
 }
 

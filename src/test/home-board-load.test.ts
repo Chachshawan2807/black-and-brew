@@ -34,10 +34,21 @@ describe('home secretary board load', () => {
     expect(source).toContain('loadHomeMemberPanel');
     expect(source).toContain('checkAuth');
     expect(source).toMatch(
-      /const boardPromise = loadSecretaryBoard[\s\S]*const memberPanelPromise = loadHomeMemberPanel[\s\S]*await checkAuth\(\)/,
+      /const boardPromise = loadSecretaryBoard[\s\S]*const memberPanelPromise = loadHomeMemberPanel[\s\S]*await authedPromise/,
     );
-    expect(source).toMatch(
-      /Promise\.all\(\[\s*boardPromise,\s*memberPanelPromise/,
+  });
+
+  test('home page streams tasks and member panel in separate Suspense boundaries', () => {
+    const source = readFileSync(homePagePath, 'utf-8');
+    const suspenseCount = [...source.matchAll(/<Suspense\b/g)].length;
+    expect(suspenseCount).toBeGreaterThanOrEqual(3);
+    expect(source).toContain('HomeTasksSlot');
+    expect(source).toContain('HomeShiftsSlot');
+    expect(source).not.toMatch(
+      /await Promise\.all\(\[\s*boardPromise,\s*memberPanelPromise/,
+    );
+    expect(source).not.toMatch(
+      /const \[boardResult, memberPanelResult\] = await Promise\.all/,
     );
   });
 
@@ -60,9 +71,9 @@ describe('home secretary board load', () => {
     expect(source).toContain('skipInitialFullSync: true');
     expect(source).toContain('requestHomeBoardFullSync');
     expect(source).toContain('writeCachedSecretaryBoard');
-    expect(source).toContain('writeCachedHomeMemberPanel');
+    expect(source).not.toMatch(/timeout:\s*1200/);
     expect(source).toMatch(
-      /scheduleIdleWork\(\(\)\s*=>\s*requestHomeBoardFullSync\(\)/,
+      /requestHomeBoardFullSync\(\)/,
     );
   });
 
@@ -71,13 +82,22 @@ describe('home secretary board load', () => {
     expect(source).toContain('waitForPinReadAccess');
     expect(source).toContain('loadHomeMemberPanel');
     expect(source).toContain('readCachedHomeMemberPanel');
-    expect(source).toMatch(
-      /Promise\.all\(\[[\s\S]*loadSecretaryBoard[\s\S]*loadHomeMemberPanel/,
+    expect(source).not.toMatch(
+      /const \[result, memberResult\] = await Promise\.all/,
     );
     expect(source).not.toContain('SESSION_POLL_MS');
     expect(source).not.toMatch(
       /for\s*\([^)]*attempt[^)]*\)[\s\S]*loadSecretaryBoard/,
     );
+  });
+
+  test('client entry paints the secretary board before the member panel resolves', () => {
+    const source = readFileSync(homeEntryPath, 'utf-8');
+    expect(source).toMatch(/const boardPromise = loadSecretaryBoard/);
+    expect(source).toMatch(/const panelPromise = loadHomeMemberPanel/);
+    expect(source).toMatch(/const boardResult = await boardPromise/);
+    expect(source).toMatch(/setBoard\(boardResult\.board\)/);
+    expect(source).toMatch(/void panelPromise\.then/);
   });
 
   test('home loading skeleton does not show loading copy', () => {
