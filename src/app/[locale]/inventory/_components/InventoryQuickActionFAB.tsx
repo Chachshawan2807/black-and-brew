@@ -93,6 +93,23 @@ export default function InventoryQuickActionFAB() {
     isHistoryRefreshing,
     historySearchQuery,
     handleHistorySearchQueryChange } = history;
+
+  const quickAction = useInventoryQuickAction({
+    items,
+    setItems,
+    isReadOnly,
+    showHistoryModal,
+    onHistoryRefresh: refreshHistory,
+    isItemsLoaded: hasLoadedItems,
+    notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_FAB,
+    onAfterSave: (saved) => {
+      blurActiveElement();
+      if (saved?.id && saved.name) {
+        setFrequentItems(touchFrequentItemInCache({ id: saved.id, name: saved.name }));
+      }
+      setIsOpen(false);
+    } });
+
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [isExportingPO, setIsExportingPO] = useState(false);
 
@@ -130,22 +147,6 @@ export default function InventoryQuickActionFAB() {
       saveFrequentItemsCache(res.data);
     }
   }, []);
-
-  const quickAction = useInventoryQuickAction({
-    items,
-    setItems,
-    isReadOnly,
-    showHistoryModal,
-    onHistoryRefresh: refreshHistory,
-    isItemsLoaded: hasLoadedItems,
-    notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_FAB,
-    onAfterSave: (saved) => {
-      blurActiveElement();
-      if (saved?.id && saved.name) {
-        setFrequentItems(touchFrequentItemInCache({ id: saved.id, name: saved.name }));
-      }
-      setIsOpen(false);
-    } });
 
   const fabMobileBulkQueueActive = isMobile && quickAction.bulkMode;
   const fabMobileBulkListScroll =
