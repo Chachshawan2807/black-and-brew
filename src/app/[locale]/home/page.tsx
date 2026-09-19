@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { connection } from 'next/server';
 import { checkAuth } from '@/app/actions/auth';
 import { loadHomeMemberPanel, loadSecretaryBoard } from '@/app/actions/home-actions';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
@@ -12,6 +13,7 @@ function isHomeAuthPending(error?: string): boolean {
 }
 
 async function HomeBoard({ locale }: { locale: string }) {
+  await connection();
   const workDateIso = todayIsoBkk();
   const boardPromise = loadSecretaryBoard({ locale });
   const memberPanelPromise = loadHomeMemberPanel({ dateIso: workDateIso });
