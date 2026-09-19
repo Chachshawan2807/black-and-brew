@@ -1,126 +1,182 @@
 {
+  "dashboardScreenshotRange": {
+    "start": "2026-08-26",
+    "end": "2026-09-25"
+  },
   "mobile": [
     {
       "id": "01-home",
-      "route": "/en/home",
+      "route": "/th/home",
       "headline": "Daily tasks at a glance",
-      "waitSelector": "main",
-      "rawFile": "01-home.png"
+      "waitSelector": "#app-main",
+      "rawFile": "01-home.png",
+      "redactMode": "staff"
     },
     {
       "id": "02-dashboard",
-      "route": "/en/dashboard",
+      "route": "/th/dashboard",
       "headline": "Live shifts and roster",
-      "waitSelector": "main",
-      "rawFile": "02-dashboard.png"
+      "waitSelector": "#app-main",
+      "rawFile": "02-dashboard.png",
+      "redactMode": "staff",
+      "dashboardRange": true
     },
     {
       "id": "03-schedule",
-      "route": "/en/schedule",
+      "route": "/th/schedule",
       "headline": "Drag-and-drop scheduling",
-      "waitSelector": "main",
-      "rawFile": "03-schedule.png"
+      "waitSelector": "#app-main",
+      "rawFile": "03-schedule.png",
+      "redactMode": "staff"
     },
     {
       "id": "04-inventory",
-      "route": "/en/inventory",
+      "route": "/th/inventory",
       "headline": "Stock spreadsheet, always in sync",
-      "waitSelector": "table",
-      "rawFile": "04-inventory.png"
+      "waitSelector": "[data-testid=\"sort-order-input\"]",
+      "rawFile": "04-inventory.png",
+      "redactMode": "none"
     },
     {
       "id": "05-inventory-count",
-      "route": "/en/inventory/count",
+      "route": "/th/inventory/count",
       "headline": "Cycle counts on the floor",
-      "waitSelector": "main",
-      "rawFile": "05-inventory-count.png"
+      "waitSelector": "#app-main",
+      "rawFile": "05-inventory-count.png",
+      "redactMode": "none"
     },
     {
       "id": "06-inventory-accuracy",
-      "route": "/en/inventory/accuracy",
+      "route": "/th/inventory/accuracy",
       "headline": "Inventory accuracy insights",
-      "waitSelector": "main",
-      "rawFile": "06-inventory-accuracy.png"
+      "waitSelector": "#app-main",
+      "rawFile": "06-inventory-accuracy.png",
+      "redactMode": "none"
     },
     {
       "id": "07-branch-withdraw",
-      "route": "/en/inventory/branch-withdraw",
+      "route": "/th/inventory/branch-withdraw",
       "headline": "Branch stock withdrawals",
-      "waitSelector": "main",
-      "rawFile": "07-branch-withdraw.png"
+      "waitSelector": "#app-main",
+      "rawFile": "07-branch-withdraw.png",
+      "redactMode": "none"
     },
     {
       "id": "08-bean-orders",
-      "route": "/en/bean-orders",
+      "route": "/th/bean-orders",
       "headline": "Bean orders from intake to ship",
-      "waitSelector": "main",
-      "rawFile": "08-bean-orders.png"
+      "waitSelector": "#app-main",
+      "rawFile": "08-bean-orders.png",
+      "redactMode": "none"
     },
     {
-      "id": "09-bean-orders-new",
-      "route": "/en/bean-orders/new",
-      "headline": "Fast order entry",
-      "waitSelector": "main",
-      "rawFile": "09-bean-orders-new.png"
-    },
-    {
-      "id": "10-maintenance",
-      "route": "/en/maintenance",
+      "id": "09-maintenance",
+      "route": "/th/maintenance",
       "headline": "Equipment maintenance log",
-      "waitSelector": "main",
-      "rawFile": "10-maintenance.png"
+      "waitSelector": "#app-main",
+      "rawFile": "09-maintenance.png",
+      "redactMode": "none"
     },
     {
-      "id": "11-settings",
-      "route": "/en/settings",
+      "id": "10-settings",
+      "route": "/th/settings",
       "headline": "Theme, alerts, and device trust",
-      "waitSelector": "main",
-      "rawFile": "11-settings.png"
+      "waitSelector": "#app-main",
+      "rawFile": "10-settings.png",
+      "redactMode": "none"
     },
     {
-      "id": "12-notifications",
-      "route": "/en/inventory",
+      "id": "11-notifications",
+      "route": "/th/inventory",
       "headline": "Inventory alerts in one place",
-      "waitSelector": "table",
-      "rawFile": "12-notifications.png",
-      "openNotificationPanel": true
+      "waitSelector": "[data-testid=\"sort-order-input\"]",
+      "rawFile": "11-notifications.png",
+      "openNotificationPanel": true,
+      "redactMode": "none"
     }
   ],
   "desktop": [
     {
       "id": "d-home",
-      "route": "/en/home",
+      "route": "/th/home",
       "headline": "Daily tasks at a glance",
-      "waitSelector": "main",
-      "rawFile": "d-home.png"
+      "waitSelector": "#app-main",
+      "rawFile": "d-home.png",
+      "redactMode": "staff"
     },
     {
       "id": "d-dashboard",
-      "route": "/en/dashboard",
+      "route": "/th/dashboard",
       "headline": "Live shifts and roster",
-      "waitSelector": "main",
-      "rawFile": "d-dashboard.png"
+      "waitSelector": "#app-main",
+      "rawFile": "d-dashboard.png",
+      "redactMode": "staff",
+      "dashboardRange": true
     },
     {
       "id": "d-schedule",
-      "route": "/en/schedule",
+      "route": "/th/schedule",
       "headline": "Drag-and-drop scheduling",
-      "waitSelector": "main",
-      "rawFile": "d-schedule.png"
+      "waitSelector": "#app-main",
+      "rawFile": "d-schedule.png",
+      "redactMode": "staff"
+    },
+    {
+      "id": "d-maintenance",
+      "route": "/th/maintenance",
+      "headline": "Equipment maintenance log",
+      "waitSelector": "#app-main",
+      "rawFile": "d-maintenance.png",
+      "redactMode": "none"
     },
     {
       "id": "d-inventory",
-      "route": "/en/inventory",
+      "route": "/th/inventory",
       "headline": "Stock spreadsheet, always in sync",
-      "waitSelector": "table",
-      "rawFile": "d-inventory.png"
+      "waitSelector": "[data-testid=\"sort-order-input\"]",
+      "rawFile": "d-inventory.png",
+      "redactMode": "none"
+    },
+    {
+      "id": "d-inventory-count",
+      "route": "/th/inventory/count",
+      "headline": "Cycle counts on the floor",
+      "waitSelector": "#app-main",
+      "rawFile": "d-inventory-count.png",
+      "redactMode": "none"
+    },
+    {
+      "id": "d-inventory-accuracy",
+      "route": "/th/inventory/accuracy",
+      "headline": "Inventory accuracy insights",
+      "waitSelector": "#app-main",
+      "rawFile": "d-inventory-accuracy.png",
+      "redactMode": "none"
     },
     {
       "id": "d-branch-withdraw",
-      "route": "/en/inventory/branch-withdraw",
+      "route": "/th/inventory/branch-withdraw",
       "headline": "Branch stock withdrawals",
-      "waitSelector": "main",
-      "rawFile": "d-branch-withdraw.png"
+      "waitSelector": "#app-main",
+      "rawFile": "d-branch-withdraw.png",
+      "redactMode": "none"
+    },
+    {
+      "id": "d-bean-orders",
+      "route": "/th/bean-orders",
+      "headline": "Bean orders from intake to ship",
+      "waitSelector": "#app-main",
+      "rawFile": "d-bean-orders.png",
+      "redactMode": "none"
+    },
+    {
+      "id": "d-settings",
+      "route": "/th/settings",
+      "headline": "Theme, alerts, and device trust",
+      "waitSelector": "#app-main",
+      "rawFile": "d-settings.png",
+      "redactMode": "none"
     }
-  ]
+  ],
+  "lastCapture": "2026-09-19T18:50:36.078Z"
 }

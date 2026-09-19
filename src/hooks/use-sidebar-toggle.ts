@@ -26,15 +26,19 @@ export const useSidebarToggle = create(
 
 /** Wait for zustand persist rehydration before reading sidebar open state from localStorage. */
 export function useSidebarHydrated() {
-  const [hydrated, setHydrated] = useState(() => useSidebarToggle.persist.hasHydrated());
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    if (useSidebarToggle.persist.hasHydrated()) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
+    const persistApi = useSidebarToggle.persist;
+    if (!persistApi) {
       setHydrated(true);
       return;
     }
-    return useSidebarToggle.persist.onFinishHydration(() => setHydrated(true));
+    if (persistApi.hasHydrated()) {
+      setHydrated(true);
+      return;
+    }
+    return persistApi.onFinishHydration(() => setHydrated(true));
   }, []);
 
   return hydrated;

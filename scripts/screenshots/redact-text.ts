@@ -8,6 +8,10 @@ export function applyStaffAliases(text: string, staffNames: Record<string, strin
   let out = text;
   const entries = Object.entries(staffNames).sort((a, b) => b[0].length - a[0].length);
   for (const [real, alias] of entries) {
+    if (real.length < 3) {
+      if (out.trim() === real) out = alias;
+      continue;
+    }
     out = out.split(real).join(alias);
   }
   return out;

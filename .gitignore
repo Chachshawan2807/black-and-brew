@@ -96,3 +96,5 @@ graphify-out/
 # --- Marketing screenshots (regenerate via npm run screenshots) ---
 docs/marketing/screenshots/raw/**/*.png
 docs/marketing/screenshots/framed/**/*.png
+docs/marketing/screenshots/**/_debug*.png
+docs/marketing/screenshots/notification-list.seed.json

@@ -16,6 +16,11 @@ describe('applyStaffAliases', () => {
   test('replaces staff names', () => {
     expect(applyStaffAliases('ชัช and นิต้า', config.staffNames)).toBe('Staff F and Staff A');
   });
+
+  test('does not replace single-char staff names inside product words', () => {
+    expect(applyStaffAliases('ซอสคาราเมล', { เม: 'Staff D' })).toBe('ซอสคาราเมล');
+    expect(applyStaffAliases('เม', { เม: 'Staff D' })).toBe('Staff D');
+  });
 });
 
 describe('redactPhones', () => {

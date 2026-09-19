@@ -10,7 +10,6 @@ async function main() {
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
-  await page.setViewportSize({ width: 1080, height: 1920 });
 
   for (const shot of manifest.mobile) {
     const rawPath = path.join(RAW_MOBILE, shot.rawFile);
@@ -26,8 +25,14 @@ async function main() {
       .replace('{{HEADLINE}}', shot.headline)
       .replace('{{SCREENSHOT_DATA_URL}}', dataUrl);
     await page.setContent(html, { waitUntil: 'load' });
+
+    const bodyHeight = await page.evaluate(() => document.body.scrollHeight);
+    // Tall full-page mobile raws (e.g. inventory grid) must not be clipped in framed output.
+    const height = Math.min(Math.max(bodyHeight + 40, 1200), 40000);
+    await page.setViewportSize({ width: 1080, height });
+
     const outPath = path.join(FRAMED_DIR, `${shot.id}.png`);
-    await page.screenshot({ path: outPath, fullPage: false });
+    await page.screenshot({ path: outPath, fullPage: true });
     console.log('framed', outPath);
   }
 
