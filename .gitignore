@@ -92,3 +92,7 @@ graphify-out/
 
 # --- Hallmark (optional local audit session log) ---
 .hallmark/
+
+# --- Marketing screenshots (regenerate via npm run screenshots) ---
+docs/marketing/screenshots/raw/**/*.png
+docs/marketing/screenshots/framed/**/*.png

@@ -39,7 +39,11 @@
     "graph:sync": "node scripts/sync-knowledge-graph.mjs",
     "push:cleanup": "node scripts/push-subscriptions-cleanup.mjs",
     "push:cleanup:apply": "node scripts/push-subscriptions-cleanup.mjs --apply --mode=stale",
-    "push:cleanup:all": "node scripts/push-subscriptions-cleanup.mjs --apply --mode=all --confirm=REMOVE_ALL"
+    "push:cleanup:all": "node scripts/push-subscriptions-cleanup.mjs --apply --mode=all --confirm=REMOVE_ALL",
+    "screenshots:capture": "node scripts/screenshots/capture.mjs",
+    "screenshots:compose": "node scripts/screenshots/compose.mjs",
+    "screenshots": "npm run screenshots:capture && npm run screenshots:compose",
+    "screenshots:verify": "node scripts/screenshots/verify-no-staff-leak.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.79",
@@ -91,6 +95,7 @@
     "eslint-config-next": "16.2.4",
     "jsdom": "^29.1.1",
     "markdownlint-cli2": "^0.22.1",
+    "playwright": "^1.55.0",
     "sharp": "^0.35.1",
     "tailwindcss": "^4",
     "typescript": "^5",

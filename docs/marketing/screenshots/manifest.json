@@ -1,0 +1,126 @@
+{
+  "mobile": [
+    {
+      "id": "01-home",
+      "route": "/en/home",
+      "headline": "Daily tasks at a glance",
+      "waitSelector": "main",
+      "rawFile": "01-home.png"
+    },
+    {
+      "id": "02-dashboard",
+      "route": "/en/dashboard",
+      "headline": "Live shifts and roster",
+      "waitSelector": "main",
+      "rawFile": "02-dashboard.png"
+    },
+    {
+      "id": "03-schedule",
+      "route": "/en/schedule",
+      "headline": "Drag-and-drop scheduling",
+      "waitSelector": "main",
+      "rawFile": "03-schedule.png"
+    },
+    {
+      "id": "04-inventory",
+      "route": "/en/inventory",
+      "headline": "Stock spreadsheet, always in sync",
+      "waitSelector": "table",
+      "rawFile": "04-inventory.png"
+    },
+    {
+      "id": "05-inventory-count",
+      "route": "/en/inventory/count",
+      "headline": "Cycle counts on the floor",
+      "waitSelector": "main",
+      "rawFile": "05-inventory-count.png"
+    },
+    {
+      "id": "06-inventory-accuracy",
+      "route": "/en/inventory/accuracy",
+      "headline": "Inventory accuracy insights",
+      "waitSelector": "main",
+      "rawFile": "06-inventory-accuracy.png"
+    },
+    {
+      "id": "07-branch-withdraw",
+      "route": "/en/inventory/branch-withdraw",
+      "headline": "Branch stock withdrawals",
+      "waitSelector": "main",
+      "rawFile": "07-branch-withdraw.png"
+    },
+    {
+      "id": "08-bean-orders",
+      "route": "/en/bean-orders",
+      "headline": "Bean orders from intake to ship",
+      "waitSelector": "main",
+      "rawFile": "08-bean-orders.png"
+    },
+    {
+      "id": "09-bean-orders-new",
+      "route": "/en/bean-orders/new",
+      "headline": "Fast order entry",
+      "waitSelector": "main",
+      "rawFile": "09-bean-orders-new.png"
+    },
+    {
+      "id": "10-maintenance",
+      "route": "/en/maintenance",
+      "headline": "Equipment maintenance log",
+      "waitSelector": "main",
+      "rawFile": "10-maintenance.png"
+    },
+    {
+      "id": "11-settings",
+      "route": "/en/settings",
+      "headline": "Theme, alerts, and device trust",
+      "waitSelector": "main",
+      "rawFile": "11-settings.png"
+    },
+    {
+      "id": "12-notifications",
+      "route": "/en/inventory",
+      "headline": "Inventory alerts in one place",
+      "waitSelector": "table",
+      "rawFile": "12-notifications.png",
+      "openNotificationPanel": true
+    }
+  ],
+  "desktop": [
+    {
+      "id": "d-home",
+      "route": "/en/home",
+      "headline": "Daily tasks at a glance",
+      "waitSelector": "main",
+      "rawFile": "d-home.png"
+    },
+    {
+      "id": "d-dashboard",
+      "route": "/en/dashboard",
+      "headline": "Live shifts and roster",
+      "waitSelector": "main",
+      "rawFile": "d-dashboard.png"
+    },
+    {
+      "id": "d-schedule",
+      "route": "/en/schedule",
+      "headline": "Drag-and-drop scheduling",
+      "waitSelector": "main",
+      "rawFile": "d-schedule.png"
+    },
+    {
+      "id": "d-inventory",
+      "route": "/en/inventory",
+      "headline": "Stock spreadsheet, always in sync",
+      "waitSelector": "table",
+      "rawFile": "d-inventory.png"
+    },
+    {
+      "id": "d-branch-withdraw",
+      "route": "/en/inventory/branch-withdraw",
+      "headline": "Branch stock withdrawals",
+      "waitSelector": "main",
+      "rawFile": "d-branch-withdraw.png"
+    }
+  ]
+}

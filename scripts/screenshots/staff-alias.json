@@ -1,0 +1,15 @@
+{
+  "staffNames": {
+    "นิต้า": "Staff A",
+    "ปิ่น": "Staff B",
+    "มุก": "Staff C",
+    "เม": "Staff D",
+    "มีนา": "Staff E",
+    "ชัช": "Staff F",
+    "หนูดี": "Staff G",
+    "ฟิว": "Staff H",
+    "ล่า": "Staff I"
+  },
+  "customerPlaceholder": "Customer ***",
+  "phonePattern": "0[0-9]{1,2}[-\\s]?[0-9]{3}[-\\s]?[0-9]{4}"
+}
