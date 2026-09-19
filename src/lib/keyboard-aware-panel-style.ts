@@ -80,7 +80,7 @@ export function getModalContentKeyboardAwareStyle({
 export const FAB_MOBILE_BULK_QUEUE_CHROME_FULL_PX = 290;
 
 /** Estimated fixed chrome when the software keyboard is open (secondary row hidden). */
-export const FAB_MOBILE_BULK_QUEUE_CHROME_KEYBOARD_PX = 200;
+export const FAB_MOBILE_BULK_QUEUE_CHROME_KEYBOARD_PX = 248;
 
 /** Cap FAB panel max-height for FAB bulk mode on phone. */
 export function getFabMobileBulkPanelMaxHeight(
@@ -124,6 +124,7 @@ export function getFabMobileBulkPanelStyle(
 export function getMobileQuickActionKeyboardSheetBackdropStyle(
   insets: VisualViewportInsets,
   margin = 8,
+  verticalAlign: 'start' | 'center' = 'center',
 ): CSSProperties {
   if (!insets.isKeyboardOpen) return {};
 
@@ -139,7 +140,7 @@ export function getMobileQuickActionKeyboardSheetBackdropStyle(
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'stretch',
-    justifyContent: 'center',
+    justifyContent: verticalAlign === 'center' ? 'center' : 'flex-start',
     padding: margin,
     paddingTop: `max(${margin}px, env(safe-area-inset-top, 0px))`,
     overflow: 'hidden',

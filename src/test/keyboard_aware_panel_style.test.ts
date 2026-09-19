@@ -134,4 +134,14 @@ describe('keyboard-aware panel styles', () => {
     expect(backdrop.justifyContent).toBe('center');
     expect(panel.alignSelf).toBe('stretch');
   });
+
+  test('mobile quick action sheet can top-align for bulk mode keyboard layout', () => {
+    const backdrop = getMobileQuickActionKeyboardSheetBackdropStyle(
+      keyboardInsets,
+      8,
+      'start',
+    );
+
+    expect(backdrop.justifyContent).toBe('flex-start');
+  });
 });

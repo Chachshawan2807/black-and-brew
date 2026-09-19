@@ -104,7 +104,11 @@ export default function InventoryQuickActionFAB() {
   const mobileKeyboardSheet = isMobile && viewportInsets.isKeyboardOpen;
   const mobileBackdropStyle = isMobile
     ? mobileKeyboardSheet
-      ? getMobileQuickActionKeyboardSheetBackdropStyle(viewportInsets)
+      ? getMobileQuickActionKeyboardSheetBackdropStyle(
+          viewportInsets,
+          8,
+          quickAction.bulkMode ? 'start' : 'center',
+        )
       : getModalBackdropKeyboardAwareStyle({
           insets: viewportInsets,
           verticalAlign: 'center',
@@ -143,8 +147,9 @@ export default function InventoryQuickActionFAB() {
       setIsOpen(false);
     } });
 
-  const fabMobileBulkQueueActive =
-    isMobile && quickAction.bulkMode && quickAction.bulkQueue.length > 0;
+  const fabMobileBulkQueueActive = isMobile && quickAction.bulkMode;
+  const fabMobileBulkListScroll =
+    fabMobileBulkQueueActive && quickAction.bulkQueue.length > 0;
   const fabMobileBulkPanelStyle =
     fabMobileBulkQueueActive ? getFabMobileBulkPanelStyle(viewportInsets) : undefined;
 
@@ -395,7 +400,7 @@ export default function InventoryQuickActionFAB() {
                   'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-2xl isolate border border-border overflow-hidden',
                   'max-md:relative max-md:w-full',
                   FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS,
-                  fabMobileBulkQueueActive
+                  fabMobileBulkListScroll
                     ? 'max-md:overflow-hidden'
                     : 'max-md:overflow-y-auto max-md:bb-smooth-scroll',
                   'max-md:transition-[max-height] max-md:[transition-duration:var(--bb-duration-fast)]',

@@ -1143,15 +1143,17 @@ export function InventoryQuickActionBar({
         </div>
 
         {bulkMode && bulkPreviews.length > 0 && !collapseBulkQueueForSearch && (
-          <BulkQueuePanel
-            bulkPreviews={bulkPreviews}
-            quickType={quickType}
-            onRemoveBulkItem={onRemoveBulkItem}
-            onBulkLineQtyChange={onBulkLineQtyChange}
-            onClearBulkQueue={onClearBulkQueue}
-            fabMobileBulkShell={fabMobileBulkShell}
-            queueListMaxHeightPx={fabBulkQueueListMaxHeightPx}
-          />
+          <div className={cn(fabMobileBulkShell && 'min-h-0 shrink')}>
+            <BulkQueuePanel
+              bulkPreviews={bulkPreviews}
+              quickType={quickType}
+              onRemoveBulkItem={onRemoveBulkItem}
+              onBulkLineQtyChange={onBulkLineQtyChange}
+              onClearBulkQueue={onClearBulkQueue}
+              fabMobileBulkShell={fabMobileBulkShell}
+              queueListMaxHeightPx={fabBulkQueueListMaxHeightPx}
+            />
+          </div>
         )}
 
         <div
