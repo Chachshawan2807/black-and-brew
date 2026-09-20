@@ -27,9 +27,11 @@ import { filterVisibleSecretaryBoardTasks } from '@/lib/secretary/visible-board-
 import {
   publishHomeSidebarPendingCount,
   requestHomeBoardFullSync,
+  requestHomeBoardSnapshotHydrate,
   useHomeBoardSync,
   type BoardSyncPayload,
 } from '@/hooks/use-home-board-sync';
+import { resolveSnapshotScopesForBoardTasks } from '@/lib/secretary/resolve-board-hydration-scopes';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import {
   preloadSecretaryOverlayForTask,
@@ -112,12 +114,17 @@ export function HomeTaskBoard({
   const boardRef = useRef(board);
   boardRef.current = board;
 
+  const hydrationTasksRef = useRef<SecretaryBoardDisplayTask[]>([]);
+
   useHomeBoardSync({
     dateIso: workDateIso,
     locale,
     onSync: applyBoardSync,
     onWorkDateChange: setWorkDateIso,
     getBaseSnapshot: () => boardRef.current.snapshot,
+    getCurrentTasks: () => boardRef.current.tasks,
+    getHydrationScopes: () =>
+      resolveSnapshotScopesForBoardTasks(hydrationTasksRef.current),
     skipInitialFullSync: true,
   });
 
@@ -158,6 +165,14 @@ export function HomeTaskBoard({
       ),
     [board.tasks, visibility],
   );
+
+  hydrationTasksRef.current = consolidatedAllTasks;
+
+  useEffect(() => {
+    const scopes = resolveSnapshotScopesForBoardTasks(consolidatedAllTasks);
+    if (scopes.length === 0) return;
+    requestHomeBoardSnapshotHydrate(scopes);
+  }, [consolidatedAllTasks]);
 
   useEffect(() => {
     if (consolidatedAllTasks.length === 0) return;
@@ -297,8 +312,16 @@ export function HomeTaskBoard({
               <TaskCard
                 key={task.id}
                 task={task}
-                onPreloadOpen={() => preloadSecretaryOverlayForTask(task)}
-                onOpen={() => setOverlayTask(task)}
+                onPreloadOpen={() => {
+                  const scopes = resolveSnapshotScopesForBoardTasks([task]);
+                  if (scopes.length > 0) requestHomeBoardSnapshotHydrate(scopes);
+                  preloadSecretaryOverlayForTask(task);
+                }}
+                onOpen={() => {
+                  const scopes = resolveSnapshotScopesForBoardTasks([task]);
+                  if (scopes.length > 0) requestHomeBoardSnapshotHydrate(scopes);
+                  setOverlayTask(task);
+                }}
               />
             ))
           )}

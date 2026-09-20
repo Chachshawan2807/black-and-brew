@@ -51,7 +51,7 @@ describe('mobile home load', () => {
   test('home board cache survives a new mobile session via localStorage', () => {
     const source = readFileSync(cachePath, 'utf-8');
     expect(source).toContain('localStorage');
-    expect(source).toContain('bb-home-board:v2');
+    expect(source).toContain('bb-home-board:v3');
     expect(source).toContain('readCachedHomeMemberPanel');
     expect(source).toContain('writeCachedHomeMemberPanel');
   });

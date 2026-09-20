@@ -30,7 +30,10 @@ import {
 } from '@/lib/policies/server-gate';
 import { ensureServerSession } from '@/lib/security/server-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { buildMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
+import {
+  buildMinimalSecretaryBoardSnapshot,
+  isMinimalSecretaryBoardSnapshot,
+} from '@/lib/secretary/minimal-board-snapshot';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import { fetchHomeMemberPanelFromServer } from '@/lib/schedule/load-home-member-panel-server';
 import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
@@ -542,10 +545,20 @@ export async function syncAndFetchSecretaryBoard(opts?: {
     }
 
     const dateIso = opts?.dateIso ?? todayIsoBkk();
-    const [snapshot, tasksBeforeSync] = await Promise.all([
-      fetchSecretarySnapshot({ dateIso, locale }),
-      fetchSecretaryTasks(dateIso),
-    ]);
+    const baseSnapshot = opts?.baseSnapshot;
+    const reuseHydratedSnapshot =
+      baseSnapshot && !isMinimalSecretaryBoardSnapshot(baseSnapshot);
+
+    const [snapshot, tasksBeforeSync] = reuseHydratedSnapshot
+      ? await (async () => {
+          const tasksResult = await fetchSecretaryTasks(dateIso);
+          return [baseSnapshot, tasksResult] as const;
+        })()
+      : await Promise.all([
+          fetchSecretarySnapshot({ dateIso, locale }),
+          fetchSecretaryTasks(dateIso),
+        ]);
+
     const syncResult = await syncDerivedSecretaryTasks({
       ...opts,
       snapshot,
@@ -655,6 +668,44 @@ export type SecretaryBoard = {
   snapshot: SecretarySnapshot;
   tasks: SecretaryTask[];
 };
+
+/** Read-only snapshot hydrate for home overlays (no derived task writes). */
+export async function hydrateSecretaryBoardSnapshot(opts: {
+  dateIso: string;
+  locale: string;
+  scopes?: readonly Exclude<SecretarySyncScope, 'tasks'>[];
+  baseSnapshot?: SecretarySnapshot;
+}): Promise<{
+  success: boolean;
+  snapshot?: SecretarySnapshot;
+  snapshotPatch?: SecretarySnapshotPatch;
+  error?: string;
+}> {
+  const authError = await requireReadAccess();
+  if (authError) return { success: false, error: authError };
+
+  const { dateIso, locale } = opts;
+  const base =
+    opts.baseSnapshot ?? buildMinimalSecretaryBoardSnapshot(dateIso, locale);
+
+  try {
+    if (opts.scopes?.length) {
+      const patch = await fetchSecretarySnapshotSlices({ dateIso, locale }, opts.scopes);
+      return {
+        success: true,
+        snapshot: mergeSecretarySnapshot(base, patch),
+        snapshotPatch: patch,
+      };
+    }
+
+    const snapshot = await fetchSecretarySnapshot({ dateIso, locale });
+    return { success: true, snapshot };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[hydrateSecretaryBoardSnapshot]', message);
+    return { success: false, error: message };
+  }
+}
 
 export async function loadHomeMemberPanel(opts?: {
   dateIso?: string;

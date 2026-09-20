@@ -29,3 +29,16 @@ export function buildMinimalSecretaryBoardSnapshot(
     },
   };
 }
+
+/** True when the board still has placeholder snapshot data from deferDerivedSync / cache. */
+export function isMinimalSecretaryBoardSnapshot(snapshot: SecretarySnapshot): boolean {
+  return (
+    snapshot.itemsToOrder.length === 0 &&
+    snapshot.branchWithdrawItems.length === 0 &&
+    snapshot.inventoryCatalogItems.length === 0 &&
+    snapshot.maintenanceTasks.length === 0 &&
+    snapshot.operational.pendingBeanOrders.length === 0 &&
+    snapshot.operational.weeklyDays.length === 0 &&
+    snapshot.headcountToday === 0
+  );
+}

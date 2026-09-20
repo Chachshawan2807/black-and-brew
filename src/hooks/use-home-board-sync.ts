@@ -1,7 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
-import { syncAndFetchSecretaryBoard } from '@/app/actions/home-actions';
+import {
+  hydrateSecretaryBoardSnapshot,
+  syncAndFetchSecretaryBoard,
+} from '@/app/actions/home-actions';
+import { isMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
+import type { SecretarySyncScope } from '@/lib/secretary/board-sync-scope';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import {
@@ -38,6 +43,8 @@ type SyncRegistration = {
   getDateIso: () => string;
   getLocale: () => string;
   getBaseSnapshot: () => SecretarySnapshot | undefined;
+  getCurrentTasks: () => SecretaryTask[];
+  getHydrationScopes: () => Exclude<SecretarySyncScope, 'tasks'>[];
 };
 
 const registrations = new Set<SyncRegistration>();
@@ -52,6 +59,51 @@ let needsResync = false;
 let pendingTables = new Set<SecretaryRealtimeTable>();
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let forceFullNextSync = true;
+let snapshotHydrateInFlight: Promise<void> | null = null;
+
+async function hydrateBoardSnapshots(
+  targets: SyncRegistration[],
+  opts?: { scopes?: Exclude<SecretarySyncScope, 'tasks'>[]; forceFull?: boolean },
+) {
+  await Promise.all(
+    targets.map(async (registration) => {
+      const dateIso = registration.getDateIso();
+      const locale = registration.getLocale();
+      if (!dateIso || !locale) return;
+
+      const baseSnapshot = registration.getBaseSnapshot();
+      if (
+        !opts?.scopes &&
+        !opts?.forceFull &&
+        baseSnapshot &&
+        !isMinimalSecretaryBoardSnapshot(baseSnapshot)
+      ) {
+        return;
+      }
+
+      const taskScopes = registration.getHydrationScopes();
+      const scopes =
+        opts?.scopes ??
+        (opts?.forceFull || taskScopes.length === 0 ? undefined : taskScopes);
+
+      const result = await hydrateSecretaryBoardSnapshot({
+        dateIso,
+        locale,
+        scopes: scopes?.length ? scopes : undefined,
+        baseSnapshot,
+      });
+
+      if (!result.success || !result.snapshot) return;
+
+      registration.listener({
+        tasks: registration.getCurrentTasks(),
+        snapshot: result.snapshot,
+        snapshotPatch: result.snapshotPatch,
+        syncKind: scopes?.length ? 'scoped' : 'full',
+      });
+    }),
+  );
+}
 
 function isSecretaryRealtimeTable(table: string): table is SecretaryRealtimeTable {
   return (SECRETARY_REALTIME_TABLES as readonly string[]).includes(table);
@@ -178,6 +230,10 @@ async function runAllBoardSyncs() {
     let fullSyncTaskCount = 0;
     let fullSyncKind: string | undefined;
 
+    if (useFullSync && registrations.size > 0) {
+      await hydrateBoardSnapshots([...registrations], { forceFull: true });
+    }
+
     await Promise.all(
       [...registrations].map(async (registration) => {
         const dateIso = registration.getDateIso();
@@ -241,12 +297,34 @@ export function requestHomeBoardFullSync() {
   void runAllBoardSyncs();
 }
 
+/** Warm snapshot slices for overlays before full derived sync finishes. */
+export function requestHomeBoardSnapshotHydrate(
+  scopes?: Exclude<SecretarySyncScope, 'tasks'>[],
+) {
+  if (registrations.size === 0) return;
+
+  const run = async () => {
+    await hydrateBoardSnapshots([...registrations], { scopes });
+  };
+
+  if (snapshotHydrateInFlight) {
+    void snapshotHydrateInFlight.then(() => run());
+    return;
+  }
+
+  snapshotHydrateInFlight = run().finally(() => {
+    snapshotHydrateInFlight = null;
+  });
+}
+
 export function useHomeBoardSync(options: {
   dateIso: string;
   locale: string;
   onSync: (payload: BoardSyncPayload) => void;
   onWorkDateChange?: (dateIso: string) => void;
   getBaseSnapshot?: () => SecretarySnapshot;
+  getCurrentTasks?: () => SecretaryTask[];
+  getHydrationScopes?: () => Exclude<SecretarySyncScope, 'tasks'>[];
   /** Skip the mount full-sync when SSR already hydrated the board. */
   skipInitialFullSync?: boolean;
 }) {
@@ -255,6 +333,8 @@ export function useHomeBoardSync(options: {
   const dateIsoRef = useRef(options.dateIso);
   const localeRef = useRef(options.locale);
   const getBaseSnapshotRef = useRef(options.getBaseSnapshot);
+  const getCurrentTasksRef = useRef(options.getCurrentTasks);
+  const getHydrationScopesRef = useRef(options.getHydrationScopes);
   const skipInitialFullSyncRef = useRef(options.skipInitialFullSync ?? false);
   const skipNextDateLocaleSyncRef = useRef(options.skipInitialFullSync ?? false);
 
@@ -264,6 +344,8 @@ export function useHomeBoardSync(options: {
     dateIsoRef.current = options.dateIso;
     localeRef.current = options.locale;
     getBaseSnapshotRef.current = options.getBaseSnapshot;
+    getCurrentTasksRef.current = options.getCurrentTasks;
+    getHydrationScopesRef.current = options.getHydrationScopes;
     skipInitialFullSyncRef.current = options.skipInitialFullSync ?? false;
   });
 
@@ -277,6 +359,8 @@ export function useHomeBoardSync(options: {
       getDateIso: () => dateIsoRef.current,
       getLocale: () => localeRef.current,
       getBaseSnapshot: () => getBaseSnapshotRef.current?.(),
+      getCurrentTasks: () => getCurrentTasksRef.current?.() ?? [],
+      getHydrationScopes: () => getHydrationScopesRef.current?.() ?? [],
     };
 
     registrations.add(registration);

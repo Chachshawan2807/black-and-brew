@@ -1,5 +1,9 @@
 import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
 import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
+import {
+  prefetchBeanOrdersForOverlay,
+  prefetchScheduleOverlayData,
+} from '@/lib/secretary/overlay-data-cache';
 import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import {
   resolveSecretaryTaskOverlayKind,
@@ -18,7 +22,13 @@ function preloadOverlayChunks(kind: SecretaryTaskOverlayKind): void {
       preloadPurchaseOrdersModal();
       break;
     case 'bean_orders_list':
+      void prefetchBeanOrdersForOverlay();
+      void import('@/app/[locale]/home/_components/SecretaryTaskListOverlay');
+      break;
     case 'schedule_review_list':
+      void prefetchScheduleOverlayData();
+      void import('@/app/[locale]/home/_components/SecretaryTaskListOverlay');
+      break;
     case 'maintenance_list':
       void import('@/app/[locale]/home/_components/SecretaryTaskListOverlay');
       break;
