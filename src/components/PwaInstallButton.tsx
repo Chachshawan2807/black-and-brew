@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Download, Share, SquarePlus } from '@/lib/icons';
 import { CloseIcon } from '@/components/ui/close-icon';
@@ -68,11 +68,11 @@ export function PwaInstallButton({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPreparing, setIsPreparing] = useState(false);
   const [iosGuideOpen, setIosGuideOpen] = useState(false);
-  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    setPortalTarget(document.body);
-  }, []);
+  const portalTarget = useSyncExternalStore(
+    () => () => {},
+    () => document.body,
+    () => null,
+  );
 
   const closeIosGuide = useCallback(() => {
     dialogRef.current?.close();

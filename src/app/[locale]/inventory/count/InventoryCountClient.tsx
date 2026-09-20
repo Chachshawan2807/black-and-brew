@@ -846,13 +846,9 @@ export default function InventoryCountClient({
   const isReadOnly = useReadOnly();
   const { subscribe } = useInventoryRealtime();
   const [adjustUnlocked, setAdjustUnlocked] = useState(() => isCountAdjustUnlocked());
-  const [adjustPinOpen, setAdjustPinOpen] = useState(false);
-
-  useEffect(() => {
-    if (embedded && initialPageMode === 'adjust' && !adjustUnlocked) {
-      setAdjustPinOpen(true);
-    }
-  }, [adjustUnlocked, embedded, initialPageMode]);
+  const [adjustPinOpen, setAdjustPinOpen] = useState(
+    () => embedded && initialPageMode === 'adjust' && !isCountAdjustUnlocked(),
+  );
 
   const inventoryCountOverlayLayers = useMemo(
     () => [

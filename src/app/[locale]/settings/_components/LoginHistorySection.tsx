@@ -174,28 +174,36 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
   const isTh = locale === "th";
   const loadGenRef = useRef(0);
 
-  const load = useCallback(async (force = false) => {
-    const gen = ++loadGenRef.current;
-    setLoading(true);
+  const fetchLoginHistory = useCallback((gen: number, force = false) => {
     if (force) invalidateLoginHistoryCache();
-    const result = await getOrFetchLoginHistoryBundle(LOGIN_HISTORY_INITIAL_LIMIT);
-    if (gen !== loadGenRef.current) return;
+    void getOrFetchLoginHistoryBundle(LOGIN_HISTORY_INITIAL_LIMIT).then((result) => {
+      if (gen !== loadGenRef.current) return;
 
-    if (!result.success) {
-      setError(result.error);
-      setRows([]);
-      setSessions([]);
-    } else {
-      setError(null);
-      setRows(result.rows);
-      setSessions(result.sessions);
-    }
-    setLoading(false);
+      if (!result.success) {
+        setError(result.error);
+        setRows([]);
+        setSessions([]);
+      } else {
+        setError(null);
+        setRows(result.rows);
+        setSessions(result.sessions);
+      }
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    const gen = ++loadGenRef.current;
+    fetchLoginHistory(gen);
+  }, [fetchLoginHistory]);
+
+  const load = useCallback(
+    (force = false) => {
+      const gen = ++loadGenRef.current;
+      fetchLoginHistory(gen, force);
+    },
+    [fetchLoginHistory],
+  );
 
   const visibleRows = rows.slice(0, visibleCount);
   const hasMoreRows = visibleCount < rows.length;
@@ -208,7 +216,10 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
         sessions={sessions}
         loading={loading}
         loadError={error}
-        onReload={() => load(true)}
+        onReload={() => {
+          setLoading(true);
+          void load(true);
+        }}
       />
 
       {loading ? (
@@ -224,7 +235,10 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
           </p>
           <button
             type="button"
-            onClick={() => void load(true)}
+            onClick={() => {
+              setLoading(true);
+              void load(true);
+            }}
             className={SETTINGS_BTN_GHOST}
           >
             {isTh ? "ลองใหม่" : "Try again"}

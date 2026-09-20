@@ -92,6 +92,20 @@ interface MonthlyRosterProps {
   initialEndDate?: string;
 }
 
+function resolveMonthlyRosterInitialRange(
+  initialStartDate?: string,
+  initialEndDate?: string,
+): { start: string; end: string } {
+  const start =
+    initialStartDate || format(startOfMonth(new Date()), 'yyyy-MM-dd');
+  const end = initialEndDate || format(endOfMonth(new Date()), 'yyyy-MM-dd');
+  const saved = readDashboardRosterRangeFromStorage();
+  if (!saved) return { start, end };
+  if (saved.start === start && saved.end === end) return { start, end };
+  persistDashboardRosterRange(saved.start, saved.end);
+  return { start: saved.start, end: saved.end };
+}
+
 export default function MonthlyRoster({
   initialProfiles,
   initialShifts,
@@ -100,8 +114,12 @@ export default function MonthlyRoster({
   initialEndDate,
 }: MonthlyRosterProps) {
   const hasInitialData = Boolean(initialProfiles && initialProfiles.length > 0);
-  const [startDate, setStartDate] = useState(initialStartDate || format(startOfMonth(new Date()), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(initialEndDate || format(endOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [startDate, setStartDate] = useState(
+    () => resolveMonthlyRosterInitialRange(initialStartDate, initialEndDate).start,
+  );
+  const [endDate, setEndDate] = useState(
+    () => resolveMonthlyRosterInitialRange(initialStartDate, initialEndDate).end,
+  );
   const [activeTab, setActiveTab] = useState<'consolidated' | 'individual'>('consolidated');
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(
     hasInitialData ? initialProfiles![0]?.id ?? null : null,
@@ -183,7 +201,6 @@ export default function MonthlyRoster({
   }, [selectedStaffId, data.shifts, holidays, startDate, endDate]);
 
   const initialDataConsumedRef = useRef(false);
-  const restoredRosterRangeRef = useRef(false);
   const selectedStaffIdRef = useRef(selectedStaffId);
   const hasInitialDataRef = useRef(hasInitialData);
 
@@ -191,19 +208,6 @@ export default function MonthlyRoster({
     selectedStaffIdRef.current = selectedStaffId;
     hasInitialDataRef.current = hasInitialData;
   });
-
-  useEffect(() => {
-    if (restoredRosterRangeRef.current) return;
-    restoredRosterRangeRef.current = true;
-
-    const saved = readDashboardRosterRangeFromStorage();
-    if (!saved) return;
-    if (saved.start === startDate && saved.end === endDate) return;
-
-    setStartDate(saved.start);
-    setEndDate(saved.end);
-    persistDashboardRosterRange(saved.start, saved.end);
-  }, [startDate, endDate]);
 
   useEffect(() => {
     async function loadData() {

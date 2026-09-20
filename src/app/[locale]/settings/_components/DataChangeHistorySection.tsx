@@ -128,29 +128,37 @@ export default function DataChangeHistorySection({
   const isTh = locale === "th";
   const loadGenRef = useRef(0);
 
-  const load = useCallback(async () => {
-    const gen = ++loadGenRef.current;
-    setLoading(true);
-    const historyModule = moduleFilter === "all" ? undefined : moduleFilter;
-    const result = await getOrFetchEditHistory({
-      limit: EDIT_HISTORY_INITIAL_LIMIT,
-      module: historyModule,
-    });
-    if (gen !== loadGenRef.current) return;
+  const fetchHistory = useCallback(
+    (gen: number) => {
+      const historyModule = moduleFilter === "all" ? undefined : moduleFilter;
+      void getOrFetchEditHistory({
+        limit: EDIT_HISTORY_INITIAL_LIMIT,
+        module: historyModule,
+      }).then((result) => {
+        if (gen !== loadGenRef.current) return;
 
-    if (!result.success) {
-      setError(result.error);
-      setRows([]);
-    } else {
-      setError(null);
-      setRows(result.rows);
-    }
-    setLoading(false);
-  }, [moduleFilter]);
+        if (!result.success) {
+          setError(result.error);
+          setRows([]);
+        } else {
+          setError(null);
+          setRows(result.rows);
+        }
+        setLoading(false);
+      });
+    },
+    [moduleFilter],
+  );
 
   useEffect(() => {
-    void load();
-  }, [moduleFilter, load]);
+    const gen = ++loadGenRef.current;
+    fetchHistory(gen);
+  }, [moduleFilter, fetchHistory]);
+
+  const load = useCallback(() => {
+    const gen = ++loadGenRef.current;
+    fetchHistory(gen);
+  }, [fetchHistory]);
 
   const filterOptions = [
     { value: "all", label: isTh ? "ทั้งหมด" : "All" },
@@ -175,6 +183,7 @@ export default function DataChangeHistorySection({
             onClick={() => {
               setModuleFilter(opt.value);
               setVisibleCount(INITIAL_VISIBLE_COUNT);
+              setLoading(true);
             }}
             className={cn(
               moduleFilter === opt.value ? SETTINGS_CHIP_SELECTED : SETTINGS_CHIP_IDLE,
@@ -198,7 +207,10 @@ export default function DataChangeHistorySection({
           </p>
           <button
             type="button"
-            onClick={() => void load()}
+            onClick={() => {
+              setLoading(true);
+              void load();
+            }}
             className={SETTINGS_BTN_GHOST}
           >
             {isTh ? "ลองใหม่" : "Try again"}
