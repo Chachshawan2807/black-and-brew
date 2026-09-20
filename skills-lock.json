@@ -29,7 +29,7 @@
       "source": "emilkowalski/skill",
       "sourceType": "github",
       "skillPath": "skills/emil-design-eng/SKILL.md",
-      "computedHash": "87067d79205fdedc6d682891027dd9c7335486c4b4dc2e785638941a9d2e6061"
+      "computedHash": "77853cec799207f80868c611374c6ed5fdf34a55355c5ab544b59e791c63ad98"
     },
     "extract-design-system": {
       "source": "arvindrk/extract-design-system",
@@ -41,7 +41,7 @@
       "source": "google/skills",
       "sourceType": "github",
       "skillPath": "skills/cloud/gemini-api/SKILL.md",
-      "computedHash": "cd379cd57639ff5dab90574e4a89e62182f55cf764592b1d37ec70e1585d6920"
+      "computedHash": "95dc4fa38add33fd81c4ff243b93c62c1a86b646e0a08198a42e3bc0030182bb"
     },
     "google-cloud-waf-security": {
       "source": "google/skills",
@@ -59,7 +59,7 @@
       "source": "pbakaus/impeccable",
       "sourceType": "github",
       "skillPath": ".agents/skills/impeccable/SKILL.md",
-      "computedHash": "0933e3d72def7e7ee759bd744b953a60cf68c71076fad462d9aa03eba09ddc5b"
+      "computedHash": "777e9de156e6466f0b2c3a60045a9ce6ec61e25fe30d87345c79249feb3feb7c"
     },
     "implement-spec": {
       "source": "mattpocock/skills",
@@ -77,7 +77,7 @@
       "source": "GoogleChrome/modern-web-guidance",
       "sourceType": "github",
       "skillPath": "skills/modern-web-guidance/SKILL.md",
-      "computedHash": "f018e13bfbb74fb3bfe377045d3e86fbd50c3e61f7fb0b35d4821630da37c2fd"
+      "computedHash": "614f74a0e0cfda6b43d10e60397076a9f6a0e7483f5271e18d064dca67c6ad6f"
     },
     "next-best-practices": {
       "source": "pedronauck/skills",
@@ -107,7 +107,7 @@
       "source": "shadcn/ui",
       "sourceType": "github",
       "skillPath": "skills/shadcn/SKILL.md",
-      "computedHash": "d523a2a08bb6b2ce753468ee1ff7c97aeb022921f684c4bddc6bcb85727d1be4"
+      "computedHash": "446e46a2328d06a79eb7a3d7b17d5ede886a074cec7be7be24e2f5586b12532b"
     },
     "sleek-design-mobile-apps": {
       "source": "sleekdotdesign/agent-skills",
@@ -125,7 +125,7 @@
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
       "sourceType": "github",
       "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
-      "computedHash": "14d391ffdd7367526a80ddd73177294cd1808a74249cdd1b9e9a258b86fa2e6a"
+      "computedHash": "31eef7f41fdf2c859c39c2adfcc7ad1daa7953b732cc973764ca7a0191a31706"
     },
     "vercel-composition-patterns": {
       "source": "vercel-labs/agent-skills",

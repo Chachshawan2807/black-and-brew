@@ -56,7 +56,7 @@ This file is a **baseline summary**. For any non-trivial feature, retrieve the f
 
 ```powershell
 # Windows: prefer npx.cmd if npx hangs in MCP/IDE context
-npx -y modern-web-guidance@latest search "<what you want to build>" --skill-version 2026_08_31-6ba3cecd
+npx -y modern-web-guidance@latest search "<what you want to build>" --skill-version 2026_09_04-7de96777
 npx -y modern-web-guidance@latest retrieve "<guide-id>"
 ```
 
