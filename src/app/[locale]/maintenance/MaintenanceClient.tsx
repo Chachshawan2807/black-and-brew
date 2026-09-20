@@ -47,6 +47,15 @@ export interface ServiceRecord {
   created_at?: string;
 }
 
+const MAINTENANCE_DEFAULT_COL_WIDTHS = {
+  date: 120,
+  equipment: 185,
+  issue: 100,
+  frequency: 140,
+  taskType: 120,
+  manage: 88,
+};
+
 interface MaintenanceClientProps {
   initialRecords: ServiceRecord[];
   embedded?: boolean;
@@ -99,16 +108,7 @@ export default function MaintenanceClient({
 
   useMobileBackOverlayStack('maintenance-overlay', maintenanceOverlayLayers);
 
-  const DEFAULT_WIDTHS = {
-    date: 120,
-    equipment: 185,
-    issue: 100,
-    frequency: 140,
-    taskType: 120,
-    manage: 88,
-  };
-
-  const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_WIDTHS);
+  const [colWidths, setColWidths] = useState<Record<string, number>>(MAINTENANCE_DEFAULT_COL_WIDTHS);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -120,7 +120,7 @@ export default function MaintenanceClient({
   const handleMouseDown = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.pageX;
-    const startWidth = colWidths[id] || DEFAULT_WIDTHS[id as keyof typeof DEFAULT_WIDTHS];
+    const startWidth = colWidths[id] || MAINTENANCE_DEFAULT_COL_WIDTHS[id as keyof typeof MAINTENANCE_DEFAULT_COL_WIDTHS];
 
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
@@ -166,12 +166,12 @@ export default function MaintenanceClient({
               safeWidths[key] = val;
             }
           });
-          const merged = { ...DEFAULT_WIDTHS, ...safeWidths };
+          const merged = { ...MAINTENANCE_DEFAULT_COL_WIDTHS, ...safeWidths };
           if (safeWidths.issue === undefined || safeWidths.issue === 280 || safeWidths.issue === 140) {
-            merged.issue = DEFAULT_WIDTHS.issue;
+            merged.issue = MAINTENANCE_DEFAULT_COL_WIDTHS.issue;
           }
           if (safeWidths.manage === undefined || safeWidths.manage === 110) {
-            merged.manage = DEFAULT_WIDTHS.manage;
+            merged.manage = MAINTENANCE_DEFAULT_COL_WIDTHS.manage;
           }
           setColWidths(merged);
           if (

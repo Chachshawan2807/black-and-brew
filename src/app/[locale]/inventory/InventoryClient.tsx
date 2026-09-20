@@ -3,7 +3,7 @@
 import { PageLoadingState } from '@/components/ui/page-loading-state';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ClipboardList, ICON_STROKE, Package, PlusCircle, Redo2, Trash2, Undo2, X } from '@/lib/icons';
+import { ClipboardList, ICON_STROKE, Package, PlusCircle, Redo2, Trash2, Undo2 } from '@/lib/icons';
 import {
   INVENTORY_BTN_PRIMARY,
   INVENTORY_BTN_SECONDARY,
@@ -1093,13 +1093,9 @@ export default function InventoryClient({
       },
     ],
     [
-      quickAction.bulkConfirmOpen,
-      quickAction.cancelBulkSubmit,
+      quickAction,
       deleteId,
-      quickAction.transactionDateModalOpen,
-      quickAction.cancelTransactionDate,
-      history.showHistoryModal,
-      history.setShowHistoryModal,
+      history,
       showWithdrawRequiredModal,
       showPurchaseOrderModal,
       showAddModal,

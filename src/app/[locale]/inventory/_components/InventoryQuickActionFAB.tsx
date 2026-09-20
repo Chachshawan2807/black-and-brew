@@ -221,11 +221,7 @@ export default function InventoryQuickActionFAB() {
     setShowAddModal(false);
     setShowHistoryModal(false);
     setShowPurchaseOrderModal(false);
-  }, [
-    quickAction.bulkConfirmOpen,
-    quickAction.cancelBulkSubmit,
-    setShowHistoryModal,
-  ]);
+  }, [quickAction, setShowHistoryModal]);
 
   const quickOverlayActive =
     isPanelRendered ||

@@ -13,7 +13,7 @@ import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
-import { BB_BTN_CLOSE, BB_BTN_OUTLINE, BB_BTN_OUTLINE_DANGER, BB_BTN_ICON } from '@/lib/ui-outlined-tokens';
+import { BB_BTN_CLOSE, BB_BTN_OUTLINE, BB_BTN_OUTLINE_DANGER } from '@/lib/ui-outlined-tokens';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';

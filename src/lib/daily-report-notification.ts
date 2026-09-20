@@ -1,14 +1,13 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { formatInTimeZone } from 'date-fns-tz';
 import { THAI_TIMEZONE } from '@/lib/timezone';
-import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import type { DailyReportData, DailyReportSchedule } from '@/lib/daily-report/types';
 import {
   buildDailyReportAltText,
   buildDailyReportFieldSummary,
   buildDailyReportSummaryLine,
 } from '@/lib/daily-report-summary';
-import { bangkokCalendarIsoToDate, getBangkokCalendarIso, addBangkokCalendarDays } from '@/lib/date-utils';
+import { getBangkokCalendarIso, addBangkokCalendarDays } from '@/lib/date-utils';
 import { formatScheduleNotificationDateDisplay, THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
 import { sanitizeJsonValue } from '@/lib/data-change-log';
 
@@ -56,7 +55,7 @@ function buildDailyReportMetadata(
   locale: string,
   previousMetadata?: Record<string, unknown> | null,
 ) {
-  const { logId, alt, schedulePath, title, summary, fieldSummary, isTh } =
+  const { logId, schedulePath, title, summary, fieldSummary } =
     buildDailyReportLogPayload(data, locale);
 
   return {

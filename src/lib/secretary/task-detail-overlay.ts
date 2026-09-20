@@ -12,7 +12,8 @@ export type SecretaryAttentionListItem = {
 };
 
 export function canOpenSecretaryTaskDetail(
-  _task: Pick<SecretaryTask, 'source_kind'>,
+  task: Pick<SecretaryTask, 'source_kind'>,
 ): boolean {
+  void task;
   return true;
 }

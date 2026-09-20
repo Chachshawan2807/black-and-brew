@@ -1,5 +1,4 @@
 import { AlertCircle, RefreshCw } from '@/lib/icons';
-import { LoadingIcon } from '@/components/ui/loading-icon';
 
 type SecretaryOverlayErrorStateProps = {
   message: string;

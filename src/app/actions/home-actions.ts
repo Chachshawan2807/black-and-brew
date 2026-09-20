@@ -594,7 +594,7 @@ export async function updateSecretaryTaskStatus(
   if (!gate.success) return gate;
 
   try {
-    const { data: existingRow, error: fetchError } = await getSupabaseAdmin()
+    const { error: fetchError } = await getSupabaseAdmin()
       .from('operational_tasks')
       .select(TASK_SELECT)
       .eq('id', taskId)

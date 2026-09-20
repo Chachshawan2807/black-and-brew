@@ -459,17 +459,17 @@ export default function BranchWithdrawClient({
     setNativeDialogOpen(open);
   }, []);
 
-  const openDialog = (dialog: HTMLDialogElement | null) => {
+  const openDialog = useCallback((dialog: HTMLDialogElement | null) => {
     openBranchWithdrawDialog(dialog);
     syncNativeDialogOpen();
     requestAnimationFrame(syncNativeDialogOpen);
-  };
+  }, [syncNativeDialogOpen]);
 
-  const closeDialog = (dialog: HTMLDialogElement | null) => {
+  const closeDialog = useCallback((dialog: HTMLDialogElement | null) => {
     closeBranchWithdrawDialog(dialog);
     syncNativeDialogOpen();
     requestAnimationFrame(syncNativeDialogOpen);
-  };
+  }, [syncNativeDialogOpen]);
 
   useEffect(() => {
     const refs = [previewDialogRef, saveResultDialogRef, historyLineDialogRef, addItemDialogRef];
@@ -508,7 +508,7 @@ export default function BranchWithdrawClient({
         },
       },
     ],
-    [lineMessageDialog, nativeDialogOpen],
+    [closeDialog, lineMessageDialog, nativeDialogOpen],
   );
 
   useMobileBackOverlayStack('branch-withdraw-overlay', branchWithdrawOverlayLayers);
@@ -599,12 +599,12 @@ export default function BranchWithdrawClient({
     } finally {
       setIsReceiving(false);
     }
-  }, [inventorySource, isReadOnly, refresh, rows, displayItems]);
+  }, [displayItems, inventorySource, isReadOnly, openDialog, refresh, rows]);
 
   const closeAddItemDialog = useCallback(() => {
     closeDialog(addItemDialogRef.current);
     setAddItemQuery('');
-  }, []);
+  }, [closeDialog]);
 
   const handleAddItemDialogClick = useCallback((event: MouseEvent<HTMLDialogElement>) => {
     const dialog = addItemDialogRef.current;
@@ -625,7 +625,7 @@ export default function BranchWithdrawClient({
   const openAddItemDialog = useCallback(() => {
     setAddItemQuery('');
     openDialog(addItemDialogRef.current);
-  }, []);
+  }, [openDialog]);
 
   const handleAddItem = useCallback((itemId: string) => {
     setExtraItemIds((prev) => (prev.includes(itemId) ? prev : [...prev, itemId]));
@@ -672,17 +672,17 @@ export default function BranchWithdrawClient({
   const openPreviewDialog = useCallback(() => {
     setPreviewCopyStatus(null);
     openDialog(previewDialogRef.current);
-  }, []);
+  }, [openDialog]);
 
   const openHistoryLineDialog = useCallback((entry: BranchWithdrawHistoryRow) => {
     setHistoryCopyStatus(null);
     setLineMessageDialog({ title: `สรุปรายการ (${formatHistoryDate(entry.created_at)})`, message: entry.line_message });
     openDialog(historyLineDialogRef.current);
-  }, []);
+  }, [openDialog]);
 
   const closeHistoryLineDialog = useCallback(() => {
     closeDialog(historyLineDialogRef.current);
-  }, []);
+  }, [closeDialog]);
 
   const handleHistoryLineDialogClick = useCallback((event: MouseEvent<HTMLDialogElement>) => {
     const dialog = historyLineDialogRef.current;

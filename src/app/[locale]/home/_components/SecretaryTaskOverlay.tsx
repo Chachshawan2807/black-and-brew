@@ -97,7 +97,6 @@ export default function SecretaryTaskOverlay({
 function SecretaryTaskOverlayBody({
   task,
   snapshot,
-  locale,
   onClose,
   onTaskUpdated,
   onTaskDeleted,

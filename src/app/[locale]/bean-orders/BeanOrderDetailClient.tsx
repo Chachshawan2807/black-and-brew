@@ -193,7 +193,6 @@ export default function BeanOrderDetailClient({
       return;
     }
     const resolvedCarrierCode = carrierValidation.resolvedCarrierCode;
-    const previousCarrierCode = order.shipment?.carrierCode ?? null;
     const resolvedTrackingNumber = resolveBeanOrderTrackingNumberForSave({
       trackingNumber,
       previousTrackingNumber: order.shipment?.trackingNumber,

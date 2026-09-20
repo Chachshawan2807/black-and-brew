@@ -22,7 +22,7 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn((url: string, key: string, options?: { global?: { headers?: Record<string, string> } }) => {
     if (key === 'service-role-key') {
       return {
-        from: vi.fn((table: string) => ({
+        from: vi.fn(() => ({
           upsert: mockUpsert,
           delete: vi.fn(() => ({
             in: mockDeleteIn,

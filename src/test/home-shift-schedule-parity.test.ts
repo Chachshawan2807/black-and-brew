@@ -7,8 +7,6 @@ import {
 } from '@/lib/schedule/schedule-grid-parity';
 
 describe('home shift schedule parity', () => {
-  const profiles = [{ id: 'a', full_name: 'Ann', schedule_order: 1 }];
-
   test('isScheduleGridShiftAssigned matches schedule cell visibility', () => {
     expect(
       isScheduleGridShiftAssigned({

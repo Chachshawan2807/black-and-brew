@@ -27,7 +27,7 @@ import {
   withReducedMotion,
 } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
-import { BB_BTN_CLOSE, BB_ICON_BADGE_BASE, BB_ICON_BADGE_FILL, BB_RADIUS_SOFT } from '@/lib/ui-outlined-tokens';
+import { BB_BTN_CLOSE, BB_ICON_BADGE_BASE, BB_ICON_BADGE_FILL } from '@/lib/ui-outlined-tokens';
 import { BEAN_ORDER_BTN_ICON } from './bean-order-layout';
 
 export const BEAN_ORDER_MOTION_SAFE =

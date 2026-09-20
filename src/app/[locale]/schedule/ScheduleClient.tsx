@@ -65,7 +65,6 @@ import {
   SCHEDULE_FIELD_INPUT,
   SCHEDULE_FORM_LABEL,
   SCHEDULE_MODAL_FOOTER,
-  SCHEDULE_MODAL_HEADER,
   SCHEDULE_MODAL_OVERLAY,
   SCHEDULE_MODAL_PANEL,
   SCHEDULE_MODAL_PANEL_SHEET,
@@ -906,7 +905,7 @@ export default function ScheduleClient({
     }, delayMs);
   }, [clearClientRefreshRetry]);
 
-  const refreshShiftsForWeek = useCallback(async (options?: { force?: boolean }) => {
+  const refreshShiftsForWeek = useCallback(async () => {
     if (weekDays.length < 7) return;
 
     const generation = ++refreshGenerationRef.current;
@@ -1099,7 +1098,7 @@ export default function ScheduleClient({
     if (el.scrollHeight <= el.clientHeight + 12) {
       void fetchMgmtHistory();
     }
-  }, [fetchMgmtHistory, getMgmtHistoryScrollRoot]);
+  }, [fetchMgmtHistory, getMgmtHistoryScrollRoot, mgmtHistoryLoading]);
 
   useEffect(() => {
     void fetchMgmtHistory({ reset: true });

@@ -66,6 +66,7 @@ export type PushVerifyStatus = 'registered' | 'missing' | 'unauthorized' | 'erro
  * missing. Expired JWT / stale Server Actions used to drop the local sub, then
  * subscribe() failed and Settings showed none + ensure_failed.
  */
-export function shouldReplaceLocalPushSubscription(_status: PushVerifyStatus): boolean {
+export function shouldReplaceLocalPushSubscription(status: PushVerifyStatus): boolean {
+  void status;
   return false;
 }
