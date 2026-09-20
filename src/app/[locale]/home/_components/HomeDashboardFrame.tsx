@@ -61,10 +61,6 @@ export function HomeShiftPane({
   const sidebarIsOpen = useSidebarToggle((state) => state.isOpen);
   const desktopSplit = sidebarHydrated && !sidebarIsOpen;
 
-  useEffect(() => {
-    setActiveDateIso(dateIso);
-  }, [dateIso]);
-
   useEffect(() => watchBangkokWorkDate(setActiveDateIso), []);
 
   useEffect(() => {
@@ -73,8 +69,12 @@ export function HomeShiftPane({
     }
   }, [activeDateIso, initialPanel]);
 
+  const panelSeedKey =
+    initialPanel?.dateIso === activeDateIso ? 'seeded' : 'pending';
+
   return (
     <HomeShiftStatusSection
+      key={`${activeDateIso}-${panelSeedKey}`}
       dateIso={activeDateIso}
       initialPanel={initialPanel?.dateIso === activeDateIso ? initialPanel : undefined}
       showWhenEmpty={desktopSplit}

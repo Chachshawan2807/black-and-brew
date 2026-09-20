@@ -73,32 +73,41 @@ export default function BeanOrdersOverlay({ task, locale, onClose }: BeanOrdersO
   }, []);
 
   useEffect(() => {
-    if (!selectedOrderId) {
-      setSelectedOrder(null);
-      return;
-    }
+    if (!selectedOrderId) return;
 
     let cancelled = false;
-    setDetailLoading(true);
 
-    void (async () => {
-      const result = await fetchBeanOrderDetail(selectedOrderId);
+    void fetchBeanOrderDetail(selectedOrderId).then((result) => {
       if (cancelled) return;
       setDetailLoading(false);
       if (!result.success || !result.data) {
         setLoadError(result.error ?? 'ไม่สามารถโหลดรายละเอียดออเดอร์ได้');
         setSelectedOrderId(null);
+        setSelectedOrder(null);
         return;
       }
       setSelectedOrder(result.data);
-    })();
+    });
 
     return () => {
       cancelled = true;
     };
   }, [selectedOrderId]);
 
-  const title = selectedOrder ? selectedOrder.orderNo : task.title;
+  const clearOrderSelection = () => {
+    setSelectedOrderId(null);
+    setSelectedOrder(null);
+    setDetailLoading(false);
+  };
+
+  const openOrder = (orderId: string) => {
+    setDetailLoading(true);
+    setSelectedOrder(null);
+    setSelectedOrderId(orderId);
+  };
+
+  const title =
+    selectedOrderId && selectedOrder ? selectedOrder.orderNo : task.title;
 
   return (
     <SecretaryTaskSubwindow title={title} onClose={onClose} maxWidthClass="max-w-4xl">
@@ -114,7 +123,7 @@ export default function BeanOrdersOverlay({ task, locale, onClose }: BeanOrdersO
             order={selectedOrder}
             locale={locale}
             embedded
-            onBack={() => setSelectedOrderId(null)}
+            onBack={clearOrderSelection}
           />
         </div>
       ) : (
@@ -125,7 +134,7 @@ export default function BeanOrdersOverlay({ task, locale, onClose }: BeanOrdersO
             embedded
             defaultPaymentFilter={filters.paymentFilter}
             defaultFulfillmentFilter={filters.fulfillmentFilter}
-            onOpenOrder={setSelectedOrderId}
+            onOpenOrder={openOrder}
           />
         </div>
       )}

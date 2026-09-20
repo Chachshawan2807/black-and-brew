@@ -233,17 +233,6 @@ export default function HomeShiftStatusSection({
 
   useEffect(() => {
     if (panelMatchesDate(initialPanel, dateIso)) {
-      setProfiles(initialPanel.profiles);
-      setShifts(initialPanel.shifts);
-      setTomorrowShifts(initialPanel.tomorrowShifts);
-      setLoaded(true);
-      return;
-    }
-    setLoaded(false);
-  }, [initialPanel, dateIso]);
-
-  useEffect(() => {
-    if (panelMatchesDate(initialPanel, dateIso)) {
       return scheduleIdleWork(() => runRefresh({ force: true }), { timeout: 2000 });
     }
     runRefresh({ force: true });

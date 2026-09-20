@@ -90,6 +90,16 @@ export function HomeTaskBoard({
   const sidebarIsOpen = useSidebarToggle((state) => state.isOpen);
   const desktopSplit = sidebarHydrated && !sidebarIsOpen;
 
+  const visibility = useMemo(() => ({ workDateIso }), [workDateIso]);
+
+  const consolidatedAllTasks = useMemo(
+    () =>
+      consolidateSecretaryBoardTasks(
+        filterVisibleSecretaryBoardTasks(board.tasks, 'all', visibility),
+      ),
+    [board.tasks, visibility],
+  );
+
   const applyBoardSync = useCallback((payload: BoardSyncPayload) => {
     setBoard((prev) => {
       const nextSnapshot = payload.snapshot
@@ -112,9 +122,10 @@ export function HomeTaskBoard({
   }, []);
 
   const boardRef = useRef(board);
-  boardRef.current = board;
 
-  const hydrationTasksRef = useRef<SecretaryBoardDisplayTask[]>([]);
+  useEffect(() => {
+    boardRef.current = board;
+  }, [board]);
 
   useHomeBoardSync({
     dateIso: workDateIso,
@@ -124,7 +135,7 @@ export function HomeTaskBoard({
     getBaseSnapshot: () => boardRef.current.snapshot,
     getCurrentTasks: () => boardRef.current.tasks,
     getHydrationScopes: () =>
-      resolveSnapshotScopesForBoardTasks(hydrationTasksRef.current),
+      resolveSnapshotScopesForBoardTasks(consolidatedAllTasks),
     skipInitialFullSync: true,
   });
 
@@ -155,18 +166,6 @@ export function HomeTaskBoard({
       source: boardLoadSource,
     });
   }, [boardLoadSource, initialBoard.tasks.length]);
-
-  const visibility = useMemo(() => ({ workDateIso }), [workDateIso]);
-
-  const consolidatedAllTasks = useMemo(
-    () =>
-      consolidateSecretaryBoardTasks(
-        filterVisibleSecretaryBoardTasks(board.tasks, 'all', visibility),
-      ),
-    [board.tasks, visibility],
-  );
-
-  hydrationTasksRef.current = consolidatedAllTasks;
 
   useEffect(() => {
     const scopes = resolveSnapshotScopesForBoardTasks(consolidatedAllTasks);
@@ -357,7 +356,11 @@ export default function HomeClient({
         locale={locale}
         boardLoadSource={boardLoadSource}
       />
-      <HomeShiftPane dateIso={workDateIso} initialPanel={initialMemberPanel} />
+      <HomeShiftPane
+        key={workDateIso}
+        dateIso={workDateIso}
+        initialPanel={initialMemberPanel}
+      />
     </HomeDashboardFrame>
   );
 }

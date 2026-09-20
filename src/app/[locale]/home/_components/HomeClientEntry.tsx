@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, startTransition } from 'react';
 import { checkAuth } from '@/app/actions/auth';
 import { loadHomeMemberPanel, loadSecretaryBoard, type SecretaryBoard } from '@/app/actions/home-actions';
 import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
@@ -90,12 +90,12 @@ function applyMemberPanel(
 
 /** Client fallback when server auth or board is still pending; uses same-day cache for instant paint. */
 export function HomeClientEntry({ locale }: HomeClientEntryProps) {
-  const boardFromCacheOnInitRef = useRef(false);
-  const [board, setBoard] = useState<SecretaryBoard | null>(() => {
-    const cached = readCachedSecretaryBoard(locale);
-    boardFromCacheOnInitRef.current = cached !== null;
-    return cached;
-  });
+  const [boardFromCacheOnInit] = useState(
+    () => readCachedSecretaryBoard(locale) !== null,
+  );
+  const [board, setBoard] = useState<SecretaryBoard | null>(() =>
+    readCachedSecretaryBoard(locale),
+  );
   const [memberPanel, setMemberPanel] = useState<HomeMemberPanelSnapshot | undefined>(
     () => {
       const cachedBoard = readCachedSecretaryBoard(locale);
@@ -106,12 +106,14 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const loadInFlightRef = useRef(false);
   const boardRef = useRef(board);
-  boardRef.current = board;
+
+  useEffect(() => {
+    boardRef.current = board;
+  }, [board]);
 
   const tryLoadBoard = useCallback(async (opts?: LoadBoardOptions) => {
     if (loadInFlightRef.current) return;
     loadInFlightRef.current = true;
-    setLoadError(null);
 
     try {
       if (!opts?.skipPinWait) {
@@ -129,6 +131,7 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
       const boardResult = await boardPromise;
       if (boardResult.success && boardResult.board) {
         writeCachedSecretaryBoard(boardResult.board);
+        setLoadError(null);
         setBoard(boardResult.board);
         const boardDate = boardResult.board.snapshot.dateIso;
         void panelPromise.then(async (memberResult) => {
@@ -158,6 +161,7 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
         if (retryResult.success && retryResult.board) {
           const retryBoard = retryResult.board;
           writeCachedSecretaryBoard(retryBoard);
+          setLoadError(null);
           setBoard(retryBoard);
           void retryPanelPromise.then((retryMember) => {
             applyMemberPanel(
@@ -185,8 +189,10 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
   useEffect(() => {
     registerHomeBoardPerfDevTools();
     homePerfStartSession('entry');
-    void tryLoadBoard({ skipPinWait: boardFromCacheOnInitRef.current });
-  }, [tryLoadBoard]);
+    startTransition(() => {
+      void tryLoadBoard({ skipPinWait: boardFromCacheOnInit });
+    });
+  }, [boardFromCacheOnInit, tryLoadBoard]);
 
   useEffect(() => {
     const onAuthenticated = () => {
@@ -211,7 +217,7 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
         initialBoard={board}
         initialMemberPanel={memberPanel}
         locale={locale}
-        boardLoadSource={boardFromCacheOnInitRef.current ? 'session-cache' : 'client-fetch'}
+        boardLoadSource={boardFromCacheOnInit ? 'session-cache' : 'client-fetch'}
       />
     );
   }

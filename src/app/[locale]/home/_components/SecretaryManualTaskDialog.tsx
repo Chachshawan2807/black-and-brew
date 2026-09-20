@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import { Trash2 } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
@@ -39,15 +39,47 @@ export default function SecretaryManualTaskDialog({
   onSave,
   onDelete,
 }: SecretaryManualTaskDialogProps) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const titleId = useId();
   const descriptionId = useId();
 
-  useEffect(() => {
-    if (!open) {
-      setConfirmDelete(false);
-    }
-  }, [open]);
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <SecretaryManualTaskDialogOpen
+      mode={mode}
+      title={title}
+      description={description}
+      isPending={isPending}
+      onTitleChange={onTitleChange}
+      onDescriptionChange={onDescriptionChange}
+      onClose={onClose}
+      onSave={onSave}
+      onDelete={onDelete}
+      titleId={titleId}
+      descriptionId={descriptionId}
+    />
+  );
+}
+
+function SecretaryManualTaskDialogOpen({
+  mode,
+  title,
+  description,
+  isPending = false,
+  onTitleChange,
+  onDescriptionChange,
+  onClose,
+  onSave,
+  onDelete,
+  titleId,
+  descriptionId,
+}: Omit<SecretaryManualTaskDialogProps, 'open'> & {
+  titleId: string;
+  descriptionId: string;
+}) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const dialogTitle = mode === 'create' ? 'เพิ่มงาน' : 'แก้ไขงาน';
   const dialogSubtitle =
@@ -117,7 +149,7 @@ export default function SecretaryManualTaskDialog({
 
   return (
     <SecretaryTaskPanelShell
-      open={open}
+      open
       title={dialogTitle}
       subtitle={dialogSubtitle}
       onClose={onClose}

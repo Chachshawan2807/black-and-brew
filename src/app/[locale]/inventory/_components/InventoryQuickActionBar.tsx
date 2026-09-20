@@ -1,6 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { createPortal } from 'react-dom';
 import type { CSSProperties } from 'react';
 import {
@@ -28,6 +35,10 @@ import {
 import { ICON_STROKE } from '@/lib/icons';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import { cn } from '@/lib/utils';
+
+function useClientMounted() {
+  return useSyncExternalStore(() => () => {}, () => true, () => false);
+}
 import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import type { QuickBadgeStyles } from '@/lib/inventory-stock';
 import {
@@ -548,14 +559,9 @@ function BulkSubmitConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useClientMounted();
   const typeLabel = getBulkSubmitTypeLabel(bulkQuickType);
   const rowTone = inventoryQuickActionTypeColors(bulkQuickType);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -765,7 +771,7 @@ export function InventoryQuickActionBar({
     setPrevHighlightResetSignature(highlightResetSignature);
     setHighlightedIndex(QUICK_SEARCH_NO_HIGHLIGHT);
   }
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useClientMounted();
   const [portaledSuggestionsStyle, setPortaledSuggestionsStyle] = useState<CSSProperties>({});
   const maxMd = useMaxMd();
   const isMobile = maxMd === true;
@@ -791,45 +797,64 @@ export function InventoryQuickActionBar({
   const suggestionsListId = 'inventory-quick-search-suggestions';
   const showClearSearch = quickSearch.trim().length > 0;
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
-    setIsMounted(true);
-  }, []);
+  useLayoutEffect(() => {
+    if (!showSuggestions || !portalSuggestions) return;
 
-  const updatePortaledSuggestionsStyle = useCallback(() => {
-    const anchor = searchRootRef.current;
-    if (!anchor) return;
-    const rect = anchor.getBoundingClientRect();
-    const viewportHeight = viewportInsets.visibleHeight || window.innerHeight;
-    const viewportWidth = viewportInsets.visibleWidth || window.innerWidth;
-    setPortaledSuggestionsStyle(
-      getAnchoredSuggestionsOverlayStyle(
-        rect,
-        {
-          offsetTop: viewportInsets.offsetTop,
-          offsetLeft: viewportInsets.offsetLeft,
-          visibleHeight: viewportHeight,
-          visibleWidth: viewportWidth,
-        },
-        8,
-        isFabPanel,
-      ),
-    );
+    const updatePortaledSuggestionsStyle = () => {
+      const anchor = searchRootRef.current;
+      if (!anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      const viewportHeight = viewportInsets.visibleHeight || window.innerHeight;
+      const viewportWidth = viewportInsets.visibleWidth || window.innerWidth;
+      setPortaledSuggestionsStyle(
+        getAnchoredSuggestionsOverlayStyle(
+          rect,
+          {
+            offsetTop: viewportInsets.offsetTop,
+            offsetLeft: viewportInsets.offsetLeft,
+            visibleHeight: viewportHeight,
+            visibleWidth: viewportWidth,
+          },
+          8,
+          isFabPanel,
+        ),
+      );
+    };
+
+    updatePortaledSuggestionsStyle();
   }, [
     isFabPanel,
+    portalSuggestions,
+    showSuggestions,
     viewportInsets.offsetLeft,
     viewportInsets.offsetTop,
     viewportInsets.visibleHeight,
     viewportInsets.visibleWidth,
   ]);
 
-  useLayoutEffect(() => {
-    if (!showSuggestions || !portalSuggestions) return;
-    updatePortaledSuggestionsStyle();
-  }, [portalSuggestions, showSuggestions, updatePortaledSuggestionsStyle]);
-
   useEffect(() => {
     if (!showSuggestions || !portalSuggestions) return;
+
+    const updatePortaledSuggestionsStyle = () => {
+      const anchor = searchRootRef.current;
+      if (!anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      const viewportHeight = viewportInsets.visibleHeight || window.innerHeight;
+      const viewportWidth = viewportInsets.visibleWidth || window.innerWidth;
+      setPortaledSuggestionsStyle(
+        getAnchoredSuggestionsOverlayStyle(
+          rect,
+          {
+            offsetTop: viewportInsets.offsetTop,
+            offsetLeft: viewportInsets.offsetLeft,
+            visibleHeight: viewportHeight,
+            visibleWidth: viewportWidth,
+          },
+          8,
+          isFabPanel,
+        ),
+      );
+    };
 
     updatePortaledSuggestionsStyle();
     const vv = window.visualViewport;
@@ -842,7 +867,15 @@ export function InventoryQuickActionBar({
       vv?.removeEventListener('scroll', updatePortaledSuggestionsStyle);
       window.removeEventListener('resize', updatePortaledSuggestionsStyle);
     };
-  }, [portalSuggestions, showSuggestions, updatePortaledSuggestionsStyle]);
+  }, [
+    isFabPanel,
+    portalSuggestions,
+    showSuggestions,
+    viewportInsets.offsetLeft,
+    viewportInsets.offsetTop,
+    viewportInsets.visibleHeight,
+    viewportInsets.visibleWidth,
+  ]);
 
   const handleClearQuickSearch = useCallback(() => {
     setQuickSearch('');

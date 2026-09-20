@@ -50,6 +50,7 @@ async function HomeShiftsSlot({
   const memberPanelResult = await panelPromise;
   return (
     <HomeShiftPane
+      key={dateIso}
       dateIso={dateIso}
       initialPanel={memberPanelResult.success ? memberPanelResult.panel : undefined}
     />

@@ -78,33 +78,49 @@ export default function SecretaryTaskOverlay({
   onTaskDeleted,
   isPending: parentPending = false,
 }: SecretaryTaskOverlayProps) {
-  const overlayKind =
-    task && canOpenSecretaryTaskDetail(task) ? resolveSecretaryTaskOverlayKind(task) : null;
+  if (!task) return null;
+
+  return (
+    <SecretaryTaskOverlayBody
+      key={task.id}
+      task={task}
+      snapshot={snapshot}
+      locale={locale}
+      onClose={onClose}
+      onTaskUpdated={onTaskUpdated}
+      onTaskDeleted={onTaskDeleted}
+      parentPending={parentPending}
+    />
+  );
+}
+
+function SecretaryTaskOverlayBody({
+  task,
+  snapshot,
+  locale,
+  onClose,
+  onTaskUpdated,
+  onTaskDeleted,
+  parentPending = false,
+}: SecretaryTaskOverlayProps & { parentPending?: boolean }) {
+  const overlayKind = canOpenSecretaryTaskDetail(task)
+    ? resolveSecretaryTaskOverlayKind(task)
+    : null;
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
-  const [editTitle, setEditTitle] = useState('');
-  const [editDescription, setEditDescription] = useState('');
+  const [editTitle, setEditTitle] = useState(task.title);
+  const [editDescription, setEditDescription] = useState(task.description ?? '');
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    setSelectedChannels(['all']);
-  }, [task?.id]);
-
-  useEffect(() => {
-    if (!task) return;
-    setEditTitle(task.title);
-    setEditDescription(task.description ?? '');
-  }, [task?.id, task?.title, task?.description]);
-
   const purchaseState = useMemo(() => {
-    if (!task || overlayKind !== 'purchase_orders') return null;
+    if (overlayKind !== 'purchase_orders') return null;
     return computePurchaseOrderDerivedState(snapshot.itemsToOrder, selectedChannels, {
       excludeFromAllSources: [BRANCH_WITHDRAW_ORDER_SOURCE],
     });
-  }, [overlayKind, selectedChannels, snapshot.itemsToOrder, task]);
+  }, [overlayKind, selectedChannels, snapshot.itemsToOrder]);
 
   const maintenanceListItems = useMemo(
     () =>
-      task && overlayKind === 'maintenance_list'
+      overlayKind === 'maintenance_list'
         ? filterMaintenanceForTask(task, snapshot)
         : [],
     [overlayKind, snapshot, task],
@@ -112,7 +128,7 @@ export default function SecretaryTaskOverlay({
 
   const scheduleReviewListItems = useMemo(
     () =>
-      task && overlayKind === 'schedule_review_list'
+      overlayKind === 'schedule_review_list'
         ? buildScheduleReviewListItems(task)
         : [],
     [overlayKind, task],
@@ -120,7 +136,7 @@ export default function SecretaryTaskOverlay({
 
   const beanOrderListItems = useMemo(
     () =>
-      task && overlayKind === 'bean_orders_list'
+      overlayKind === 'bean_orders_list'
         ? buildBeanOrderListItems(task, snapshot)
         : [],
     [overlayKind, snapshot, task],
@@ -128,17 +144,17 @@ export default function SecretaryTaskOverlay({
 
   const taskInfoListItems = useMemo(
     () =>
-      task && overlayKind === 'task_info' ? buildTaskInfoListItems(task, snapshot) : [],
+      overlayKind === 'task_info' ? buildTaskInfoListItems(task, snapshot) : [],
     [overlayKind, snapshot, task],
   );
 
   useEffect(() => {
-    if (overlayKind && task) {
+    if (overlayKind) {
       preloadSecretaryOverlayForTask(task);
     }
   }, [overlayKind, task]);
 
-  if (!task || !overlayKind || overlayKind === 'branch_withdraw_panel') return null;
+  if (!overlayKind || overlayKind === 'branch_withdraw_panel') return null;
 
   const pending = isPending || parentPending;
 
