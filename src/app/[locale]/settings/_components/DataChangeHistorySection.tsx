@@ -131,10 +131,10 @@ export default function DataChangeHistorySection({
   const load = useCallback(async () => {
     const gen = ++loadGenRef.current;
     setLoading(true);
-    const module = moduleFilter === "all" ? undefined : moduleFilter;
+    const historyModule = moduleFilter === "all" ? undefined : moduleFilter;
     const result = await getOrFetchEditHistory({
       limit: EDIT_HISTORY_INITIAL_LIMIT,
-      module,
+      module: historyModule,
     });
     if (gen !== loadGenRef.current) return;
 

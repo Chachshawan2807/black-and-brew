@@ -263,10 +263,10 @@ async function skipInactiveInventoryCountDerivedTasks(dateIso: string): Promise<
   const taskIds = (data ?? [])
     .filter((row) => {
       const taskType = String(row.task_type);
-      const module = String(row.module);
+      const taskModule = String(row.module);
       const isCountTask =
-        module === 'inventory_count' ||
-        module === 'inventory_accuracy' ||
+        taskModule === 'inventory_count' ||
+        taskModule === 'inventory_accuracy' ||
         taskType === 'inventory_count_due' ||
         taskType === 'inventory_accuracy_review';
       if (!isCountTask) return false;

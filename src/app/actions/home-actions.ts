@@ -502,7 +502,6 @@ export async function syncAndFetchSecretaryBoard(opts?: {
 
   try {
     if (plan.kind === 'light') {
-      const dateIso = opts?.dateIso ?? todayIsoBkk();
       const tasksResult = await fetchSecretaryTasks(dateIso);
 
       if (!tasksResult.success || !tasksResult.tasks) {
@@ -516,13 +515,14 @@ export async function syncAndFetchSecretaryBoard(opts?: {
     }
 
     if (plan.kind === 'scoped') {
-      const dateIso = opts?.dateIso ?? opts?.baseSnapshot?.dateIso ?? todayIsoBkk();
+      const scopedDateIso =
+        opts?.dateIso ?? opts?.baseSnapshot?.dateIso ?? todayIsoBkk();
       const dataScopes = plan.scopes.filter(
         (scope): scope is Exclude<typeof scope, 'tasks'> => scope !== 'tasks',
       );
 
       const syncResult = await syncDerivedSecretaryTasks({
-        dateIso,
+        dateIso: scopedDateIso,
         locale,
         scopes: dataScopes,
         baseSnapshot: opts?.baseSnapshot,
@@ -531,7 +531,7 @@ export async function syncAndFetchSecretaryBoard(opts?: {
         return { success: false, error: syncResult.error };
       }
 
-      const tasksResult = await fetchSecretaryTasks(dateIso);
+      const tasksResult = await fetchSecretaryTasks(scopedDateIso);
 
       if (!tasksResult.success || !tasksResult.tasks) {
         return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
@@ -544,7 +544,6 @@ export async function syncAndFetchSecretaryBoard(opts?: {
       };
     }
 
-    const dateIso = opts?.dateIso ?? todayIsoBkk();
     const baseSnapshot = opts?.baseSnapshot;
     const reuseHydratedSnapshot =
       baseSnapshot && !isMinimalSecretaryBoardSnapshot(baseSnapshot);

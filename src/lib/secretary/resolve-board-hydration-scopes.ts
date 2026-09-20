@@ -10,8 +10,8 @@ for (const [scope, modules] of Object.entries(SCOPE_MODULES) as [
   Exclude<SecretarySyncScope, 'tasks'>,
   SecretaryModule[],
 ][]) {
-  for (const module of modules) {
-    MODULE_TO_DATA_SCOPE.set(module, scope);
+  for (const secretaryModule of modules) {
+    MODULE_TO_DATA_SCOPE.set(secretaryModule, scope);
   }
 }
 

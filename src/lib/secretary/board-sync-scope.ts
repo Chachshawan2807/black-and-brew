@@ -112,8 +112,8 @@ export function modulesForSyncScopes(
   const modules = new Set<SecretaryModule>();
   for (const scope of scopes) {
     if (scope === 'tasks') continue;
-    for (const module of SCOPE_MODULES[scope]) {
-      modules.add(module);
+    for (const secretaryModule of SCOPE_MODULES[scope]) {
+      modules.add(secretaryModule);
     }
   }
   return [...modules];
