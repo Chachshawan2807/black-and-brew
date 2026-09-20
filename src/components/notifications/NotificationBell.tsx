@@ -99,6 +99,7 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
             'relative bb-transition',
             INVENTORY_QUICK_ACTION_COLORS.fab,
             INVENTORY_QUICK_ACTION_HOVER.fab,
+            FAB_SIZE_CLASS,
             FAB_STACK_INNER_CLASS,
             panelOpen && 'ring-2 ring-amber-600/35 ring-offset-2 ring-offset-background',
             !stacked && cn('fixed z-[201]', FAB_RIGHT_CLASS),

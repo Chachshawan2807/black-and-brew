@@ -102,7 +102,7 @@ Use interoperable web platform features that major browsers have supported for a
 **Authoritative skill:** `.cursor/skills/chrome-modern-web-guidance/SKILL.md` read before any HTML/CSS/clientside JS UI work. For non-trivial features, retrieve full guides:
 
 ```text
-npx -y modern-web-guidance@latest search "<use case>"
+npx -y modern-web-guidance@latest search "<use case>" --skill-version 2026_09_04-7de96777
 npx -y modern-web-guidance@latest retrieve "<guide-id>"
 ```
 

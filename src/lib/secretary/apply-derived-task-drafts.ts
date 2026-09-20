@@ -126,7 +126,7 @@ export async function applyDerivedTaskDrafts(
     upserted += 1;
   }
 
-  let existingQuery = getSupabaseAdmin()
+  const existingQuery = getSupabaseAdmin()
     .from('operational_tasks')
     .select('id, source_ref_hash, status, module, task_type, metadata')
     .eq('scheduled_date', dateIso)

@@ -14,7 +14,8 @@ BLACKANDBREW ERP uses **three installed design skills in a fixed order**. ERP ru
    - Fetch fresh rules: `https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md`
    - Review target files; output `file:line` findings only.
 2. **impeccable critique** (`.agents/skills/impeccable/SKILL.md` → `critique` only)
-   - `node .agents/skills/impeccable/scripts/context.mjs --target "<path>"`
+   - Windows: `.agents/skills/impeccable/scripts/impeccable.cmd context --target "<path>"`
+   - Unix: `.agents/skills/impeccable/scripts/impeccable context --target "<path>"`
    - Mode **Operate** for inventory, schedule, settings, notifications.
    - Do **not** use `bolder`, `delight`, or `overdrive` on core ERP routes.
 3. **ui-ux-pro-max-erp** (`.cursor/skills/ui-ux-pro-max-erp/SKILL.md`)

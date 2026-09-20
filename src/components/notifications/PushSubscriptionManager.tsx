@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { CloseIcon } from '@/components/ui/close-icon';
 import { cn } from '@/lib/utils';
 import { BB_BTN_CLOSE, BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
-import { Bell, X } from '@/lib/icons';
+import { Bell } from '@/lib/icons';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import { getNotificationPermissionState } from '@/lib/pwa-notification-bridge';
 import {

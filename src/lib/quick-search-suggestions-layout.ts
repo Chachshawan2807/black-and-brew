@@ -22,7 +22,7 @@ function clampSuggestionsHorizontal(
   const maxRight = offsetLeft + visibleWidth - SUGGESTIONS_EDGE_GAP;
   const maxWidth = Math.max(0, visibleWidth - SUGGESTIONS_EDGE_GAP * 2);
 
-  let width = Math.min(anchorRect.width, maxWidth);
+  const width = Math.min(anchorRect.width, maxWidth);
   let left = anchorRect.left;
 
   left = Math.max(minLeft, Math.min(left, maxRight - width));
