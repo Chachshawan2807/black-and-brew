@@ -63,7 +63,7 @@ export const BB_ICON_BADGE_FILL = {
   success: 'bg-emerald-50/70 dark:bg-emerald-950/35',
   warn: 'bg-amber-50/70 dark:bg-amber-950/35',
   accent: 'bg-emerald-50/60 dark:bg-emerald-950/30',
-  calendar: 'bb-pastel-surface bg-[#ffda66]',
+  calendar: 'bb-pastel-surface bg-[#fff3cd]',
   schedule: 'bb-pastel-surface bg-[#e6f0ff]',
   insight: 'bb-pastel-surface bg-[#ffe0a8]',
   security: 'bb-pastel-surface bg-[#ffe4e6]',

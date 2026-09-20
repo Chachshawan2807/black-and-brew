@@ -24,13 +24,16 @@ import {
   formatNotificationTime,
   groupNotificationsByTime,
 } from '@/lib/notification-time-groups';
-import { countUnread } from '@/lib/notification-storage';
 import type { InventoryNotification } from '@/lib/notification-types';
 import { ExpandableLines } from '@/components/ui/expandable-lines';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { NotificationItemIcon } from '@/components/notifications/NotificationItemIcon';
 import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
 import { isScheduleNotification, isSecurityNotification, isProactiveInsightNotification, isBeanOrderCreatedNotification } from '@/lib/notification-display-icon';
+
+/** Compact 32px chrome; -inset-[6px] pseudo keeps ~44px touch target without wide squares. */
+const PANEL_HEADER_ICON_BTN_CLASS =
+  'relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 bb-transition touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 before:absolute before:-inset-[6px] before:rounded-[10px] before:content-[""]';
 
 function getNotificationDetailLines(item: InventoryNotification): string[] {
   if (isBeanOrderCreatedNotification(item)) {
@@ -134,21 +137,6 @@ export function NotificationPanel() {
   const panelStyle = getModalContentKeyboardAwareStyle({ insets: viewportInsets });
 
   const groups = groupNotificationsByTime(notifications, locale);
-  const visibleUnread = countUnread(notifications);
-  const hasOlderUnread = unreadCount > visibleUnread;
-
-  const unreadSummary =
-    unreadCount > 0
-      ? isTh
-        ? hasOlderUnread
-          ? `${unreadCount} รายการยังไม่ได้อ่าน · แสดง ${notifications.length} รายการล่าสุด`
-          : `${unreadCount} รายการยังไม่ได้อ่าน`
-        : hasOlderUnread
-          ? `${unreadCount} unread · showing latest ${notifications.length}`
-          : `${unreadCount} unread`
-      : isTh
-        ? 'รายการล่าสุด'
-        : 'Recent notifications · live updates';
 
   return (
     <AnimatePresence>
@@ -198,10 +186,10 @@ export function NotificationPanel() {
                     <Bell size={17} strokeWidth={1.75} className="text-black" />
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 max-md:flex-nowrap">
                       <h2
                         id="notification-panel-title"
-                        className="text-[15px] font-normal text-foreground leading-snug truncate text-pretty"
+                        className="min-w-0 truncate text-[15px] font-normal text-foreground leading-snug max-md:shrink-0 max-md:overflow-visible max-md:text-clip max-md:whitespace-nowrap"
                       >
                         {isTh ? 'การแจ้งเตือน' : 'Notifications'}
                       </h2>
@@ -211,19 +199,16 @@ export function NotificationPanel() {
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-muted-foreground leading-normal truncate">
-                      {unreadSummary}
-                    </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0 rounded-2xl bg-muted/40 p-0.5">
+                <div className="inline-flex w-fit items-center gap-0 shrink-0 rounded-xl bg-muted/40 px-0.5 py-0.5">
                   {notifications.length > 0 && (
                     <>
                       <HintTooltip tip={isTh ? 'อ่านทั้งหมด' : 'Mark all read'}>
                         <button
                           type="button"
                           onClick={markAllRead}
-                          className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-background/80 bb-transition touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
+                          className={PANEL_HEADER_ICON_BTN_CLASS}
                           aria-label={isTh ? 'อ่านทั้งหมด' : 'Mark all read'}
                         >
                           <CheckCheck size={17} strokeWidth={1.75} aria-hidden />
@@ -233,7 +218,7 @@ export function NotificationPanel() {
                         <button
                           type="button"
                           onClick={clearAll}
-                          className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-background/80 bb-transition touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
+                          className={PANEL_HEADER_ICON_BTN_CLASS}
                           aria-label={isTh ? 'ล้างประวัติ' : 'Clear history'}
                         >
                           <Trash2 size={17} strokeWidth={1.75} aria-hidden />
@@ -245,7 +230,7 @@ export function NotificationPanel() {
                     <button
                       type="button"
                       onClick={closePanel}
-                      className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-background/80 bb-transition touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
+                      className={PANEL_HEADER_ICON_BTN_CLASS}
                       aria-label={isTh ? 'ปิด' : 'Close'}
                     >
                       <X size={18} strokeWidth={1.75} aria-hidden />

@@ -32,6 +32,13 @@ describe('NotificationPanel mobile layout', () => {
     expect(code).toContain("item.fieldSummary.split('\\n')");
   });
 
+  test('mobile header keeps notification title on one line beside unread badge', () => {
+    const code = readFile('components/notifications/NotificationPanel.tsx');
+    expect(code).toMatch(/id="notification-panel-title"[\s\S]*max-md:whitespace-nowrap/);
+    expect(code).toMatch(/max-md:flex-nowrap/);
+    expect(code).not.toMatch(/notification-panel-title"[\s\S]*text-pretty/);
+  });
+
   test('uses icon-only header actions with accessible labels', () => {
     const code = readFile('components/notifications/NotificationPanel.tsx');
     expect(code).toContain('CheckCheck');
@@ -40,6 +47,8 @@ describe('NotificationPanel mobile layout', () => {
     expect(code).toContain('<Trash2 size={17}');
     expect(code).toContain("aria-label={isTh ? 'อ่านทั้งหมด' : 'Mark all read'}");
     expect(code).toContain("aria-label={isTh ? 'ล้างประวัติ' : 'Clear history'}");
+    expect(code).toContain('PANEL_HEADER_ICON_BTN_CLASS');
+    expect(code).toContain('before:-inset-[6px]');
   });
 
   test('notification rows avoid content-visibility clipping on mobile webkit', () => {
