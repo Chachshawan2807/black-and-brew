@@ -45,6 +45,8 @@ Before sharing PNGs externally, run `npm run screenshots:verify`. DOM anonymizat
 
 - **PIN overlay stuck:** Confirm 6-digit read-only PIN; avoid repeated wrong attempts (lockout).
 - **Timeout on a page:** Increase wait or adjust `waitSelector` in `manifest.json` for that route only.
-- **Notification shot (#11):** Playwright starts with empty notification storage. Capture seeds the panel from `notification-list.seed.json` (optional) or a Supabase `data_change_logs` query (service role in `.env.local`), then waits for list rows before shutter.
+- **Branch withdraw (#07):** Inner scroll region is scrolled to the bottom before capture so withdrawal history in the scroll body appears in the viewport.
+- **Notification shot (#11):** Waits for hub catch-up first, then falls back to formatted seed (same formatters as the FAB hub, via `format-catch-up-notifications.ts`). Optional override: `notification-list.seed.json`.
+- **Mobile #10:** `10-settings` is Settings (sidebar footer), not maintenance. Maintenance is only `09-maintenance`.
 - **Dashboard dates:** Shots `02-dashboard` / `d-dashboard` use `26/08/2026`–`25/09/2026` via `manifest.json` → `dashboardScreenshotRange`.
 - **Passkey enroll dialog:** Capture clicks **Skip for now** automatically when shown.

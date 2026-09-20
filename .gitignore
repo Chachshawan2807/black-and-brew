@@ -98,3 +98,4 @@ docs/marketing/screenshots/raw/**/*.png
 docs/marketing/screenshots/framed/**/*.png
 docs/marketing/screenshots/**/_debug*.png
 docs/marketing/screenshots/notification-list.seed.json
+docs/marketing/screenshots/.notification-seed-build.json

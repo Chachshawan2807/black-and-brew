@@ -254,11 +254,41 @@ async function captureShot(page, context, shot, outDir, viewport, profile, alias
   await waitForLayoutShell(page, profile);
   await waitForStableFrame(page);
 
+  if (shot.scrollBranchWithdrawBody === 'bottom') {
+    await page.evaluate(() => {
+      const scrollers = [...document.querySelectorAll('.overflow-y-auto.bb-smooth-scroll')];
+      const body =
+        scrollers.find((el) => el.scrollHeight > el.clientHeight + 8) ?? scrollers.at(-1);
+      if (body) {
+        body.scrollTop = body.scrollHeight;
+      }
+    });
+    await page.waitForTimeout(400);
+    await waitForStableFrame(page);
+  }
+
   if (shot.openNotificationPanel) {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForLoadState('networkidle', { timeout: 45000 }).catch(() => {});
     await page.waitForTimeout(5000);
-    if (session.notificationSeedJson) {
+
+    const hasHydratedList = async () =>
+      page.evaluate(() => {
+        try {
+          const raw = localStorage.getItem('bb-inventory-notifications');
+          if (!raw) return false;
+          const list = JSON.parse(raw);
+          return Array.isArray(list) && list.length > 0;
+        } catch {
+          return false;
+        }
+      });
+
+    if (!(await hasHydratedList())) {
+      await page.waitForTimeout(12000);
+    }
+
+    if (!(await hasHydratedList()) && session.notificationSeedJson) {
       await page.evaluate((json) => {
         localStorage.setItem('bb-inventory-notifications', json);
       }, session.notificationSeedJson);

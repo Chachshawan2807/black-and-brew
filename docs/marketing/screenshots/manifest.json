@@ -59,7 +59,8 @@
       "headline": "Branch stock withdrawals",
       "waitSelector": "#app-main",
       "rawFile": "07-branch-withdraw.png",
-      "redactMode": "none"
+      "redactMode": "none",
+      "scrollBranchWithdrawBody": "bottom"
     },
     {
       "id": "08-bean-orders",

@@ -18,6 +18,9 @@ describe('screenshot manifest', () => {
   test('mobile covers every sidebar route plus notification FAB panel', () => {
     const routes = manifest.mobile.map((s) => s.route);
     expect(manifest.mobile).toHaveLength(11);
+    expect(manifest.mobile.find((s) => s.id === '07-branch-withdraw')?.scrollBranchWithdrawBody).toBe(
+      'bottom',
+    );
     for (const route of SIDEBAR_ROUTES) {
       expect(routes).toContain(route);
     }
