@@ -48,6 +48,11 @@ type SecretaryTaskOverlayProps = {
   isPending?: boolean;
 };
 
+type SecretaryTaskOverlayBodyProps = Omit<SecretaryTaskOverlayProps, 'task' | 'isPending'> & {
+  task: SecretaryBoardDisplayTask;
+  parentPending?: boolean;
+};
+
 function filterMaintenanceForTask(
   task: SecretaryTask,
   snapshot: SecretarySnapshot,
@@ -101,7 +106,7 @@ function SecretaryTaskOverlayBody({
   onTaskUpdated,
   onTaskDeleted,
   parentPending = false,
-}: SecretaryTaskOverlayProps & { parentPending?: boolean }) {
+}: SecretaryTaskOverlayBodyProps) {
   const overlayKind = canOpenSecretaryTaskDetail(task)
     ? resolveSecretaryTaskOverlayKind(task)
     : null;
