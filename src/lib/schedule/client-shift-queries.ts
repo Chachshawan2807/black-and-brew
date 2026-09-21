@@ -22,6 +22,26 @@ export function normalizeClientShiftRow<T extends ClientShiftRow>(shift: T): T {
   };
 }
 
+function queryWeekShiftsFromClient(weekStart: string, weekEnd: string) {
+  return supabase
+    .from('shifts')
+    .select(CLIENT_SHIFT_COLUMNS)
+    .gte('start_time', `${weekStart}T00:00:00`)
+    .lte('start_time', `${weekEnd}T23:59:59`)
+    .not('status', 'is', null)
+    .not('status', 'eq', '')
+    .not('metadata->>location', 'is', null)
+    .not('metadata->>location', 'eq', '');
+}
+
+function queryWeekHolidaysFromClient(weekStart: string, weekEnd: string) {
+  return supabase
+    .from('holidays')
+    .select('id, date, name')
+    .gte('date', weekStart)
+    .lte('date', weekEnd);
+}
+
 export async function fetchWeekShiftsFromClient(
   weekStart: string,
   weekEnd: string,
@@ -31,21 +51,45 @@ export async function fetchWeekShiftsFromClient(
     return null;
   }
 
-  const { data, error } = await supabase
-    .from('shifts')
-    .select(CLIENT_SHIFT_COLUMNS)
-    .gte('start_time', `${weekStart}T00:00:00`)
-    .lte('start_time', `${weekEnd}T23:59:59`)
-    .not('status', 'is', null)
-    .not('status', 'eq', '')
-    .not('metadata->>location', 'is', null)
-    .not('metadata->>location', 'eq', '');
+  const { data, error } = await queryWeekShiftsFromClient(weekStart, weekEnd);
 
   if (error) {
     throw error;
   }
 
   return (data ?? []).map((shift) => normalizeClientShiftRow(shift as ClientShiftRow));
+}
+
+export type ClientHolidayRow = {
+  id: string;
+  date: string;
+  name: string;
+};
+
+export async function fetchScheduleWeekGridFromClient(
+  weekStart: string,
+  weekEnd: string,
+): Promise<{ shifts: ClientShiftRow[]; holidays: ClientHolidayRow[] } | null> {
+  const sessionOk = await ensureSupabaseSession();
+  if (!sessionOk) {
+    return null;
+  }
+
+  const shiftsQuery = queryWeekShiftsFromClient(weekStart, weekEnd);
+  const holidaysQuery = queryWeekHolidaysFromClient(weekStart, weekEnd);
+  const [shiftsRes, holidaysRes] = await Promise.all([shiftsQuery, holidaysQuery]);
+
+  if (shiftsRes.error) {
+    throw shiftsRes.error;
+  }
+  if (holidaysRes.error) {
+    throw holidaysRes.error;
+  }
+
+  return {
+    shifts: (shiftsRes.data ?? []).map((shift) => normalizeClientShiftRow(shift as ClientShiftRow)),
+    holidays: (holidaysRes.data ?? []) as ClientHolidayRow[],
+  };
 }
 
 export async function fetchShiftsForDateIsoFromClient(dateIso: string): Promise<ClientShiftRow[] | null> {

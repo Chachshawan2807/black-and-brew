@@ -17,8 +17,13 @@ describe('schedule initial render reliability', () => {
     expect(schedulePageCode).not.toContain('createLazyFeatureClient');
   });
 
-  test('ScheduleClient derives week rows from server week anchor and hydrates on week navigation', () => {
-    expect(scheduleClientCode).toContain('getScheduleWeekDays(initialDateStr)');
+  test('ScheduleClient hydrates the first week from the server then switches weeks on the client', () => {
+    expect(scheduleClientCode).toContain('getScheduleWeekDays(weekAnchor)');
+    expect(scheduleClientCode).toContain('fetchScheduleWeekGridFromClient');
+    expect(scheduleClientCode).toContain('history.pushState');
+    expect(scheduleClientCode).not.toMatch(
+      /handleDateChange[\s\S]*navigateWithoutViewTransition/,
+    );
     expect(scheduleClientCode).toMatch(
       /if \(initialDateStr !== hydratedWeekRef\.current\) \{[\s\S]*setShifts\(initialShifts\)/,
     );

@@ -120,14 +120,14 @@ describe('programmatic navigations cancel stale view transitions', () => {
     expect(detail).not.toMatch(/router\.push\(`\/\$\{locale\}\/bean-orders`\)/);
   });
 
-  test('schedule and dashboard query navigations invalidate pending view transitions', () => {
+  test('schedule week changes stay on the client; dashboard query nav invalidates pending view transitions', () => {
     const schedule = readSrc('app/[locale]/schedule/ScheduleClient.tsx');
     const dashboard = readSrc('app/[locale]/dashboard/_components/LiveShiftList.tsx');
 
-    expect(schedule).toContain('navigateWithoutViewTransition');
-    expect(schedule).toMatch(
-      /navigateWithoutViewTransition\(\s*router\.push,\s*`\?week=\$\{e\.target\.value\}`\s*\)/,
-    );
+    expect(schedule).toContain('invalidatePendingViewTransitionNavigations');
+    expect(schedule).toContain('history.pushState');
+    expect(schedule).toContain('fetchScheduleWeekGridFromClient');
+    expect(schedule).not.toMatch(/navigateWithoutViewTransition\(\s*router\.push,\s*`\?week=/);
     expect(schedule).not.toMatch(/router\.push\(`\?week=\$\{e\.target\.value\}`\)/);
 
     expect(dashboard).toContain('navigateWithoutViewTransition');

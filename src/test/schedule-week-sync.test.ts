@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+  buildScheduleWeekSearch,
   getScheduleWeekDays,
   parseScheduleDateOnly,
   shiftBelongsToWeek,
@@ -41,5 +42,12 @@ describe('schedule week sync helpers', () => {
     expect(weekHasShiftData(shifts, '2026-08-10', '2026-08-16')).toBe(true);
     expect(weekHasShiftData(shifts, '2026-08-17', '2026-08-23')).toBe(false);
     expect(shiftBelongsToWeek(shifts[0], '2026-08-10', '2026-08-16')).toBe(true);
+  });
+
+  test('buildScheduleWeekSearch updates week without dropping other query params', () => {
+    expect(buildScheduleWeekSearch('?showRegularHolidays=true', '2026-08-20')).toBe(
+      '?showRegularHolidays=true&week=2026-08-20',
+    );
+    expect(buildScheduleWeekSearch('?week=2026-08-10', '2026-08-20')).toBe('?week=2026-08-20');
   });
 });

@@ -12,12 +12,15 @@ import { format } from 'date-fns';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
-import { navigateWithoutViewTransition } from '@/lib/view-transition';
-import { safeRouterRefresh } from '@/lib/warm-route-navigation';
+import { invalidatePendingViewTransitionNavigations } from '@/lib/view-transition';
 import { useShiftRealtime } from '@/hooks/use-shift-realtime';
 import { useDebouncedShiftRefresh } from '@/hooks/useDebouncedShiftRefresh';
-import { fetchWeekShiftsFromClient } from '@/lib/schedule/client-shift-queries';
 import {
+  fetchScheduleWeekGridFromClient,
+  fetchWeekShiftsFromClient,
+} from '@/lib/schedule/client-shift-queries';
+import {
+  buildScheduleWeekSearch,
   getScheduleWeekDays,
   parseScheduleDateOnly,
   weekHasShiftData,
@@ -882,7 +885,8 @@ export default function ScheduleClient({
     }
   };
 
-  const weekDays = useMemo(() => getScheduleWeekDays(initialDateStr), [initialDateStr]);
+  const [weekAnchor, setWeekAnchor] = useState(initialDateStr);
+  const weekDays = useMemo(() => getScheduleWeekDays(weekAnchor), [weekAnchor]);
 
   const refreshGenerationRef = useRef(0);
   const clientRefreshRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1007,7 +1011,9 @@ export default function ScheduleClient({
     if (initialDateStr !== hydratedWeekRef.current) {
       hydratedWeekRef.current = initialDateStr;
       clientRefreshEmptyRetriesRef.current = 0;
+      setWeekAnchor(initialDateStr);
       setShifts(initialShifts);
+      setHolidays(initialHolidays);
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [hasServerRegularHolidayData, initialProfiles, initialHolidays, initialRegularHolidays, initialDateStr, initialShifts]);
@@ -1537,10 +1543,86 @@ export default function ScheduleClient({
     }
   };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.value) {
-      navigateWithoutViewTransition(router.push, `?week=${e.target.value}`);
+  const loadScheduleWeekGrid = useCallback(async (weekStart: string, weekEnd: string) => {
+    const generation = ++refreshGenerationRef.current;
+    clientRefreshEmptyRetriesRef.current = 0;
+    clearClientRefreshRetry();
+
+    try {
+      const data = await fetchScheduleWeekGridFromClient(weekStart, weekEnd);
+      if (generation !== refreshGenerationRef.current) return;
+
+      if (data === null) {
+        clearClientRefreshRetry();
+        clientRefreshRetryRef.current = setTimeout(() => {
+          clientRefreshRetryRef.current = null;
+          void loadScheduleWeekGrid(weekStart, weekEnd);
+        }, 400);
+        return;
+      }
+
+      hydratedWeekRef.current = weekStart;
+      setWeekAnchor(weekStart);
+      setCurrentDate(parseScheduleDateOnly(weekStart));
+      setShifts(data.shifts as Shift[]);
+      setHolidays(data.holidays);
+    } catch (error) {
+      if (error && typeof error === 'object' && 'message' in error) {
+        const supabaseError = error as { message: string; details?: string };
+        console.error(
+          'Supabase Error (ScheduleClient week navigation):',
+          supabaseError.message,
+          supabaseError.details,
+        );
+      } else {
+        console.error('Supabase Error (ScheduleClient week navigation):', error);
+      }
     }
+  }, [clearClientRefreshRetry]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const weekFromUrl = new URLSearchParams(window.location.search).get('week');
+      if (!weekFromUrl) return;
+      const nextWeekDays = getScheduleWeekDays(weekFromUrl);
+      const weekStart = nextWeekDays[0];
+      const weekEnd = nextWeekDays[6];
+      if (!weekStart || !weekEnd) return;
+      if (weekStart === hydratedWeekRef.current) return;
+      setWeekAnchor(weekStart);
+      setCurrentDate(parseScheduleDateOnly(weekStart));
+      setShifts([]);
+      setHolidays([]);
+      void loadScheduleWeekGrid(weekStart, weekEnd);
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [loadScheduleWeekGrid]);
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (!value) return;
+
+    const nextWeekDays = getScheduleWeekDays(value);
+    const weekStart = nextWeekDays[0];
+    const weekEnd = nextWeekDays[6];
+    if (!weekStart || !weekEnd) return;
+
+    invalidatePendingViewTransitionNavigations();
+    window.history.pushState(null, '', buildScheduleWeekSearch(window.location.search, value));
+
+    if (weekStart === weekDays[0]) {
+      setCurrentDate(parseScheduleDateOnly(weekStart));
+      setWeekAnchor(weekStart);
+      return;
+    }
+
+    setWeekAnchor(weekStart);
+    setCurrentDate(parseScheduleDateOnly(weekStart));
+    setShifts([]);
+    setHolidays([]);
+    void loadScheduleWeekGrid(weekStart, weekEnd);
   };
 
   const handleSaveHoliday = async (date: string) => {
@@ -1669,7 +1751,7 @@ export default function ScheduleClient({
         redoStackLength={redoStack.length}
         onUndo={undo}
         onRedo={redo}
-        initialDateStr={initialDateStr}
+        initialDateStr={weekAnchor}
         onDateChange={handleDateChange}
         onShowRegularHolidayModal={() => setShowRegularHolidayModal(true)}
         onShowManagementModal={() => setShowManagementModal(true)}

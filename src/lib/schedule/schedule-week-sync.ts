@@ -26,3 +26,11 @@ export function weekHasShiftData<T extends { start_time: string }>(
 ): boolean {
   return shifts.some((shift) => shiftBelongsToWeek(shift, weekStart, weekEnd));
 }
+
+/** Keep existing schedule query flags (e.g. showRegularHolidays) when changing weeks. */
+export function buildScheduleWeekSearch(currentSearch: string, dateInput: string): string {
+  const raw = currentSearch.startsWith('?') ? currentSearch.slice(1) : currentSearch;
+  const params = new URLSearchParams(raw);
+  params.set('week', dateInput);
+  return `?${params.toString()}`;
+}
