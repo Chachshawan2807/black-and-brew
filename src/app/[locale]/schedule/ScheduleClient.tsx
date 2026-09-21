@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
 import { invalidatePendingViewTransitionNavigations } from '@/lib/view-transition';
+import { safeRouterRefresh } from '@/lib/warm-route-navigation';
 import { useShiftRealtime } from '@/hooks/use-shift-realtime';
 import { useDebouncedShiftRefresh } from '@/hooks/useDebouncedShiftRefresh';
 import {
