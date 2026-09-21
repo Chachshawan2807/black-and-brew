@@ -48,7 +48,7 @@ describe('PWA sidebar navigation reliability', () => {
     expect(lib).not.toContain("import { startTransition } from 'react'");
     expect(lib).toContain('navigationGeneration');
     expect(lib).toMatch(/if \(generation !== navigationGeneration\)/);
-    expect(lib).toMatch(/document\.startViewTransition\(\(\) => \{[\s\S]*navigate\(href\)/);
+    expect(lib).toMatch(/document\.startViewTransition\(\(\) => \{[\s\S]*safeRouterNavigate\(navigate, href\)/);
     expect(lib).toContain('navigateWithoutViewTransition');
     expect(lib).toContain('invalidatePendingViewTransitionNavigations');
   });
@@ -104,13 +104,14 @@ describe('PWA sidebar navigation reliability', () => {
 
     expect(hook).toContain('history.pushState');
     expect(hook).toContain('popstate');
+    expect(hook).toContain('shouldInterceptMobileBackHistory');
     expect(drawer).toContain('useMobileBackLayer');
     expect(drawer).toContain("'mobile-nav-drawer'");
     expect(panel).toContain('useMobileBackLayer');
     expect(panel).toContain("'notification-panel'");
     expect(quickFab).toContain('useMobileBackLayer');
     expect(quickFab).toContain("'quick-action-overlay'");
-    expect(schedule).toContain('useMobileBackLayer');
+    expect(schedule).toContain('useMobileBackOverlayStack');
     expect(schedule).toContain("'schedule-overlay'");
   });
 });

@@ -1,3 +1,5 @@
+import { isCoarsePointer } from '@/hooks/use-coarse-pointer';
+
 export const MOBILE_BACK_STATE_KEY = 'bbMobileBack';
 
 export const MOBILE_BACK_LAYER_IDS = [
@@ -40,13 +42,52 @@ export function readMobileBackLayerId(state: unknown): MobileBackLayerId | null 
   return isMobileBackLayerId(layerId) ? layerId : null;
 }
 
+const mountGenerations = new Map<MobileBackLayerId, number>();
+const claimedHistoryLayers = new Set<MobileBackLayerId>();
+
+export function beginMobileBackLayerMount(layerId: MobileBackLayerId): number {
+  const next = (mountGenerations.get(layerId) ?? 0) + 1;
+  mountGenerations.set(layerId, next);
+  return next;
+}
+
+export function isCurrentMobileBackLayerMount(
+  layerId: MobileBackLayerId,
+  generation: number,
+): boolean {
+  return mountGenerations.get(layerId) === generation;
+}
+
+/** First caller for this overlay owns the history entry; remounts reuse it. */
+export function claimMobileBackHistoryEntry(layerId: MobileBackLayerId): boolean {
+  if (claimedHistoryLayers.has(layerId)) return false;
+  claimedHistoryLayers.add(layerId);
+  return true;
+}
+
+export function releaseMobileBackHistoryEntry(layerId: MobileBackLayerId): void {
+  claimedHistoryLayers.delete(layerId);
+}
+
+export function resetMobileBackLayerRuntimeForTests(): void {
+  mountGenerations.clear();
+  claimedHistoryLayers.clear();
+}
+
+export function shouldInterceptMobileBackHistory(
+  media?: Parameters<typeof isCoarsePointer>[0],
+): boolean {
+  return isCoarsePointer(media);
+}
+
 export function shouldSyncHistoryOnLayerClose(
   dismissedByGesture: boolean,
   historyState: unknown,
   layerId: MobileBackLayerId,
   closingForNavigation = false,
+  layerStillActive = false,
 ): boolean {
-  if (dismissedByGesture || closingForNavigation) return false;
+  if (dismissedByGesture || closingForNavigation || layerStillActive) return false;
   return readMobileBackLayerId(historyState) === layerId;
 }
 

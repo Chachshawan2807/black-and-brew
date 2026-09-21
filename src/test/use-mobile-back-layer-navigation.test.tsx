@@ -1,13 +1,31 @@
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { useMobileBackLayer } from '@/hooks/use-mobile-back-layer';
-import { createMobileBackHistoryState } from '@/lib/mobile-back-layer';
+import {
+  createMobileBackHistoryState,
+  resetMobileBackLayerRuntimeForTests,
+} from '@/lib/mobile-back-layer';
+
+function mockCoarsePointer(matches: boolean) {
+  window.matchMedia = vi.fn((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })) as unknown as typeof window.matchMedia;
+}
 
 describe('useMobileBackLayer route navigation', () => {
   const originalPushState = window.history.pushState;
   const originalBack = window.history.back;
 
   beforeEach(() => {
+    resetMobileBackLayerRuntimeForTests();
+    mockCoarsePointer(true);
     window.history.pushState = vi.fn((state) => {
       Object.defineProperty(window.history, 'state', {
         configurable: true,
@@ -113,5 +131,81 @@ describe('useMobileBackLayer route navigation', () => {
     rerender({ active: false });
 
     expect(window.history.back).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not history.back when the layer remounts while still active', async () => {
+    const dismiss = vi.fn();
+    const { unmount } = renderHook(() => {
+      useMobileBackLayer('home-overlay', true, dismiss);
+    });
+
+    expect(window.history.pushState).toHaveBeenCalledTimes(1);
+    vi.mocked(window.history.back).mockClear();
+
+    unmount();
+    renderHook(() => {
+      useMobileBackLayer('home-overlay', true, dismiss);
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(window.history.back).not.toHaveBeenCalled();
+    expect(dismiss).not.toHaveBeenCalled();
+    expect(window.history.pushState).toHaveBeenCalledTimes(1);
+  });
+
+  test('edge swipe popstate still dismisses after remount while active', async () => {
+    const dismiss = vi.fn();
+    const { unmount } = renderHook(() => {
+      useMobileBackLayer('home-overlay', true, dismiss);
+    });
+
+    unmount();
+    renderHook(() => {
+      useMobileBackLayer('home-overlay', true, dismiss);
+    });
+    await Promise.resolve();
+
+    window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
+
+    expect(dismiss).toHaveBeenCalledTimes(1);
+  });
+
+  test('pops history after a true unmount while the overlay was still active', async () => {
+    const { unmount } = renderHook(() => {
+      useMobileBackLayer('home-overlay', true, vi.fn());
+    });
+
+    vi.mocked(window.history.back).mockClear();
+    unmount();
+    await Promise.resolve();
+
+    expect(window.history.back).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not push or pop history on fine-pointer desktop', async () => {
+    mockCoarsePointer(false);
+    const dismiss = vi.fn();
+
+    const { rerender, unmount } = renderHook(
+      ({ active }: { active: boolean }) => {
+        useMobileBackLayer('home-overlay', active, dismiss);
+      },
+      { initialProps: { active: true } },
+    );
+
+    expect(window.history.pushState).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
+    expect(dismiss).not.toHaveBeenCalled();
+
+    rerender({ active: false });
+    expect(window.history.back).not.toHaveBeenCalled();
+
+    rerender({ active: true });
+    unmount();
+    await Promise.resolve();
+    expect(window.history.back).not.toHaveBeenCalled();
   });
 });

@@ -1,12 +1,22 @@
-import { describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 import {
+  beginMobileBackLayerMount,
+  claimMobileBackHistoryEntry,
   createMobileBackHistoryState,
+  isCurrentMobileBackLayerMount,
   readMobileBackLayerId,
+  releaseMobileBackHistoryEntry,
+  resetMobileBackLayerRuntimeForTests,
   shouldDismissMobileBackLayerOnPopState,
+  shouldInterceptMobileBackHistory,
   shouldSyncHistoryOnLayerClose,
 } from '@/lib/mobile-back-layer';
 
 describe('mobile-back-layer', () => {
+  beforeEach(() => {
+    resetMobileBackLayerRuntimeForTests();
+  });
+
   test('createMobileBackHistoryState tags history with layer id', () => {
     expect(createMobileBackHistoryState('notification-panel')).toEqual({
       bbMobileBack: 'notification-panel',
@@ -60,6 +70,18 @@ describe('mobile-back-layer', () => {
     ).toBe(false);
   });
 
+  test('shouldSyncHistoryOnLayerClose skips sync when the overlay is still active', () => {
+    expect(
+      shouldSyncHistoryOnLayerClose(
+        false,
+        createMobileBackHistoryState('home-overlay'),
+        'home-overlay',
+        false,
+        true,
+      ),
+    ).toBe(false);
+  });
+
   test('shouldDismissMobileBackLayerOnPopState dismisses when history no longer tags this layer', () => {
     expect(
       shouldDismissMobileBackLayerOnPopState(
@@ -77,5 +99,32 @@ describe('mobile-back-layer', () => {
         createMobileBackHistoryState('notification-panel'),
       ),
     ).toBe(false);
+  });
+
+  test('remount reuses the same history claim until the overlay actually closes', () => {
+    const first = beginMobileBackLayerMount('home-overlay');
+    expect(claimMobileBackHistoryEntry('home-overlay')).toBe(true);
+    const second = beginMobileBackLayerMount('home-overlay');
+    expect(isCurrentMobileBackLayerMount('home-overlay', first)).toBe(false);
+    expect(isCurrentMobileBackLayerMount('home-overlay', second)).toBe(true);
+    expect(claimMobileBackHistoryEntry('home-overlay')).toBe(false);
+    releaseMobileBackHistoryEntry('home-overlay');
+    expect(claimMobileBackHistoryEntry('home-overlay')).toBe(true);
+  });
+
+  test('shouldInterceptMobileBackHistory stays off on fine-pointer desktop', () => {
+    expect(
+      shouldInterceptMobileBackHistory({
+        matchMedia: () => ({ matches: false }) as MediaQueryList,
+      }),
+    ).toBe(false);
+  });
+
+  test('shouldInterceptMobileBackHistory stays on for coarse-pointer devices', () => {
+    expect(
+      shouldInterceptMobileBackHistory({
+        matchMedia: () => ({ matches: true }) as MediaQueryList,
+      }),
+    ).toBe(true);
   });
 });
