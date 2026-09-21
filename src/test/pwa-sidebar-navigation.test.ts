@@ -103,8 +103,11 @@ describe('PWA sidebar navigation reliability', () => {
     const schedule = readFile('app/[locale]/schedule/ScheduleClient.tsx');
 
     expect(hook).toContain('history.pushState');
+    expect(hook).toContain('history.state');
     expect(hook).toContain('popstate');
     expect(hook).toContain('shouldInterceptMobileBackHistory');
+    expect(hook).toContain('shouldPopHistoryOnOrphanUnmount');
+    expect(hook).toContain('ensureMobileBackHistoryGuard');
     expect(drawer).toContain('useMobileBackLayer');
     expect(drawer).toContain("'mobile-nav-drawer'");
     expect(panel).toContain('useMobileBackLayer');

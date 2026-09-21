@@ -9,7 +9,9 @@ import {
   resetMobileBackLayerRuntimeForTests,
   shouldDismissMobileBackLayerOnPopState,
   shouldInterceptMobileBackHistory,
+  shouldPopHistoryOnOrphanUnmount,
   shouldSyncHistoryOnLayerClose,
+  preserveClaimedMobileBackOnReplace,
 } from '@/lib/mobile-back-layer';
 
 describe('mobile-back-layer', () => {
@@ -20,6 +22,16 @@ describe('mobile-back-layer', () => {
   test('createMobileBackHistoryState tags history with layer id', () => {
     expect(createMobileBackHistoryState('notification-panel')).toEqual({
       bbMobileBack: 'notification-panel',
+    });
+  });
+
+  test('createMobileBackHistoryState keeps existing router history fields', () => {
+    expect(
+      createMobileBackHistoryState('home-overlay', { __na: 'router-tree', idx: 3 }),
+    ).toEqual({
+      __na: 'router-tree',
+      idx: 3,
+      bbMobileBack: 'home-overlay',
     });
   });
 
@@ -99,6 +111,35 @@ describe('mobile-back-layer', () => {
         createMobileBackHistoryState('notification-panel'),
       ),
     ).toBe(false);
+  });
+
+  test('shouldDismissMobileBackLayerOnPopState keeps layer when router state still tags it', () => {
+    expect(
+      shouldDismissMobileBackLayerOnPopState(
+        'home-overlay',
+        createMobileBackHistoryState('home-overlay', { __na: 'router-tree' }),
+      ),
+    ).toBe(false);
+  });
+
+  test('shouldPopHistoryOnOrphanUnmount never auto-backs while the overlay is still wanted', () => {
+    expect(shouldPopHistoryOnOrphanUnmount(true)).toBe(false);
+    expect(shouldPopHistoryOnOrphanUnmount(false)).toBe(false);
+  });
+
+  test('router replaceState cannot wipe a claimed overlay tag', () => {
+    claimMobileBackHistoryEntry('home-overlay');
+    const current = createMobileBackHistoryState('home-overlay', { __na: 'old-tree' });
+    expect(preserveClaimedMobileBackOnReplace({ __na: 'new-tree' }, current)).toEqual({
+      __na: 'new-tree',
+      bbMobileBack: 'home-overlay',
+    });
+  });
+
+  test('router replaceState stays untouched when no overlay is claimed', () => {
+    expect(preserveClaimedMobileBackOnReplace({ __na: 'new-tree' }, { __na: 'old-tree' })).toEqual({
+      __na: 'new-tree',
+    });
   });
 
   test('remount reuses the same history claim until the overlay actually closes', () => {

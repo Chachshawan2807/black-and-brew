@@ -68,4 +68,13 @@ describe('mobile back layer audit', () => {
     const weekly = readFile('app/[locale]/dashboard/_components/LiveShiftList.tsx');
     expect(weekly).toContain('statDialog');
   });
+
+  test('history hub preserves router state and never auto-backs on orphan unmount', () => {
+    const lib = readFile('lib/mobile-back-layer.ts');
+    const hook = readFile('hooks/use-mobile-back-layer.ts');
+    expect(lib).toContain('preserveClaimedMobileBackOnReplace');
+    expect(lib).toContain('shouldPopHistoryOnOrphanUnmount');
+    expect(hook).toContain('window.history.state');
+    expect(hook).toContain('ensureMobileBackHistoryGuard');
+  });
 });

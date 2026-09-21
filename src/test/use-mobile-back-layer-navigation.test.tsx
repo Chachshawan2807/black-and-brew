@@ -172,7 +172,7 @@ describe('useMobileBackLayer route navigation', () => {
     expect(dismiss).toHaveBeenCalledTimes(1);
   });
 
-  test('pops history after a true unmount while the overlay was still active', async () => {
+  test('does not history.back after a true unmount while the overlay was still active', async () => {
     const { unmount } = renderHook(() => {
       useMobileBackLayer('home-overlay', true, vi.fn());
     });
@@ -180,8 +180,9 @@ describe('useMobileBackLayer route navigation', () => {
     vi.mocked(window.history.back).mockClear();
     unmount();
     await Promise.resolve();
+    await Promise.resolve();
 
-    expect(window.history.back).toHaveBeenCalledTimes(1);
+    expect(window.history.back).not.toHaveBeenCalled();
   });
 
   test('does not push or pop history on fine-pointer desktop', async () => {

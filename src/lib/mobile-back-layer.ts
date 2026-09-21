@@ -21,7 +21,7 @@ export const MOBILE_BACK_LAYER_IDS = [
 
 export type MobileBackLayerId = (typeof MOBILE_BACK_LAYER_IDS)[number];
 
-export type MobileBackHistoryState = {
+export type MobileBackHistoryState = Record<string, unknown> & {
   [MOBILE_BACK_STATE_KEY]: MobileBackLayerId;
 };
 
@@ -32,8 +32,19 @@ export function isMobileBackLayerId(value: unknown): value is MobileBackLayerId 
   );
 }
 
-export function createMobileBackHistoryState(layerId: MobileBackLayerId): MobileBackHistoryState {
-  return { [MOBILE_BACK_STATE_KEY]: layerId };
+function cloneHistoryState(state: unknown): Record<string, unknown> {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) return {};
+  return { ...(state as Record<string, unknown>) };
+}
+
+export function createMobileBackHistoryState(
+  layerId: MobileBackLayerId,
+  currentState: unknown = null,
+): MobileBackHistoryState {
+  return {
+    ...cloneHistoryState(currentState),
+    [MOBILE_BACK_STATE_KEY]: layerId,
+  };
 }
 
 export function readMobileBackLayerId(state: unknown): MobileBackLayerId | null {
@@ -78,6 +89,36 @@ export function shouldInterceptMobileBackHistory(
   media?: Parameters<typeof isCoarsePointer>[0],
 ): boolean {
   return isCoarsePointer(media);
+}
+
+/** Overlay remount or orphan unmount must never auto history.back(). */
+export function shouldPopHistoryOnOrphanUnmount(_layerStillActive: boolean): boolean {
+  return false;
+}
+
+export function preserveClaimedMobileBackOnReplace(
+  incomingState: unknown,
+  currentState: unknown,
+): unknown {
+  const currentLayer = readMobileBackLayerId(currentState);
+  if (!currentLayer || !claimedHistoryLayers.has(currentLayer)) {
+    return incomingState;
+  }
+  return createMobileBackHistoryState(currentLayer, incomingState);
+}
+
+let nativeReplaceState: History['replaceState'] | null = null;
+
+export function ensureMobileBackHistoryGuard(): void {
+  if (typeof window === 'undefined' || nativeReplaceState) return;
+  nativeReplaceState = window.history.replaceState.bind(window.history);
+  window.history.replaceState = (data, unused, url) => {
+    return nativeReplaceState!(
+      preserveClaimedMobileBackOnReplace(data, window.history.state),
+      unused,
+      url,
+    );
+  };
 }
 
 export function shouldSyncHistoryOnLayerClose(

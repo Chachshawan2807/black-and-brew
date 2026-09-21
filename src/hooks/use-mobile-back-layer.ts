@@ -5,11 +5,13 @@ import {
   beginMobileBackLayerMount,
   claimMobileBackHistoryEntry,
   createMobileBackHistoryState,
+  ensureMobileBackHistoryGuard,
   isCurrentMobileBackLayerMount,
   type MobileBackLayerId,
   releaseMobileBackHistoryEntry,
   shouldDismissMobileBackLayerOnPopState,
   shouldInterceptMobileBackHistory,
+  shouldPopHistoryOnOrphanUnmount,
   shouldSyncHistoryOnLayerClose,
 } from '@/lib/mobile-back-layer';
 
@@ -21,8 +23,9 @@ export type UseMobileBackLayerOptions = {
 /**
  * Maps Android/iOS edge-back and browser back to closing an overlay instead of exiting the PWA.
  * Touch devices only: desktop must not push/pop history or overlays bounce to the previous window.
+ * History entries clone the current router state so App Router cannot restore a previous tree.
  * Push a history entry while `active`; popstate dismisses; UI close removes the entry.
- * Remount while still open must not call history.back() or the overlay bounces shut later.
+ * Remount or orphan unmount must not call history.back() or the overlay bounces shut later.
  */
 export function useMobileBackLayer(
   layerId: MobileBackLayerId,
@@ -44,10 +47,14 @@ export function useMobileBackLayer(
     if (!active || typeof window === 'undefined') return;
     if (!shouldInterceptMobileBackHistory()) return;
 
+    ensureMobileBackHistoryGuard();
     const generation = beginMobileBackLayerMount(layerId);
     dismissedByGestureRef.current = false;
     if (claimMobileBackHistoryEntry(layerId)) {
-      window.history.pushState(createMobileBackHistoryState(layerId), '');
+      window.history.pushState(
+        createMobileBackHistoryState(layerId, window.history.state),
+        '',
+      );
     }
 
     const releaseHistory = () => {
@@ -103,7 +110,11 @@ export function useMobileBackLayer(
 
       queueMicrotask(() => {
         if (!isCurrentMobileBackLayerMount(layerId, generation)) return;
-        popOwnedHistory();
+        if (shouldPopHistoryOnOrphanUnmount(true)) {
+          popOwnedHistory();
+          return;
+        }
+        releaseHistory();
       });
     };
   }, [active, layerId, closingForNavigationRef]);
