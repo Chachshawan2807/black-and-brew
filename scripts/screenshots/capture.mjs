@@ -134,26 +134,111 @@ async function loadJson(filePath) {
 
 async function dismissPostPinPrompts(page) {
   const skip = page.getByRole('button', { name: /Skip for now|ข้ามไปก่อน/i });
-  if (await skip.isVisible({ timeout: 3000 }).catch(() => false)) {
+  for (let i = 0; i < 3; i++) {
+    if (!(await skip.isVisible({ timeout: 4000 }).catch(() => false))) break;
     await skip.click();
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(400);
   }
 }
 
 async function ensurePinGateway(page) {
-  const pinInput = page.locator('#bb-pin-gateway');
-  const needsPin = await pinInput
-    .waitFor({ state: 'visible', timeout: 4000 })
-    .then(() => true)
-    .catch(() => false);
+  if (await page.locator('#app-main').first().isVisible().catch(() => false)) {
+    return;
+  }
 
-  if (!needsPin) return;
+  await page
+    .waitForFunction(
+      () =>
+        Boolean(document.querySelector('#bb-pin-gateway')) ||
+        Boolean(document.querySelector('#app-main')),
+      { timeout: 180000 },
+    )
+    .catch(() => {});
+
+  if (await page.locator('#app-main').first().isVisible().catch(() => false)) {
+    return;
+  }
+
+  const pinInput = page.locator('#bb-pin-gateway');
+  await pinInput.waitFor({ state: 'attached', timeout: 60000 });
 
   await pinInput.click();
-  await pinInput.pressSequentially(String(PIN), { delay: 35 });
-  await page.getByText(/Sign in|เข้าสู่ระบบ/).waitFor({ state: 'hidden', timeout: 60000 }).catch(() => {});
+  await pinInput.fill(String(PIN));
+  await page
+    .getByText(/กำลังตรวจสอบ|Checking PIN/i)
+    .waitFor({ state: 'visible', timeout: 30000 })
+    .catch(() => {});
+
+  const skipEnrollment = page.getByRole('button', { name: /Skip for now|ข้ามไปก่อน/i });
+  await Promise.race([
+    page.locator('#app-main').waitFor({ state: 'visible', timeout: 180000 }),
+    skipEnrollment.waitFor({ state: 'visible', timeout: 180000 }),
+  ]).catch(() => {});
+
   await dismissPostPinPrompts(page);
-  await page.locator('#app-main').waitFor({ state: 'visible', timeout: 60000 });
+  await page.locator('#app-main').waitFor({ state: 'visible', timeout: 180000 });
+}
+
+async function bodyHasShellContent(page) {
+  return page.evaluate(() => {
+    const text = document.body?.innerText?.trim() ?? '';
+    return Boolean(document.querySelector('#app-main')) && text.length > 12;
+  });
+}
+
+async function ensureAppShellReady(page) {
+  const appMain = page.locator('#app-main').first();
+  if (await appMain.isVisible().catch(() => false)) return true;
+
+  const pinInput = page.locator('#bb-pin-gateway');
+  if (await pinInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await ensurePinGateway(page);
+    return await appMain.isVisible().catch(() => false);
+  }
+
+  await appMain.waitFor({ state: 'visible', timeout: 20000 }).catch(() => {});
+  return await appMain.isVisible().catch(() => false);
+}
+
+async function settleAfterNavigation(page) {
+  await page.waitForLoadState('networkidle', { timeout: 90000 }).catch(() => {});
+  await page.waitForTimeout(800);
+}
+
+async function waitForRouteContent(page, shot) {
+  const errorPattern = /This page couldn't load|โหลดหน้านี้ไม่สำเร็จ/i;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (attempt > 0) {
+      const backoffMs = 2500 * attempt;
+      console.warn(`Retrying ${shot.id} after empty chunk/shell (wait ${backoffMs}ms)`);
+      await page.waitForTimeout(backoffMs);
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 120000 });
+      await settleAfterNavigation(page);
+    }
+
+    await ensureAppShellReady(page).catch(() => false);
+
+    const shellReady = await page
+      .waitForFunction(
+        () => {
+          const text = document.body?.innerText?.trim() ?? '';
+          return Boolean(document.querySelector('#app-main')) && text.length > 12;
+        },
+        { timeout: 120000 },
+      )
+      .then(() => true)
+      .catch(() => false);
+
+    if (!shellReady) continue;
+
+    await page.locator(shot.waitSelector).first().waitFor({ state: 'visible', timeout: 120000 });
+    await waitForStableFrame(page);
+
+    const errorUi = await page.getByText(errorPattern).isVisible().catch(() => false);
+    if (!errorUi) return;
+  }
+
+  throw new Error(`Route ${shot.id} did not reach ready state (shell, selector, or chunk error).`);
 }
 
 async function gotoRoute(page, url) {
@@ -233,6 +318,7 @@ async function captureShot(page, context, shot, outDir, viewport, profile, alias
       ? routeWithDashboardQuery(shot.route, dashboardRange)
       : shot.route;
   await gotoRoute(page, `${BASE}${pathPart}`);
+  await settleAfterNavigation(page);
   if (dashboardRange?.start && dashboardRange?.end) {
     await persistDashboardRangeInPage(page, dashboardRange).catch(() => {});
   }
@@ -245,12 +331,14 @@ async function captureShot(page, context, shot, outDir, viewport, profile, alias
     });
   if (!session.authenticated) {
     await ensurePinGateway(page);
+    await page.locator('#app-main').first().waitFor({ state: 'visible', timeout: 120000 });
     session.authenticated = true;
   } else {
     await dismissPostPinPrompts(page);
+    await ensureAppShellReady(page);
   }
 
-  await page.locator(shot.waitSelector).first().waitFor({ state: 'visible', timeout: 60000 });
+  await waitForRouteContent(page, shot);
   await waitForLayoutShell(page, profile);
   await waitForStableFrame(page);
 
@@ -307,6 +395,17 @@ async function captureShot(page, context, shot, outDir, viewport, profile, alias
   await runDomAnonymize(page, aliasConfig, redactMode);
 
   const fullPage = shot.captureFullPage === true;
+
+  const errorUi = await page
+    .getByText(/This page couldn't load|โหลดหน้านี้ไม่สำเร็จ/i)
+    .isVisible()
+    .catch(() => false);
+  if (errorUi) {
+    const snippet = await page.locator('body').innerText().catch(() => '');
+    throw new Error(
+      `Capture aborted for ${shot.id}: page error UI visible. Body: ${snippet.slice(0, 200)}`,
+    );
+  }
 
   await page.screenshot({ path: outPath, fullPage });
   console.log('saved', outPath, fullPage ? '(full page)' : '(viewport)');
@@ -373,6 +472,19 @@ async function main() {
   if (only && mobileShots.length === 0 && desktopShots.length === 0) {
     throw new Error(`SCREENSHOT_ONLY=${only} did not match any manifest id.`);
   }
+
+  const profileVp =
+    desktopShots.length > 0 && mobileShots.length === 0
+      ? { width: 1440, height: 900 }
+      : { width: 390, height: 844 };
+  await page.setViewportSize(profileVp);
+  console.log('Warming PIN session on /th/home …');
+  await gotoRoute(page, `${BASE}/th/home`);
+  await settleAfterNavigation(page);
+  await ensurePinGateway(page);
+  await page.locator('#app-main').first().waitFor({ state: 'visible', timeout: 180000 });
+  session.authenticated = true;
+  session.warmed = true;
 
   const mobileVp = { width: 390, height: 844 };
   for (const shot of mobileShots) {

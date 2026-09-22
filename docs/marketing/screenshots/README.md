@@ -41,7 +41,7 @@ Before sharing PNGs externally, run `npm run screenshots:verify`. DOM anonymizat
 
 **Redaction scope:** `redactMode` in `manifest.json` is `staff` only on home, dashboard, and schedule (mobile + matching desktop). All other routes use `none`. Single-character staff names are never replaced inside longer words (e.g. product names).
 
-**Dev server:** Next.js "Rendering..." badge is hidden during capture via injected CSS (capture tooling only).
+**Dev server:** Next.js "Rendering..." badge is hidden during capture via injected CSS (capture tooling only). Capture warms PIN on `/th/home`, auto-clicks **ข้ามไปก่อน** on passkey enrollment, and retries when dev chunks fail to load (blank page / "This page couldn't load"). If a shot fails, re-run that id with `SCREENSHOT_FORCE=1` once the dev compile settles.
 
 ## Troubleshooting
 

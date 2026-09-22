@@ -126,7 +126,7 @@
       "id": "d-maintenance",
       "route": "/th/maintenance",
       "headline": "Equipment maintenance log",
-      "waitSelector": "#app-main",
+      "waitSelector": "button:has-text(\"เพิ่มบันทึกใหม่\")",
       "rawFile": "d-maintenance.png",
       "redactMode": "none"
     },
@@ -142,7 +142,7 @@
       "id": "d-inventory-count",
       "route": "/th/inventory/count",
       "headline": "Cycle counts on the floor",
-      "waitSelector": "#app-main",
+      "waitSelector": "button:has-text(\"ตรวจนับ\")",
       "rawFile": "d-inventory-count.png",
       "redactMode": "none"
     },
@@ -179,5 +179,5 @@
       "redactMode": "none"
     }
   ],
-  "lastCapture": "2026-09-22T14:30:55.665Z"
+  "lastCapture": "2026-09-22T16:34:14.231Z"
 }
