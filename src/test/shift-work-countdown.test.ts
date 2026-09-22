@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 import {
   buildTimedShiftEndInstant,
@@ -7,6 +9,7 @@ import {
   formatTimedShiftWindowLabel,
   parseTimedShiftLabel,
   resolveShiftCountdownPhase,
+  shiftClockFromSharedEpoch,
 } from '@/lib/schedule/shift-work-countdown';
 import { buildHomeShiftStatusRows, resolveTimedShiftCountdownView } from '@/lib/schedule/home-shift-status';
 
@@ -37,6 +40,30 @@ describe('shift-work-countdown', () => {
 
   test('formatCountdownClock renders zero-padded hh:mm:ss', () => {
     expect(formatCountdownClock(3_661_000)).toBe('01:01:01');
+  });
+
+  test('shared epoch keeps the first countdown identical on server and client', () => {
+    const epoch = Date.parse('2026-09-23T00:29:00+07:00');
+    const serverNow = shiftClockFromSharedEpoch(epoch);
+    const clientNow = shiftClockFromSharedEpoch(epoch);
+    expect(serverNow?.getTime()).toBe(epoch);
+    expect(clientNow?.getTime()).toBe(serverNow?.getTime());
+    expect(shiftClockFromSharedEpoch(undefined)).toBeNull();
+    expect(shiftClockFromSharedEpoch(null)).toBeNull();
+  });
+});
+
+describe('shift countdown hydration', () => {
+  test('the home clock does not sample a fresh Date during the hydration render', () => {
+    const root = path.resolve(__dirname, '..');
+    const section = fs.readFileSync(
+      path.resolve(root, 'app/[locale]/home/_components/HomeShiftStatusSection.tsx'),
+      'utf8',
+    );
+    const page = fs.readFileSync(path.resolve(root, 'app/[locale]/home/page.tsx'), 'utf8');
+    expect(section).not.toContain('useState(() => new Date())');
+    expect(section).toContain('shiftClockFromSharedEpoch');
+    expect(page).toContain('clockEpochMs={Date.now()}');
   });
 });
 

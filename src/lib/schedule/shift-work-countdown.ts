@@ -38,6 +38,12 @@ export function resolveShiftCountdownPhase(now: Date, shiftStart: Date, shiftEnd
   return 'active';
 }
 
+/** Clock instant shared by SSR HTML and the client hydration render. */
+export function shiftClockFromSharedEpoch(clockEpochMs: number | null | undefined): Date | null {
+  if (clockEpochMs == null || !Number.isFinite(clockEpochMs)) return null;
+  return new Date(clockEpochMs);
+}
+
 export function formatCountdownClock(totalMs: number): string {
   const clamped = Math.max(0, totalMs);
   const totalSec = Math.floor(clamped / 1000);

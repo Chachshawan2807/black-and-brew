@@ -12,7 +12,10 @@ import {
   type HomeShiftProfile,
   type HomeShiftStatusRow,
 } from '@/lib/schedule/home-shift-status';
-import { formatCountdownClock } from '@/lib/schedule/shift-work-countdown';
+import {
+  formatCountdownClock,
+  shiftClockFromSharedEpoch,
+} from '@/lib/schedule/shift-work-countdown';
 import {
   HomeSectionBadge,
   HomeSectionHeader,
@@ -31,6 +34,8 @@ type HomeShiftStatusSectionProps = {
   initialPanel?: HomeMemberPanelSnapshot;
   /** Keep right column on desktop when sidebar is collapsed and there are no shifts */
   showWhenEmpty?: boolean;
+  /** Server render instant so the first countdown matches the HTML */
+  clockEpochMs?: number;
 };
 
 function panelMatchesDate(
@@ -40,12 +45,16 @@ function panelMatchesDate(
   return panel?.dateIso === dateIso;
 }
 
-function useNowTick(enabled: boolean): Date {
-  const [now, setNow] = useState(() => new Date());
+function useNowTick(enabled: boolean, clockEpochMs?: number): Date | null {
+  const [now, setNow] = useState<Date | null>(() =>
+    enabled ? shiftClockFromSharedEpoch(clockEpochMs) : null,
+  );
 
   useEffect(() => {
     if (!enabled) return;
-    const id = window.setInterval(() => setNow(new Date()), 1000);
+    const tick = () => setNow(new Date());
+    tick();
+    const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
   }, [enabled]);
 
@@ -144,7 +153,7 @@ function ShiftStatusMemberGrid({
   now,
 }: {
   rows: HomeShiftStatusRow[];
-  now: Date;
+  now: Date | null;
 }) {
   if (rows.length === 0) {
     return <p className="mt-3 px-1 text-sm text-muted-foreground">ไม่มีกะในวันนี้</p>;
@@ -153,7 +162,7 @@ function ShiftStatusMemberGrid({
   return (
     <ul className="mt-3 flex flex-wrap gap-2">
       {rows.map((row) => {
-        const countdown = resolveTimedShiftCountdownView(row, now);
+        const countdown = now ? resolveTimedShiftCountdownView(row, now) : null;
         return (
           <li key={row.profileId}>
             <ShiftStatusEmployeeCard row={row} countdown={countdown} />
@@ -168,6 +177,7 @@ export default function HomeShiftStatusSection({
   dateIso,
   initialPanel,
   showWhenEmpty = false,
+  clockEpochMs,
 }: HomeShiftStatusSectionProps) {
   const seedPanel = panelMatchesDate(initialPanel, dateIso) ? initialPanel : undefined;
   const tomorrowDateIso = useMemo(() => addCalendarDaysIsoBkk(dateIso, 1), [dateIso]);
@@ -269,7 +279,7 @@ export default function HomeShiftStatusSection({
 
   const hasTimedShift =
     todayRows.some((row) => row.isTimedShift) || tomorrowRows.some((row) => row.isTimedShift);
-  const now = useNowTick(hasTimedShift);
+  const now = useNowTick(hasTimedShift, clockEpochMs);
 
   const hasAnyMembers = todayRows.length > 0 || tomorrowRows.length > 0;
 

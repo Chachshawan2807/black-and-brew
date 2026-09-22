@@ -52,9 +52,11 @@ export function HomeDashboardFrame({
 export function HomeShiftPane({
   dateIso,
   initialPanel,
+  clockEpochMs,
 }: {
   dateIso: string;
   initialPanel?: HomeMemberPanelSnapshot;
+  clockEpochMs?: number;
 }) {
   const [activeDateIso, setActiveDateIso] = useState(dateIso);
   const sidebarHydrated = useSidebarHydrated();
@@ -78,6 +80,7 @@ export function HomeShiftPane({
       dateIso={activeDateIso}
       initialPanel={initialPanel?.dateIso === activeDateIso ? initialPanel : undefined}
       showWhenEmpty={desktopSplit}
+      clockEpochMs={clockEpochMs}
     />
   );
 }

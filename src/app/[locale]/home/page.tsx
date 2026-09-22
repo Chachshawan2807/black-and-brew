@@ -94,6 +94,7 @@ async function HomeShiftsSlot({
       key={dateIso}
       dateIso={dateIso}
       initialPanel={memberPanelResult.success ? memberPanelResult.panel : undefined}
+      clockEpochMs={Date.now()}
     />
   );
 }
