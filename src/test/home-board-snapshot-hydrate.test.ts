@@ -13,9 +13,8 @@ describe('home board snapshot hydrate', () => {
     expect(source).toContain('export async function hydrateSecretaryBoardSnapshot');
     expect(source).toContain('fetchSecretarySnapshotSlices');
     expect(source).toContain('isMinimalSecretaryBoardSnapshot');
-    expect(source).toMatch(
-      /reuseHydratedSnapshot[\s\S]*syncDerivedSecretaryTasks/,
-    );
+    expect(source).toMatch(/reuseHydratedSnapshot[\s\S]*syncDerivedSecretaryTasks/);
+    expect(source).toMatch(/reuseHydratedSnapshot \? \{\} : \{ snapshot \}/);
   });
 
   test('board sync hub loads snapshot detail in parallel with the task refresh', () => {

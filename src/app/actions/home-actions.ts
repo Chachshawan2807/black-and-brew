@@ -578,7 +578,7 @@ export async function syncAndFetchSecretaryBoard(opts?: {
     return {
       success: true,
       tasks: tasksResult.tasks,
-      snapshot,
+      ...(reuseHydratedSnapshot ? {} : { snapshot }),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

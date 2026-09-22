@@ -15,7 +15,7 @@ import {
   SECRETARY_MODULE_BOARD_TAGS,
 } from '@/lib/secretary/board-card-surface';
 import { HomePanelEmptyState } from '@/app/[locale]/_components/home-panel-primitives';
-import { mergeSecretarySnapshot, type HomeBoardDetailUpdate } from '@/lib/secretary/snapshot-patch';
+import { type HomeBoardDetailUpdate } from '@/lib/secretary/snapshot-patch';
 import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
 import { createManualSecretaryTask } from '@/app/actions/home-actions';
 import { resolveSecretaryCardTitleFontClass, splitSecretaryCardTitle } from '@/lib/secretary/format-card-title';
@@ -39,7 +39,7 @@ import {
   shouldIdlePreloadSecretaryOverlays,
 } from '@/lib/secretary/preload-secretary-overlay';
 import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
-import { isCoarsePointer } from '@/hooks/use-coarse-pointer';
+import { applySecretaryBoardSync } from '@/lib/secretary/apply-board-sync';
 import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 import { getCachedSecretaryBoardSnapshot, subscribeSecretaryBoardCache, writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
 import { isMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
@@ -141,19 +141,7 @@ export function HomeTaskBoard({
   );
 
   const applyBoardSync = useCallback((payload: BoardSyncPayload) => {
-    setBoard((prev) => {
-      const nextSnapshot = payload.snapshot
-        ? payload.snapshot
-        : payload.snapshotPatch
-          ? mergeSecretarySnapshot(prev.snapshot, payload.snapshotPatch)
-          : prev.snapshot;
-
-      return {
-        ...prev,
-        tasks: payload.tasks ?? prev.tasks,
-        snapshot: nextSnapshot,
-      };
-    });
+    setBoard((prev) => applySecretaryBoardSync(prev, payload));
     if (payload.snapshot?.dateIso) {
       setWorkDateIso(payload.snapshot.dateIso);
     } else if (payload.snapshotPatch?.dateIso) {
@@ -181,12 +169,12 @@ export function HomeTaskBoard({
   });
 
   const applyBoardDetail = useCallback((detail: HomeBoardDetailUpdate) => {
-    setBoard((prev) => ({
-      ...prev,
-      snapshot: detail.snapshot.detailStatus === 'ready'
-        ? detail.snapshot
-        : { ...detail.snapshot, detailStatus: 'ready' },
-    }));
+    setBoard((prev) =>
+      applySecretaryBoardSync(prev, {
+        snapshotPatch: detail.snapshotPatch,
+        snapshot: detail.snapshotPatch ? undefined : detail.snapshot,
+      }),
+    );
   }, []);
 
   useEffect(() => {
@@ -200,11 +188,6 @@ export function HomeTaskBoard({
 
   useEffect(() => {
     if (preview) return;
-    if (isCoarsePointer()) {
-      return scheduleIdleWork(() => {
-        requestHomeBoardFullSync();
-      }, { timeout: 400 });
-    }
     requestHomeBoardFullSync();
   }, [preview]);
 

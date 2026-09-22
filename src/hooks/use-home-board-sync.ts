@@ -95,11 +95,17 @@ async function hydrateBoardSnapshots(
 
       if (!result.success || !result.snapshot) return;
 
-      registration.listener({
-        snapshot: result.snapshot,
-        snapshotPatch: result.snapshotPatch,
-        syncKind: scopes?.length ? 'scoped' : 'full',
-      });
+      registration.listener(
+        result.snapshotPatch
+          ? {
+              snapshotPatch: result.snapshotPatch,
+              syncKind: scopes?.length ? 'scoped' : 'full',
+            }
+          : {
+              snapshot: result.snapshot,
+              syncKind: scopes?.length ? 'scoped' : 'full',
+            },
+      );
     }),
   );
 }

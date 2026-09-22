@@ -79,16 +79,16 @@ describe('mobile home load', () => {
     );
   });
 
-  test('coarse pointer defers full board sync so cellular is not saturated after first paint', () => {
+  test('home board sync starts immediately on every pointer, including phones', () => {
     const coarse = readFileSync(coarsePointerPath, 'utf-8');
     const homeClient = readFileSync(homeClientPath, 'utf-8');
     expect(coarse).toContain('export function isCoarsePointer');
-    expect(homeClient).toContain('isCoarsePointer');
-    expect(homeClient).toMatch(
-      /isCoarsePointer\([\s\S]*scheduleIdleWork\([\s\S]*requestHomeBoardFullSync/,
+    expect(homeClient).toContain('requestHomeBoardFullSync()');
+    expect(homeClient).not.toMatch(
+      /isCoarsePointer\([\s\S]*requestHomeBoardFullSync/,
     );
-    expect(homeClient).toMatch(/timeout:\s*400/);
     expect(homeClient).not.toMatch(/timeout:\s*2500/);
+    expect(homeClient).not.toMatch(/timeout:\s*400/);
   });
 
   test('isCoarsePointer reads matchMedia without waiting for React state', async () => {
