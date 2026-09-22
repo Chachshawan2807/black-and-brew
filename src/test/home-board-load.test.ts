@@ -15,6 +15,16 @@ const skeletonPath = resolve(
 );
 
 describe('home secretary board load', () => {
+  test('loadSecretaryBoard starts the task query before the auth gate resolves', () => {
+    const source = readFileSync(homeActionsPath, 'utf-8');
+    const start = source.indexOf('export async function loadSecretaryBoard');
+    const fn = source.slice(start);
+    const queryAt = fn.indexOf('const tasksPromise = querySecretaryTasks(dateIso)');
+    const authAt = fn.indexOf('await requireReadAccess()');
+    expect(queryAt).toBeGreaterThan(0);
+    expect(authAt).toBeGreaterThan(queryAt);
+  });
+
   test('loadSecretaryBoard defers blocking derived sync by default', () => {
     const source = readFileSync(homeActionsPath, 'utf-8');
     expect(source).toContain('deferDerivedSync');
@@ -23,7 +33,7 @@ describe('home secretary board load', () => {
     expect(source).toContain('buildMinimalSecretaryBoardSnapshot');
     expect(source).toContain('async function querySecretaryTasks');
     expect(source).toMatch(
-      /if\s*\(\s*deferDerivedSync\s*\)\s*\{[\s\S]*?querySecretaryTasks\(dateIso\)/,
+      /if\s*\(\s*deferDerivedSync\s*\)\s*\{[\s\S]*?tasksPromise/,
     );
   });
 
@@ -36,6 +46,15 @@ describe('home secretary board load', () => {
     expect(source).toMatch(
       /const boardPromise = loadSecretaryBoard[\s\S]*const memberPanelPromise = loadHomeMemberPanel[\s\S]*await authedPromise/,
     );
+  });
+
+  test('home page paints cached cards while the live board streams', () => {
+    const source = readFileSync(homePagePath, 'utf-8');
+    expect(source).toContain('HomeCachedPageFallback');
+    expect(source).toContain('HomeCachedTaskFallback');
+    expect(source).toContain('scheduleHomeBoardDetail');
+    expect(source).toContain('detailPromise');
+    expect(source).not.toMatch(/await scheduleHomeBoardDetail/);
   });
 
   test('home page streams tasks and member panel in separate Suspense boundaries', () => {

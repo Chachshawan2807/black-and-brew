@@ -90,12 +90,11 @@ function applyMemberPanel(
 
 /** Client fallback when server auth or board is still pending; uses same-day cache for instant paint. */
 export function HomeClientEntry({ locale }: HomeClientEntryProps) {
-  const [boardFromCacheOnInit] = useState(
-    () => readCachedSecretaryBoard(locale) !== null,
-  );
   const [board, setBoard] = useState<SecretaryBoard | null>(() =>
     readCachedSecretaryBoard(locale),
   );
+  const [hadCachedBoard] = useState(() => board !== null);
+  const boardFromCacheOnInitRef = useRef(hadCachedBoard);
   const [memberPanel, setMemberPanel] = useState<HomeMemberPanelSnapshot | undefined>(
     () => {
       const cachedBoard = readCachedSecretaryBoard(locale);
@@ -190,9 +189,9 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
     registerHomeBoardPerfDevTools();
     homePerfStartSession('entry');
     startTransition(() => {
-      void tryLoadBoard({ skipPinWait: boardFromCacheOnInit });
+      void tryLoadBoard({ skipPinWait: boardFromCacheOnInitRef.current });
     });
-  }, [boardFromCacheOnInit, tryLoadBoard]);
+  }, [tryLoadBoard]);
 
   useEffect(() => {
     const onAuthenticated = () => {
@@ -217,7 +216,7 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
         initialBoard={board}
         initialMemberPanel={memberPanel}
         locale={locale}
-        boardLoadSource={boardFromCacheOnInit ? 'session-cache' : 'client-fetch'}
+        boardLoadSource={hadCachedBoard ? 'session-cache' : 'client-fetch'}
       />
     );
   }

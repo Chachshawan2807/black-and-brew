@@ -713,18 +713,20 @@ export async function loadHomeMemberPanel(opts?: {
   panel?: HomeMemberPanelSnapshot;
   error?: string;
 }> {
+  const dateIso = opts?.dateIso ?? todayIsoBkk();
+  const panelPromise = fetchHomeMemberPanelFromServer(dateIso).then(
+    (panel) => ({ ok: true as const, panel }),
+    (error: unknown) => ({
+      ok: false as const,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }),
+  );
   const authError = await requireReadAccess();
   if (authError) return { success: false, error: authError };
 
-  const dateIso = opts?.dateIso ?? todayIsoBkk();
-
-  try {
-    const panel = await fetchHomeMemberPanelFromServer(dateIso);
-    return { success: true, panel };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: message };
-  }
+  const panelResult = await panelPromise;
+  if (!panelResult.ok) return { success: false, error: panelResult.error };
+  return { success: true, panel: panelResult.panel };
 }
 
 export async function loadSecretaryBoard(opts?: {
@@ -736,19 +738,20 @@ export async function loadSecretaryBoard(opts?: {
    */
   deferDerivedSync?: boolean;
 }): Promise<{ success: boolean; board?: SecretaryBoard; error?: string }> {
-  const authError = await requireReadAccess();
-  if (authError) return { success: false, error: authError };
-
   const locale = opts?.locale ?? 'th';
   const dateIso = opts?.dateIso ?? todayIsoBkk();
   const deferDerivedSync = opts?.deferDerivedSync ?? true;
+  const tasksPromise = querySecretaryTasks(dateIso);
+
+  const authError = await requireReadAccess();
+  if (authError) return { success: false, error: authError };
 
   const session = await ensureServerSession();
   if (session.ok && session.readOnly && !deferDerivedSync) {
     try {
       const [snapshot, tasksResult] = await Promise.all([
         fetchSecretarySnapshot({ dateIso, locale }),
-        querySecretaryTasks(dateIso),
+        tasksPromise,
       ]);
       if (!tasksResult.success || !tasksResult.tasks) {
         return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
@@ -768,7 +771,7 @@ export async function loadSecretaryBoard(opts?: {
 
   try {
     if (deferDerivedSync) {
-      const tasksResult = await querySecretaryTasks(dateIso);
+      const tasksResult = await tasksPromise;
       if (!tasksResult.success || !tasksResult.tasks) {
         return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
       }
@@ -784,7 +787,7 @@ export async function loadSecretaryBoard(opts?: {
 
     const [snapshot, tasksResult] = await Promise.all([
       fetchSecretarySnapshot({ dateIso, locale }),
-      fetchSecretaryTasks(dateIso),
+      tasksPromise,
     ]);
 
     const syncResult = await syncDerivedSecretaryTasks({ snapshot, dateIso, locale });

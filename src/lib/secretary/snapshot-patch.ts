@@ -16,6 +16,25 @@ export type SecretarySnapshotPatch = Partial<
   >
 >;
 
+const DETAIL_PATCH_KEYS = [
+  'itemsToOrder',
+  'branchWithdrawItems',
+  'inventoryCatalogItems',
+  'maintenanceTasks',
+  'operational',
+  'headcountToday',
+  'isBranch2Day',
+] as const satisfies readonly (keyof SecretarySnapshotPatch)[];
+
+function patchHasBoardDetail(patch: SecretarySnapshotPatch): boolean {
+  return DETAIL_PATCH_KEYS.some((key) => patch[key] !== undefined);
+}
+
+export type HomeBoardDetailUpdate = {
+  snapshot: SecretarySnapshot;
+  snapshotPatch?: SecretarySnapshotPatch;
+};
+
 export function mergeSecretarySnapshot(
   current: SecretarySnapshot,
   patch: SecretarySnapshotPatch,
@@ -23,6 +42,7 @@ export function mergeSecretarySnapshot(
   return {
     ...current,
     ...patch,
+    detailStatus: patchHasBoardDetail(patch) ? 'ready' : current.detailStatus,
     operational: patch.operational
       ? { ...current.operational, ...patch.operational }
       : current.operational,

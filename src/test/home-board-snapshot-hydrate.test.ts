@@ -18,11 +18,12 @@ describe('home board snapshot hydrate', () => {
     );
   });
 
-  test('board sync hub hydrates snapshot before full derived sync', () => {
+  test('board sync hub loads snapshot detail in parallel with the task refresh', () => {
     const source = readFileSync(syncPath, 'utf-8');
     expect(source).toContain('hydrateBoardSnapshots');
     expect(source).toContain('requestHomeBoardSnapshotHydrate');
-    expect(source).toMatch(/if \(useFullSync[\s\S]*hydrateBoardSnapshots/);
+    expect(source).toMatch(/Promise\.all\(\[[\s\S]*hydrateBoardSnapshots/);
+    expect(source).not.toMatch(/await hydrateBoardSnapshots\([\s\S]{0,400}await Promise\.all/);
     expect(source).toContain('getCurrentTasks');
     expect(source).toContain('getHydrationScopes');
   });

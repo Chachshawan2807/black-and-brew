@@ -60,6 +60,8 @@ export const EMPTY_SECRETARY_COUNT_SESSION: SecretaryCountSessionSlice = {
 export type SecretarySnapshot = {
   dateIso: string;
   locale: string;
+  /** `deferred` is the fast placeholder. `ready` means detail slices were loaded. */
+  detailStatus?: 'deferred' | 'ready';
   operational: OperationalSnapshot;
   itemsToOrder: SecretaryReorderItem[];
   branchWithdrawItems: SecretaryReorderItem[];

@@ -78,12 +78,31 @@ function snapshotToCachePatch(board: SecretaryBoard): SecretarySnapshotPatch | u
     locale: snapshot.locale,
     itemsToOrder: snapshot.itemsToOrder,
     branchWithdrawItems: snapshot.branchWithdrawItems,
+    inventoryCatalogItems: snapshot.inventoryCatalogItems,
     maintenanceTasks: snapshot.maintenanceTasks,
     operational: snapshot.operational,
     headcountToday: snapshot.headcountToday,
     isBranch2Day: snapshot.isBranch2Day,
     branch2Remark: snapshot.branch2Remark,
   };
+}
+
+function readSameDaySnapshotPatch(
+  locale: string,
+  dateIso: string,
+): SecretarySnapshotPatch | undefined {
+  try {
+    const raw =
+      readRaw(BOARD_CACHE_KEY) ??
+      readRaw(LEGACY_BOARD_CACHE_KEY_V2) ??
+      readRaw(LEGACY_BOARD_CACHE_KEY_V1);
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw) as CachedHomeBoard;
+    if (parsed.locale !== locale || parsed.dateIso !== dateIso) return undefined;
+    return parsed.snapshotPatch;
+  } catch {
+    return undefined;
+  }
 }
 
 export function readCachedSecretaryBoard(locale: string): SecretaryBoard | null {
@@ -97,22 +116,85 @@ export function readCachedSecretaryBoard(locale: string): SecretaryBoard | null 
     if (!raw) return null;
 
     const board = parseCachedBoard(raw, locale);
-    if (board) writeCachedSecretaryBoard(board);
+    if (board) persistCachedSecretaryBoard(board, false);
     return board;
   } catch {
     return null;
   }
 }
 
-export function writeCachedSecretaryBoard(board: SecretaryBoard): void {
-  const snapshotPatch = snapshotToCachePatch(board);
+const secretaryBoardCacheListeners = new Set<() => void>();
+
+type StableBoardCache = {
+  locale: string;
+  raw: string | null;
+  board: SecretaryBoard | null;
+};
+
+let stableBoardCache: StableBoardCache | null = null;
+
+function rememberBoardCache(locale: string, raw: string | null, board: SecretaryBoard | null): void {
+  stableBoardCache = { locale, raw, board };
+}
+
+export function subscribeSecretaryBoardCache(listener: () => void): () => void {
+  secretaryBoardCacheListeners.add(listener);
+  return () => {
+    secretaryBoardCacheListeners.delete(listener);
+  };
+}
+
+/** Stable snapshot for `useSyncExternalStore`. Does not write storage. */
+export function getCachedSecretaryBoardSnapshot(locale: string): SecretaryBoard | null {
+  if (typeof window === 'undefined') return null;
+
+  const raw =
+    readRaw(BOARD_CACHE_KEY) ??
+    readRaw(LEGACY_BOARD_CACHE_KEY_V2) ??
+    readRaw(LEGACY_BOARD_CACHE_KEY_V1);
+
+  if (stableBoardCache && stableBoardCache.locale === locale && stableBoardCache.raw === raw) {
+    return stableBoardCache.board;
+  }
+
+  let board: SecretaryBoard | null = null;
+  if (raw) {
+    try {
+      board = parseCachedBoard(raw, locale);
+    } catch {
+      board = null;
+    }
+  }
+
+  rememberBoardCache(locale, raw, board);
+  return board;
+}
+
+function persistCachedSecretaryBoard(board: SecretaryBoard, notify: boolean): void {
+  const freshPatch = snapshotToCachePatch(board);
+  const snapshotPatch =
+    freshPatch ??
+    (board.snapshot.detailStatus === 'ready'
+      ? undefined
+      : readSameDaySnapshotPatch(board.snapshot.locale, board.snapshot.dateIso));
   const payload: CachedHomeBoard = {
     locale: board.snapshot.locale,
     dateIso: board.snapshot.dateIso,
     tasks: board.tasks,
     ...(snapshotPatch ? { snapshotPatch } : {}),
   };
-  writeRaw(BOARD_CACHE_KEY, JSON.stringify(payload));
+  const nextRaw = JSON.stringify(payload);
+  const currentRaw = readRaw(BOARD_CACHE_KEY);
+  if (currentRaw !== nextRaw) {
+    writeRaw(BOARD_CACHE_KEY, nextRaw);
+  }
+  rememberBoardCache(board.snapshot.locale, nextRaw, board);
+  if (!notify || currentRaw === nextRaw) return;
+  secretaryBoardCacheListeners.forEach((listener) => listener());
+}
+
+export function writeCachedSecretaryBoard(board: SecretaryBoard): void {
+  persistCachedSecretaryBoard(board, true);
 }
 
 export function readCachedHomeMemberPanel(dateIso: string): HomeMemberPanelSnapshot | null {

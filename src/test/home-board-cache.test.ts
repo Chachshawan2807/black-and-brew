@@ -105,4 +105,53 @@ describe('home board session cache', () => {
     expect(readCachedHomeMemberPanel(dateIso)).toEqual(panel);
     expect(readCachedHomeMemberPanel('2000-01-01')).toBeNull();
   });
+
+  test('keeps card detail when a deferred refresh rewrites the task list', () => {
+    const dateIso = todayIsoBkk();
+    const detailItem = { id: 'milk', name: 'นม' };
+    writeCachedSecretaryBoard({
+      snapshot: {
+        ...buildMinimalSecretaryBoardSnapshot(dateIso, 'th'),
+        detailStatus: 'ready',
+        itemsToOrder: [detailItem] as never,
+        inventoryCatalogItems: [detailItem] as never,
+      },
+      tasks: [sampleTask('task-1')],
+    });
+
+    writeCachedSecretaryBoard({
+      snapshot: buildMinimalSecretaryBoardSnapshot(dateIso, 'th'),
+      tasks: [sampleTask('task-2')],
+    });
+
+    const cached = readCachedSecretaryBoard('th');
+    expect(cached?.tasks.map((task) => task.id)).toEqual(['task-2']);
+    expect(cached?.snapshot.itemsToOrder).toEqual([detailItem]);
+    expect(cached?.snapshot.inventoryCatalogItems).toEqual([detailItem]);
+    expect(cached?.snapshot.detailStatus).toBe('ready');
+  });
+
+  test('a ready empty snapshot replaces stale card detail', () => {
+    const dateIso = todayIsoBkk();
+    writeCachedSecretaryBoard({
+      snapshot: {
+        ...buildMinimalSecretaryBoardSnapshot(dateIso, 'th'),
+        detailStatus: 'ready',
+        itemsToOrder: [{ id: 'milk', name: 'นม' }] as never,
+      },
+      tasks: [sampleTask('task-1')],
+    });
+
+    writeCachedSecretaryBoard({
+      snapshot: {
+        ...buildMinimalSecretaryBoardSnapshot(dateIso, 'th'),
+        detailStatus: 'ready',
+      },
+      tasks: [sampleTask('task-2')],
+    });
+
+    const cached = readCachedSecretaryBoard('th');
+    expect(cached?.snapshot.itemsToOrder).toEqual([]);
+    expect(cached?.snapshot.detailStatus).toBe('ready');
+  });
 });

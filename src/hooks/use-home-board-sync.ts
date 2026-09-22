@@ -30,7 +30,7 @@ import { homePerfFullSyncEnd, homePerfFullSyncStart } from '@/lib/perf/home-boar
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 
 export type BoardSyncPayload = {
-  tasks: SecretaryTask[];
+  tasks?: SecretaryTask[];
   snapshot?: SecretarySnapshot;
   snapshotPatch?: SecretarySnapshotPatch;
   syncKind?: SecretaryBoardSyncKind;
@@ -96,7 +96,6 @@ async function hydrateBoardSnapshots(
       if (!result.success || !result.snapshot) return;
 
       registration.listener({
-        tasks: registration.getCurrentTasks(),
         snapshot: result.snapshot,
         snapshotPatch: result.snapshotPatch,
         syncKind: scopes?.length ? 'scoped' : 'full',
@@ -229,13 +228,15 @@ async function runAllBoardSyncs() {
     let fullSyncOk = true;
     let fullSyncTaskCount = 0;
     let fullSyncKind: string | undefined;
+    const targets = [...registrations];
 
-    if (useFullSync && registrations.size > 0) {
-      await hydrateBoardSnapshots([...registrations], { forceFull: true });
-    }
+    const hydratePromise =
+      useFullSync && targets.length > 0
+        ? hydrateBoardSnapshots(targets, { forceFull: true })
+        : Promise.resolve();
 
-    await Promise.all(
-      [...registrations].map(async (registration) => {
+    const taskSyncPromise = Promise.all(
+      targets.map(async (registration) => {
         const dateIso = registration.getDateIso();
         const locale = registration.getLocale();
         if (!dateIso || !locale) return;
@@ -266,6 +267,8 @@ async function runAllBoardSyncs() {
         publishHomeSidebarPendingCount(result.tasks, dateIso);
       }),
     );
+
+    await Promise.all([hydratePromise, taskSyncPromise]);
 
     if (useFullSync) {
       homePerfFullSyncEnd({
@@ -325,6 +328,8 @@ export function useHomeBoardSync(options: {
   getBaseSnapshot?: () => SecretarySnapshot;
   getCurrentTasks?: () => SecretaryTask[];
   getHydrationScopes?: () => Exclude<SecretarySyncScope, 'tasks'>[];
+  /** When false, keep the hook mounted without opening a realtime sync. */
+  enabled?: boolean;
   /** Skip the mount full-sync when SSR already hydrated the board. */
   skipInitialFullSync?: boolean;
 }) {
@@ -354,6 +359,8 @@ export function useHomeBoardSync(options: {
   }, []);
 
   useEffect(() => {
+    if (options.enabled === false) return;
+
     const registration: SyncRegistration = {
       listener,
       getDateIso: () => dateIsoRef.current,
@@ -383,21 +390,23 @@ export function useHomeBoardSync(options: {
       subscriberCount = Math.max(0, subscriberCount - 1);
       teardownSharedSecretaryChannel();
     };
-  }, [listener]);
+  }, [listener, options.enabled]);
 
   useEffect(() => {
+    if (options.enabled === false) return;
     if (skipNextDateLocaleSyncRef.current) {
       skipNextDateLocaleSyncRef.current = false;
       return;
     }
     requestHomeBoardFullSync();
-  }, [options.dateIso, options.locale]);
+  }, [options.dateIso, options.locale, options.enabled]);
 
   useEffect(() => {
+    if (options.enabled === false) return;
     return watchBangkokWorkDate((nextDateIso) => {
       onWorkDateChangeRef.current?.(nextDateIso);
       dateIsoRef.current = nextDateIso;
       requestHomeBoardFullSync();
     });
-  }, []);
+  }, [options.enabled]);
 }

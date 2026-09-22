@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { Suspense, use, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from 'react';
 import { ClipboardList, Plus } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';
@@ -15,7 +15,7 @@ import {
   SECRETARY_MODULE_BOARD_TAGS,
 } from '@/lib/secretary/board-card-surface';
 import { HomePanelEmptyState } from '@/app/[locale]/_components/home-panel-primitives';
-import { mergeSecretarySnapshot } from '@/lib/secretary/snapshot-patch';
+import { mergeSecretarySnapshot, type HomeBoardDetailUpdate } from '@/lib/secretary/snapshot-patch';
 import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
 import { createManualSecretaryTask } from '@/app/actions/home-actions';
 import { resolveSecretaryCardTitleFontClass, splitSecretaryCardTitle } from '@/lib/secretary/format-card-title';
@@ -41,7 +41,8 @@ import {
 import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
 import { isCoarsePointer } from '@/hooks/use-coarse-pointer';
 import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
-import { writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
+import { getCachedSecretaryBoardSnapshot, subscribeSecretaryBoardCache, writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
+import { isMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/home-actions';
 import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
@@ -63,11 +64,33 @@ const SecretaryManualTaskDialog = dynamic(
   () => import('./_components/SecretaryManualTaskDialog'),
   { ssr: false },
 );
+
+function BoardDetailStream({
+  detailPromise,
+  onDetail,
+}: {
+  detailPromise: Promise<HomeBoardDetailUpdate | null>;
+  onDetail: (detail: HomeBoardDetailUpdate) => void;
+}) {
+  const detail = use(detailPromise);
+
+  useEffect(() => {
+    if (!detail) return;
+    onDetail(detail);
+  }, [detail, onDetail]);
+
+  return null;
+}
+
 type HomeTaskBoardProps = {
   initialBoard: SecretaryBoard;
   locale: string;
   /** Where the first paint board came from (perf diagnostics only). */
   boardLoadSource?: HomeBoardLoadSource;
+  /** Cached preview while the live board is still downloading. */
+  preview?: boolean;
+  /** Server-started detail slices. Cards paint before this resolves. */
+  detailPromise?: Promise<HomeBoardDetailUpdate | null>;
 };
 
 type HomeClientProps = HomeTaskBoardProps & {
@@ -78,8 +101,25 @@ export function HomeTaskBoard({
   initialBoard,
   locale,
   boardLoadSource = 'ssr',
+  preview = false,
+  detailPromise,
 }: HomeTaskBoardProps) {
-  const [board, setBoard] = useState(initialBoard);
+  const [boardState, setBoard] = useState(initialBoard);
+  const cachedBoard = useSyncExternalStore(
+    subscribeSecretaryBoardCache,
+    () => getCachedSecretaryBoardSnapshot(locale),
+    () => null,
+  );
+  const board = useMemo(() => {
+    if (preview || !cachedBoard) return boardState;
+    if (!isMinimalSecretaryBoardSnapshot(boardState.snapshot)) return boardState;
+    if (cachedBoard.snapshot.dateIso !== boardState.snapshot.dateIso) return boardState;
+    if (isMinimalSecretaryBoardSnapshot(cachedBoard.snapshot)) return boardState;
+    return {
+      tasks: boardState.tasks,
+      snapshot: cachedBoard.snapshot,
+    };
+  }, [boardState, cachedBoard, preview]);
   const [workDateIso, setWorkDateIso] = useState(() => initialBoard.snapshot.dateIso || todayIsoBkk());
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -110,7 +150,7 @@ export function HomeTaskBoard({
 
       return {
         ...prev,
-        tasks: payload.tasks,
+        tasks: payload.tasks ?? prev.tasks,
         snapshot: nextSnapshot,
       };
     });
@@ -137,26 +177,39 @@ export function HomeTaskBoard({
     getHydrationScopes: () =>
       resolveSnapshotScopesForBoardTasks(consolidatedAllTasks),
     skipInitialFullSync: true,
+    enabled: !preview,
   });
+
+  const applyBoardDetail = useCallback((detail: HomeBoardDetailUpdate) => {
+    setBoard((prev) => ({
+      ...prev,
+      snapshot: detail.snapshot.detailStatus === 'ready'
+        ? detail.snapshot
+        : { ...detail.snapshot, detailStatus: 'ready' },
+    }));
+  }, []);
 
   useEffect(() => {
     publishHomeSidebarPendingCount(board.tasks, workDateIso);
   }, [board.tasks, workDateIso]);
 
   useEffect(() => {
+    if (preview) return;
     writeCachedSecretaryBoard(board);
-  }, [board]);
+  }, [board, preview]);
 
   useEffect(() => {
+    if (preview) return;
     if (isCoarsePointer()) {
       return scheduleIdleWork(() => {
         requestHomeBoardFullSync();
-      }, { timeout: 2500 });
+      }, { timeout: 400 });
     }
     requestHomeBoardFullSync();
-  }, []);
+  }, [preview]);
 
   useEffect(() => {
+    if (preview) return;
     registerHomeBoardPerfDevTools();
     if (boardLoadSource === 'ssr') {
       homePerfStartSession('ssr-direct');
@@ -165,16 +218,17 @@ export function HomeTaskBoard({
       taskCount: initialBoard.tasks.length,
       source: boardLoadSource,
     });
-  }, [boardLoadSource, initialBoard.tasks.length]);
+  }, [boardLoadSource, initialBoard.tasks.length, preview]);
 
   useEffect(() => {
+    if (preview || detailPromise) return;
     const scopes = resolveSnapshotScopesForBoardTasks(consolidatedAllTasks);
     if (scopes.length === 0) return;
     requestHomeBoardSnapshotHydrate(scopes);
-  }, [consolidatedAllTasks]);
+  }, [consolidatedAllTasks, detailPromise, preview]);
 
   useEffect(() => {
-    if (consolidatedAllTasks.length === 0) return;
+    if (preview || consolidatedAllTasks.length === 0) return;
     if (!shouldIdlePreloadSecretaryOverlays()) return;
 
     return scheduleIdleWork(() => {
@@ -183,7 +237,7 @@ export function HomeTaskBoard({
         preloadSecretaryOverlayForTask(task);
       }
     }, { timeout: 3000 });
-  }, [consolidatedAllTasks]);
+  }, [consolidatedAllTasks, preview]);
 
   const handleAddTask = () => {
     const title = newTitle.trim();
@@ -241,8 +295,27 @@ export function HomeTaskBoard({
 
   useMobileBackOverlayStack('home-overlay', homeOverlayLayers);
 
+  if (
+    !preview &&
+    cachedBoard &&
+    boardState.snapshot !== cachedBoard.snapshot &&
+    isMinimalSecretaryBoardSnapshot(boardState.snapshot) &&
+    cachedBoard.snapshot.dateIso === boardState.snapshot.dateIso &&
+    !isMinimalSecretaryBoardSnapshot(cachedBoard.snapshot)
+  ) {
+    setBoard({
+      tasks: boardState.tasks,
+      snapshot: cachedBoard.snapshot,
+    });
+  }
+
   return (
     <>
+      {detailPromise && !preview ? (
+        <Suspense fallback={null}>
+          <BoardDetailStream detailPromise={detailPromise} onDetail={applyBoardDetail} />
+        </Suspense>
+      ) : null}
       {showCreateDialog ? (
         <SecretaryManualTaskDialog
           open

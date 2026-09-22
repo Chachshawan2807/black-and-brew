@@ -63,6 +63,7 @@ const fetchSecretarySnapshotCached = cache(async (dateIso: string, locale: strin
   return {
     dateIso,
     locale,
+    detailStatus: 'ready',
     operational,
     itemsToOrder,
     branchWithdrawItems,

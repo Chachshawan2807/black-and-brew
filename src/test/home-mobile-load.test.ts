@@ -87,6 +87,8 @@ describe('mobile home load', () => {
     expect(homeClient).toMatch(
       /isCoarsePointer\([\s\S]*scheduleIdleWork\([\s\S]*requestHomeBoardFullSync/,
     );
+    expect(homeClient).toMatch(/timeout:\s*400/);
+    expect(homeClient).not.toMatch(/timeout:\s*2500/);
   });
 
   test('isCoarsePointer reads matchMedia without waiting for React state', async () => {

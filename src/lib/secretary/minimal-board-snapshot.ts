@@ -9,6 +9,7 @@ export function buildMinimalSecretaryBoardSnapshot(
   return {
     dateIso,
     locale,
+    detailStatus: 'deferred',
     headcountToday: 0,
     isBranch2Day: false,
     itemsToOrder: [],
@@ -32,6 +33,8 @@ export function buildMinimalSecretaryBoardSnapshot(
 
 /** True when the board still has placeholder snapshot data from deferDerivedSync / cache. */
 export function isMinimalSecretaryBoardSnapshot(snapshot: SecretarySnapshot): boolean {
+  if (snapshot.detailStatus === 'deferred') return true;
+  if (snapshot.detailStatus === 'ready') return false;
   return (
     snapshot.itemsToOrder.length === 0 &&
     snapshot.branchWithdrawItems.length === 0 &&
