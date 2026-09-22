@@ -23,6 +23,8 @@ Optional: `SCREENSHOT_BASE_URL=https://your-preview.vercel.app`
 
 Re-run after a partial failure: existing PNGs are skipped unless `SCREENSHOT_FORCE=1`.
 
+Single shot (e.g. notifications only): `SCREENSHOT_ONLY=11-notifications SCREENSHOT_FORCE=1 npm run screenshots:capture`
+
 ## Output
 
 | Folder | Contents |

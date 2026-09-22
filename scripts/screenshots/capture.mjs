@@ -363,14 +363,25 @@ async function main() {
     notificationSeedJson: seed?.json ?? null,
   };
 
+  const only = process.env.SCREENSHOT_ONLY?.trim();
+  const mobileShots = only
+    ? manifest.mobile.filter((s) => s.id === only)
+    : manifest.mobile;
+  const desktopShots = only
+    ? manifest.desktop.filter((s) => s.id === only)
+    : manifest.desktop;
+  if (only && mobileShots.length === 0 && desktopShots.length === 0) {
+    throw new Error(`SCREENSHOT_ONLY=${only} did not match any manifest id.`);
+  }
+
   const mobileVp = { width: 390, height: 844 };
-  for (const shot of manifest.mobile) {
+  for (const shot of mobileShots) {
     console.log('mobile', shot.id);
     await captureShot(page, context, shot, RAW_MOBILE, mobileVp, 'mobile', aliasConfig, session, manifest);
   }
 
   const desktopVp = { width: 1440, height: 900 };
-  for (const shot of manifest.desktop) {
+  for (const shot of desktopShots) {
     console.log('desktop', shot.id);
     await captureShot(page, context, shot, RAW_DESKTOP, desktopVp, 'desktop', aliasConfig, session, manifest);
   }
