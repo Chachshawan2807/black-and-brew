@@ -1,4 +1,5 @@
 import { isMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
+import { mergeSecretaryBoardTasksAfterSync } from '@/lib/secretary/merge-board-tasks-after-sync';
 import {
   mergeSecretarySnapshot,
   type SecretarySnapshotPatch,
@@ -25,7 +26,14 @@ export function applySecretaryBoardSync(
   prev: BoardSlice,
   update: SecretaryBoardSyncUpdate,
 ): BoardSlice {
-  const tasks = update.tasks ?? prev.tasks;
+  const tasks =
+    update.tasks === undefined
+      ? prev.tasks
+      : mergeSecretaryBoardTasksAfterSync(
+          prev.tasks,
+          update.tasks,
+          prev.snapshot.dateIso,
+        );
 
   if (update.snapshotPatch) {
     return {

@@ -239,6 +239,7 @@ export function HomeTaskBoard({
       setNewTitle('');
       setNewDescription('');
       setShowCreateDialog(false);
+      requestHomeBoardFullSync();
     });
   };
 

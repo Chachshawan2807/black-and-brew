@@ -35,6 +35,10 @@ import {
   isMinimalSecretaryBoardSnapshot,
 } from '@/lib/secretary/minimal-board-snapshot';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
+import {
+  rollForwardOpenManualSecretaryTasks,
+  secretaryTasksForWorkDayOrFilter,
+} from '@/lib/secretary/roll-forward-manual-tasks';
 import { fetchHomeMemberPanelFromServer } from '@/lib/schedule/load-home-member-panel-server';
 import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
 
@@ -81,10 +85,11 @@ async function querySecretaryTasks(dateIso: string): Promise<{
   error?: string;
 }> {
   try {
+    const now = new Date().toISOString();
     const { data, error } = await getSupabaseAdmin()
       .from('operational_tasks')
       .select(TASK_SELECT)
-      .eq('scheduled_date', dateIso)
+      .or(secretaryTasksForWorkDayOrFilter(dateIso, now))
       .order('priority', { ascending: true })
       .order('created_at', { ascending: true });
 
@@ -498,6 +503,13 @@ export async function syncAndFetchSecretaryBoard(opts?: {
       const message = error instanceof Error ? error.message : 'Unknown error';
       return { success: false, error: message };
     }
+  }
+
+  try {
+    await rollForwardOpenManualSecretaryTasks(dateIso);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
   }
 
   try {

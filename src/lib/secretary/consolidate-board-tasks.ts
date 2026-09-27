@@ -1,3 +1,4 @@
+import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import { normalizeSuggestionTitle } from '@/lib/secretary/normalize-suggestion-title';
 import { filterScheduleTaskDescription } from '@/lib/proactive-insights/filter-schedule-alert-display';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
@@ -24,6 +25,9 @@ export function boardTaskConsolidationKey(task: SecretaryTask): string {
 
   if (task.task_type !== 'custom') {
     return task.task_type;
+  }
+  if (isManualSecretaryTask(task)) {
+    return `manual:${task.id}`;
   }
   return `custom:${task.module}:${normalizeSuggestionTitle(task.title)}`;
 }

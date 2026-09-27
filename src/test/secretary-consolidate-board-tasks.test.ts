@@ -100,7 +100,7 @@ describe('consolidateSecretaryBoardTasks', () => {
     ]);
   });
 
-  test('merges custom tasks with same normalized title and module', () => {
+  test('merges derived custom tasks with same normalized title and module', () => {
     expect(boardTaskConsolidationKey(task({ id: 'a', task_type: 'custom', module: 'custom', title: 'เช็คคลัง' }))).toBe(
       boardTaskConsolidationKey(task({ id: 'b', task_type: 'custom', module: 'custom', title: ' เช็คคลัง ' })),
     );

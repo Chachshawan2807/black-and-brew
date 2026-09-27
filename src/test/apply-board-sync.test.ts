@@ -41,7 +41,14 @@ function readySnapshot(): SecretarySnapshot {
 describe('applySecretaryBoardSync', () => {
   test('task refresh keeps detail that is already on the board', () => {
     const prev = {
-      tasks: [task('old')],
+      tasks: [
+        {
+          ...task('old'),
+          source_kind: 'derived' as const,
+          task_type: 'inventory_reorder' as const,
+          module: 'inventory' as const,
+        },
+      ],
       snapshot: readySnapshot(),
     };
 
@@ -51,9 +58,27 @@ describe('applySecretaryBoardSync', () => {
     expect(next.snapshot).toBe(prev.snapshot);
   });
 
+  test('task refresh keeps open manual tasks missing from server payload', () => {
+    const prev = {
+      tasks: [task('manual-keep')],
+      snapshot: readySnapshot(),
+    };
+
+    const next = applySecretaryBoardSync(prev, { tasks: [] });
+
+    expect(next.tasks.map((entry) => entry.id)).toEqual(['manual-keep']);
+  });
+
   test('a deferred snapshot does not replace ready card detail', () => {
     const prev = {
-      tasks: [task('old')],
+      tasks: [
+        {
+          ...task('old'),
+          source_kind: 'derived' as const,
+          task_type: 'inventory_reorder' as const,
+          module: 'inventory' as const,
+        },
+      ],
       snapshot: readySnapshot(),
     };
 
@@ -89,7 +114,14 @@ describe('applySecretaryBoardSync', () => {
     const full = readySnapshot();
     const next = applySecretaryBoardSync(
       {
-        tasks: [task('old')],
+        tasks: [
+          {
+            ...task('old'),
+            source_kind: 'derived' as const,
+            task_type: 'inventory_reorder' as const,
+            module: 'inventory' as const,
+          },
+        ],
         snapshot: buildMinimalSecretaryBoardSnapshot('2026-09-23', 'th'),
       },
       { tasks: [task('new')], snapshot: full },
