@@ -64,6 +64,10 @@ describe('secretary manual task UI', () => {
     expect(dialog).toContain('htmlFor');
     expect(dialog).toContain('กำลังบันทึก...');
     expect(dialog).toContain('SecretaryTaskPanelShell');
+    expect(dialog).toContain('deleteConfirmOpen');
+    expect(dialog).toContain('ยืนยันการลบ');
+    expect(dialog).toContain('text-red-600');
+    expect(dialog).not.toContain('setConfirmDelete');
     expect(dialog).not.toContain('SECRETARY_TASK_COLORS.attention');
     expect(dialog).not.toContain('border-[#f5c6cb]');
   });

@@ -55,6 +55,8 @@ describe('home page mobile modal baseline', () => {
   test('manual task dialog uses touch-friendly fields and panel shell', () => {
     const dialog = readHome('app/[locale]/home/_components/SecretaryManualTaskDialog.tsx');
     expect(dialog).toContain('SecretaryTaskPanelShell');
+    expect(dialog).toContain('FadeModalScaffold');
+    expect(dialog).toContain('ลบงานนี้?');
     expect(dialog).toContain('py-2.5');
     expect(dialog).toContain('aria-invalid');
   });
