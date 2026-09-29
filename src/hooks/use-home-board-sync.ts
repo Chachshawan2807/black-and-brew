@@ -28,6 +28,7 @@ import { countSidebarPendingSecretaryTasks } from '@/lib/secretary/count-sidebar
 import { watchBangkokWorkDate } from '@/lib/secretary/watch-bangkok-work-date';
 import { homePerfFullSyncEnd, homePerfFullSyncStart } from '@/lib/perf/home-board-perf';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
+import { applyOperationalTaskRealtime } from '@/lib/secretary/apply-operational-task-realtime';
 
 export type BoardSyncPayload = {
   tasks?: SecretaryTask[];
@@ -171,10 +172,29 @@ async function ensureSharedSecretaryChannel() {
       return;
     }
 
-    const notify = (payload: { table?: string }) => {
+    const notify = (payload: {
+      table?: string;
+      eventType?: 'INSERT' | 'UPDATE' | 'DELETE';
+      new?: Record<string, unknown>;
+      old?: Record<string, unknown>;
+    }) => {
       const table = payload.table;
       if (table && isSecretaryRealtimeTable(table)) {
         pendingTables.add(table);
+      }
+      if (table === 'operational_tasks' && payload.eventType) {
+        const record = payload.eventType === 'DELETE' ? payload.old : payload.new;
+        for (const registration of registrations) {
+          const nextTasks = applyOperationalTaskRealtime(
+            registration.getCurrentTasks(),
+            payload.eventType,
+            record,
+          );
+          if (!nextTasks) continue;
+          registration.listener({ tasks: nextTasks, syncKind: 'light' });
+          const dateIso = registration.getDateIso();
+          if (dateIso) publishHomeSidebarPendingCount(nextTasks, dateIso);
+        }
       }
       scheduleDebouncedBoardSync();
     };

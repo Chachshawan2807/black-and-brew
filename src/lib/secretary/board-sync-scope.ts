@@ -28,13 +28,13 @@ export type SecretaryBoardSyncPlan = {
 };
 
 /** Full-board resync after multi-table or unknown realtime bursts. */
-export const SECRETARY_BOARD_SYNC_DEBOUNCE_MS = 1_200;
+export const SECRETARY_BOARD_SYNC_DEBOUNCE_MS = 250;
 
 /** Task-list-only realtime (operational_tasks) should feel immediate. */
-export const SECRETARY_BOARD_SYNC_DEBOUNCE_LIGHT_MS = 200;
+export const SECRETARY_BOARD_SYNC_DEBOUNCE_LIGHT_MS = 50;
 
 /** Single-domain snapshot slice + derive. */
-export const SECRETARY_BOARD_SYNC_DEBOUNCE_SCOPED_MS = 600;
+export const SECRETARY_BOARD_SYNC_DEBOUNCE_SCOPED_MS = 120;
 
 export function resolveSecretaryBoardSyncDebounceMs(
   changedTables: readonly SecretaryRealtimeTable[],
