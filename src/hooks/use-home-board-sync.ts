@@ -5,7 +5,10 @@ import {
   hydrateSecretaryBoardSnapshot,
   syncAndFetchSecretaryBoard,
 } from '@/app/actions/home-actions';
-import { isMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
+import {
+  isMinimalSecretaryBoardSnapshot,
+  secretarySnapshotDetailIsReady,
+} from '@/lib/secretary/minimal-board-snapshot';
 import type { SecretarySyncScope } from '@/lib/secretary/board-sync-scope';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
@@ -73,6 +76,7 @@ async function hydrateBoardSnapshots(
       if (!dateIso || !locale) return;
 
       const baseSnapshot = registration.getBaseSnapshot();
+      if (secretarySnapshotDetailIsReady(baseSnapshot)) return;
       if (
         !opts?.scopes &&
         !opts?.forceFull &&
@@ -256,8 +260,11 @@ async function runAllBoardSyncs() {
     let fullSyncKind: string | undefined;
     const targets = [...registrations];
 
+    const snapshotStillDeferred = targets.some(
+      (registration) => !secretarySnapshotDetailIsReady(registration.getBaseSnapshot()),
+    );
     const hydratePromise =
-      useFullSync && targets.length > 0
+      useFullSync && snapshotStillDeferred
         ? hydrateBoardSnapshots(targets, { forceFull: true })
         : Promise.resolve();
 

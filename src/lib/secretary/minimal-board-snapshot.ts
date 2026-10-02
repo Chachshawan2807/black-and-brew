@@ -31,6 +31,13 @@ export function buildMinimalSecretaryBoardSnapshot(
   };
 }
 
+/** True when overlay fields were loaded, so another snapshot fetch would only delay the cards. */
+export function secretarySnapshotDetailIsReady(
+  snapshot: SecretarySnapshot | undefined,
+): boolean {
+  return snapshot?.detailStatus === 'ready';
+}
+
 /** True when the board still has placeholder snapshot data from deferDerivedSync / cache. */
 export function isMinimalSecretaryBoardSnapshot(snapshot: SecretarySnapshot): boolean {
   if (snapshot.detailStatus === 'deferred') return true;

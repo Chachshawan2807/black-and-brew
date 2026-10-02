@@ -42,7 +42,10 @@ import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual
 import { applySecretaryBoardSync } from '@/lib/secretary/apply-board-sync';
 import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 import { getCachedSecretaryBoardSnapshot, subscribeSecretaryBoardCache, writeCachedSecretaryBoard } from '@/lib/secretary/home-board-cache';
-import { isMinimalSecretaryBoardSnapshot } from '@/lib/secretary/minimal-board-snapshot';
+import {
+  isMinimalSecretaryBoardSnapshot,
+  secretarySnapshotDetailIsReady,
+} from '@/lib/secretary/minimal-board-snapshot';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/home-actions';
 import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
@@ -68,16 +71,18 @@ const SecretaryManualTaskDialog = dynamic(
 function BoardDetailStream({
   detailPromise,
   onDetail,
+  onDetailSettled,
 }: {
   detailPromise: Promise<HomeBoardDetailUpdate | null>;
   onDetail: (detail: HomeBoardDetailUpdate) => void;
+  onDetailSettled: () => void;
 }) {
   const detail = use(detailPromise);
 
   useEffect(() => {
-    if (!detail) return;
-    onDetail(detail);
-  }, [detail, onDetail]);
+    if (detail) onDetail(detail);
+    onDetailSettled();
+  }, [detail, onDetail, onDetailSettled]);
 
   return null;
 }
@@ -168,13 +173,24 @@ export function HomeTaskBoard({
     enabled: !preview,
   });
 
+  const derivedRefreshStarted = useRef(false);
+  const refreshDerivedBoard = useCallback(() => {
+    if (preview || derivedRefreshStarted.current) return;
+    derivedRefreshStarted.current = true;
+    requestHomeBoardFullSync();
+  }, [preview]);
+
   const applyBoardDetail = useCallback((detail: HomeBoardDetailUpdate) => {
-    setBoard((prev) =>
-      applySecretaryBoardSync(prev, {
+    setBoard((prev) => {
+      const next = applySecretaryBoardSync(prev, {
         snapshotPatch: detail.snapshotPatch,
         snapshot: detail.snapshotPatch ? undefined : detail.snapshot,
-      }),
-    );
+      });
+      boardRef.current = next;
+      return next;
+    });
+    const dateIso = detail.snapshot?.dateIso ?? detail.snapshotPatch?.dateIso;
+    if (dateIso) setWorkDateIso(dateIso);
   }, []);
 
   useEffect(() => {
@@ -187,9 +203,9 @@ export function HomeTaskBoard({
   }, [board, preview]);
 
   useEffect(() => {
-    if (preview) return;
-    requestHomeBoardFullSync();
-  }, [preview]);
+    if (detailPromise) return;
+    refreshDerivedBoard();
+  }, [detailPromise, refreshDerivedBoard]);
 
   useEffect(() => {
     if (preview) return;
@@ -211,16 +227,30 @@ export function HomeTaskBoard({
   }, [consolidatedAllTasks, detailPromise, preview]);
 
   useEffect(() => {
+    if (preview) return;
+    preloadSecretaryTaskOverlayShell();
+  }, [preview]);
+
+  useEffect(() => {
     if (preview || consolidatedAllTasks.length === 0) return;
     if (!shouldIdlePreloadSecretaryOverlays()) return;
 
     return scheduleIdleWork(() => {
-      preloadSecretaryTaskOverlayShell();
       for (const task of consolidatedAllTasks.slice(0, 6)) {
         preloadSecretaryOverlayForTask(task);
       }
-    }, { timeout: 3000 });
+    }, { timeout: 50 });
   }, [consolidatedAllTasks, preview]);
+
+  const warmTaskCard = useCallback(
+    (task: SecretaryBoardDisplayTask) => {
+      preloadSecretaryOverlayForTask(task);
+      if (detailPromise || secretarySnapshotDetailIsReady(board.snapshot)) return;
+      const scopes = resolveSnapshotScopesForBoardTasks([task]);
+      if (scopes.length > 0) requestHomeBoardSnapshotHydrate(scopes);
+    },
+    [board.snapshot, detailPromise],
+  );
 
   const handleAddTask = () => {
     const title = newTitle.trim();
@@ -297,7 +327,11 @@ export function HomeTaskBoard({
     <>
       {detailPromise && !preview ? (
         <Suspense fallback={null}>
-          <BoardDetailStream detailPromise={detailPromise} onDetail={applyBoardDetail} />
+          <BoardDetailStream
+            detailPromise={detailPromise}
+            onDetail={applyBoardDetail}
+            onDetailSettled={refreshDerivedBoard}
+          />
         </Suspense>
       ) : null}
       {showCreateDialog ? (
@@ -369,13 +403,10 @@ export function HomeTaskBoard({
                 key={task.id}
                 task={task}
                 onPreloadOpen={() => {
-                  const scopes = resolveSnapshotScopesForBoardTasks([task]);
-                  if (scopes.length > 0) requestHomeBoardSnapshotHydrate(scopes);
-                  preloadSecretaryOverlayForTask(task);
+                  warmTaskCard(task);
                 }}
                 onOpen={() => {
-                  const scopes = resolveSnapshotScopesForBoardTasks([task]);
-                  if (scopes.length > 0) requestHomeBoardSnapshotHydrate(scopes);
+                  warmTaskCard(task);
                   setOverlayTask(task);
                 }}
               />
@@ -404,6 +435,7 @@ export default function HomeClient({
   initialMemberPanel,
   locale,
   boardLoadSource = 'ssr',
+  detailPromise,
 }: HomeClientProps) {
   const workDateIso = initialBoard.snapshot.dateIso || todayIsoBkk();
   return (
@@ -412,6 +444,7 @@ export default function HomeClient({
         initialBoard={initialBoard}
         locale={locale}
         boardLoadSource={boardLoadSource}
+        detailPromise={detailPromise}
       />
       <HomeShiftPane
         key={workDateIso}

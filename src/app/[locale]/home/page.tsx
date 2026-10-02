@@ -6,7 +6,6 @@ import {
   loadHomeMemberPanel,
   loadSecretaryBoard,
 } from '@/app/actions/home-actions';
-import { resolveSnapshotScopesForBoardTasks } from '@/lib/secretary/resolve-board-hydration-scopes';
 import type { HomeBoardDetailUpdate } from '@/lib/secretary/snapshot-patch';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import {
@@ -22,35 +21,24 @@ import { HomeShiftPanelSkeleton } from './_components/HomePageLoadingSkeleton';
 import { HomeTaskBoard } from './HomeClient';
 
 function scheduleHomeBoardDetail(
-  boardPromise: ReturnType<typeof loadSecretaryBoard>,
+  dateIso: string,
   locale: string,
 ): Promise<HomeBoardDetailUpdate | null> {
-  return boardPromise.then(async (result) => {
-    if (!result.success || !result.board) return null;
-    const scopes = resolveSnapshotScopesForBoardTasks(result.board.tasks);
-    if (scopes.length === 0) return null;
-
-    try {
-      const hydrated = await hydrateSecretaryBoardSnapshot({
-        dateIso: result.board.snapshot.dateIso,
-        locale,
-        scopes,
-        baseSnapshot: result.board.snapshot,
-      });
+  return hydrateSecretaryBoardSnapshot({ dateIso, locale })
+    .then((hydrated) => {
       if (!hydrated.success || !hydrated.snapshot) return null;
       return {
         snapshot:
           hydrated.snapshot.detailStatus === 'ready'
             ? hydrated.snapshot
             : { ...hydrated.snapshot, detailStatus: 'ready' },
-        snapshotPatch: hydrated.snapshotPatch,
       };
-    } catch (error) {
+    })
+    .catch((error: unknown) => {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('[scheduleHomeBoardDetail]', message);
       return null;
-    }
-  });
+    });
 }
 
 async function HomeTasksSlot({
@@ -104,7 +92,7 @@ async function HomeBoard({ locale }: { locale: string }) {
   const workDateIso = todayIsoBkk();
   const authedPromise = checkAuth();
   const boardPromise = loadSecretaryBoard({ locale, dateIso: workDateIso });
-  const detailPromise = scheduleHomeBoardDetail(boardPromise, locale);
+  const detailPromise = scheduleHomeBoardDetail(workDateIso, locale);
   const memberPanelPromise = loadHomeMemberPanel({ dateIso: workDateIso });
   const authed = await authedPromise;
   if (!authed) {

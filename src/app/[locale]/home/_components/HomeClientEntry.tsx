@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState, startTransition } from 'react';
 import { checkAuth } from '@/app/actions/auth';
-import { loadHomeMemberPanel, loadSecretaryBoard, type SecretaryBoard } from '@/app/actions/home-actions';
+import {
+  hydrateSecretaryBoardSnapshot,
+  loadHomeMemberPanel,
+  loadSecretaryBoard,
+  type SecretaryBoard,
+} from '@/app/actions/home-actions';
+import type { HomeBoardDetailUpdate } from '@/lib/secretary/snapshot-patch';
+import { secretarySnapshotDetailIsReady } from '@/lib/secretary/minimal-board-snapshot';
+import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
 import {
   homePerfStartSession,
@@ -45,6 +53,20 @@ type LoadBoardOptions = {
 function isUnauthorizedBoardError(error?: string): boolean {
   if (!error) return true;
   return error.toLowerCase().includes('unauthorized');
+}
+
+function loadBoardDetail(locale: string): Promise<HomeBoardDetailUpdate | null> {
+  return hydrateSecretaryBoardSnapshot({ dateIso: todayIsoBkk(), locale })
+    .then((hydrated) => {
+      if (!hydrated.success || !hydrated.snapshot) return null;
+      return {
+        snapshot:
+          hydrated.snapshot.detailStatus === 'ready'
+            ? hydrated.snapshot
+            : { ...hydrated.snapshot, detailStatus: 'ready' },
+      };
+    })
+    .catch(() => null);
 }
 
 async function waitForPinReadAccess(): Promise<boolean> {
@@ -103,6 +125,10 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
     },
   );
   const [loadError, setLoadError] = useState<string | null>(null);
+  const detailInFlightRef = useRef<Promise<HomeBoardDetailUpdate | null> | null>(null);
+  const [detailPromise, setDetailPromise] = useState<
+    Promise<HomeBoardDetailUpdate | null> | undefined
+  >(undefined);
   const loadInFlightRef = useRef(false);
   const boardRef = useRef(board);
 
@@ -125,6 +151,13 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
         }
       }
 
+      const painted = boardRef.current;
+      const needsDetail = !painted || !secretarySnapshotDetailIsReady(painted.snapshot);
+      if (needsDetail && !painted && !detailInFlightRef.current) {
+        const pending = loadBoardDetail(locale);
+        detailInFlightRef.current = pending;
+        setDetailPromise(pending);
+      }
       const boardPromise = loadSecretaryBoard({ locale });
       const panelPromise = loadHomeMemberPanel();
       const boardResult = await boardPromise;
@@ -217,6 +250,7 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
         initialMemberPanel={memberPanel}
         locale={locale}
         boardLoadSource={hadCachedBoard ? 'session-cache' : 'client-fetch'}
+        detailPromise={detailPromise}
       />
     );
   }

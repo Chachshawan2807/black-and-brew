@@ -48,6 +48,13 @@ describe('home secretary board load', () => {
     );
   });
 
+  test('home page starts card detail in parallel with the task list', () => {
+    const source = readFileSync(homePagePath, 'utf-8');
+    expect(source).toContain('scheduleHomeBoardDetail(workDateIso, locale)');
+    expect(source).not.toMatch(/boardPromise\.then/);
+    expect(source).not.toMatch(/await scheduleHomeBoardDetail/);
+  });
+
   test('home page paints cached cards while the live board streams', () => {
     const source = readFileSync(homePagePath, 'utf-8');
     expect(source).toContain('HomeCachedPageFallback');
