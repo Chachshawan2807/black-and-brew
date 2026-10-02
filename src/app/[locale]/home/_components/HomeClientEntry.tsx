@@ -60,10 +60,7 @@ function loadBoardDetail(locale: string): Promise<HomeBoardDetailUpdate | null> 
     .then((hydrated) => {
       if (!hydrated.success || !hydrated.snapshot) return null;
       return {
-        snapshot:
-          hydrated.snapshot.detailStatus === 'ready'
-            ? hydrated.snapshot
-            : { ...hydrated.snapshot, detailStatus: 'ready' },
+        snapshot: { ...hydrated.snapshot, detailStatus: 'ready' as const },
       };
     })
     .catch(() => null);

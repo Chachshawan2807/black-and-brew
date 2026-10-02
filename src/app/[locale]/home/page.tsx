@@ -28,10 +28,7 @@ function scheduleHomeBoardDetail(
     .then((hydrated) => {
       if (!hydrated.success || !hydrated.snapshot) return null;
       return {
-        snapshot:
-          hydrated.snapshot.detailStatus === 'ready'
-            ? hydrated.snapshot
-            : { ...hydrated.snapshot, detailStatus: 'ready' },
+        snapshot: { ...hydrated.snapshot, detailStatus: 'ready' as const },
       };
     })
     .catch((error: unknown) => {
