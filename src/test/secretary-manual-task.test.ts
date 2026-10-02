@@ -72,11 +72,27 @@ describe('secretary manual task UI', () => {
     expect(dialog).not.toContain('border-[#f5c6cb]');
   });
 
+  test('manual create and update do not rebuild the home page', () => {
+    const actions = fs.readFileSync(path.resolve(ROOT, 'app/actions/home-actions.ts'), 'utf-8');
+    const createFn = actions.slice(
+      actions.indexOf('export async function createManualSecretaryTask'),
+      actions.indexOf('const updateManualTaskSchema'),
+    );
+    const updateFn = actions.slice(
+      actions.indexOf('export async function updateManualSecretaryTask'),
+      actions.indexOf('export async function deferSecretaryTasksToNextDay'),
+    );
+    expect(createFn).not.toContain('revalidatePath');
+    expect(updateFn).not.toContain('revalidatePath');
+  });
+
   test('HomeClient opens manual task dialog for create with description', () => {
     const client = fs.readFileSync(path.resolve(ROOT, 'app/[locale]/home/HomeClient.tsx'), 'utf-8');
     expect(client).toContain('SecretaryManualTaskDialog');
     expect(client).toContain('createManualSecretaryTask');
     expect(client).toContain('newDescription');
+    expect(client).toContain('buildPendingManualSecretaryTask');
+    expect(client).not.toMatch(/createManualSecretaryTask[\s\S]{0,400}requestHomeBoardFullSync/);
   });
 
   test('SecretaryTaskOverlay routes manual tasks to editable dialog', () => {

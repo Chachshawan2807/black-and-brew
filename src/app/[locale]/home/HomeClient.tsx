@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Suspense, use, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from 'react';
+import { Suspense, use, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ClipboardList, Plus } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ import { HomePanelEmptyState } from '@/app/[locale]/_components/home-panel-primi
 import { type HomeBoardDetailUpdate } from '@/lib/secretary/snapshot-patch';
 import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
 import { createManualSecretaryTask } from '@/app/actions/home-actions';
+import { buildPendingManualSecretaryTask } from '@/lib/secretary/pending-manual-task';
 import { resolveSecretaryCardTitleFontClass, splitSecretaryCardTitle } from '@/lib/secretary/format-card-title';
 import {
   consolidateSecretaryBoardTasks,
@@ -129,7 +130,6 @@ export function HomeTaskBoard({
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
-  const [isPending, startTransition] = useTransition();
   const [overlayTask, setOverlayTask] = useState<SecretaryBoardDisplayTask | null>(null);
   const sidebarHydrated = useSidebarHydrated();
   const sidebarIsOpen = useSidebarToggle((state) => state.isOpen);
@@ -255,21 +255,39 @@ export function HomeTaskBoard({
   const handleAddTask = () => {
     const title = newTitle.trim();
     if (!title) return;
+    const description = newDescription.trim();
+    const scheduledDate = workDateIso;
+    const pendingId = crypto.randomUUID();
 
-    startTransition(async () => {
-      const result = await createManualSecretaryTask({
-        title,
-        description: newDescription.trim() || undefined,
-        scheduledDate: workDateIso,
-        priority: 'normal',
-      });
-      if (!result.success || !result.task) return;
+    setShowCreateDialog(false);
+    setNewTitle('');
+    setNewDescription('');
+    setBoard((prev) => ({
+      ...prev,
+      tasks: [
+        ...prev.tasks,
+        buildPendingManualSecretaryTask({
+          id: pendingId,
+          title,
+          description,
+          scheduledDate,
+        }),
+      ],
+    }));
 
-      setBoard((prev) => ({ ...prev, tasks: [...prev.tasks, result.task!] }));
-      setNewTitle('');
-      setNewDescription('');
-      setShowCreateDialog(false);
-      requestHomeBoardFullSync();
+    void createManualSecretaryTask({
+      title,
+      description: description || undefined,
+      scheduledDate,
+      priority: 'normal',
+    }).then((result) => {
+      setBoard((prev) => ({
+        ...prev,
+        tasks:
+          result.success && result.task
+            ? prev.tasks.map((entry) => (entry.id === pendingId ? result.task! : entry))
+            : prev.tasks.filter((entry) => entry.id !== pendingId),
+      }));
     });
   };
 
@@ -297,14 +315,13 @@ export function HomeTaskBoard({
       {
         active: showCreateDialog,
         dismiss: () => {
-          if (isPending) return;
           setShowCreateDialog(false);
           setNewTitle('');
           setNewDescription('');
         },
       },
     ],
-    [overlayTask, showCreateDialog, isPending],
+    [overlayTask, showCreateDialog],
   );
 
   useMobileBackOverlayStack('home-overlay', homeOverlayLayers);
@@ -340,11 +357,9 @@ export function HomeTaskBoard({
           mode="create"
           title={newTitle}
           description={newDescription}
-          isPending={isPending}
           onTitleChange={setNewTitle}
           onDescriptionChange={setNewDescription}
           onClose={() => {
-            if (isPending) return;
             setShowCreateDialog(false);
             setNewTitle('');
             setNewDescription('');
@@ -423,7 +438,6 @@ export function HomeTaskBoard({
           onClose={() => setOverlayTask(null)}
           onTaskUpdated={handleTaskUpdated}
           onTaskDeleted={handleTaskDeleted}
-          isPending={isPending}
         />
       ) : null}
     </>

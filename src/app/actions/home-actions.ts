@@ -314,8 +314,6 @@ export async function createManualSecretaryTask(
       return { success: false, error: error.message };
     }
 
-    revalidatePath('/th/home');
-    revalidatePath('/en/home');
     return { success: true, task: mapRow(data as Record<string, unknown>) };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -356,8 +354,6 @@ export async function updateManualSecretaryTask(
       return { success: false, error: error.message };
     }
 
-    revalidatePath('/th/home');
-    revalidatePath('/en/home');
     return { success: true, task: mapRow(data as Record<string, unknown>) };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -666,8 +662,6 @@ export async function deleteManualSecretaryTask(
       return { success: false, error: error.message };
     }
 
-    revalidatePath('/th/home');
-    revalidatePath('/en/home');
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

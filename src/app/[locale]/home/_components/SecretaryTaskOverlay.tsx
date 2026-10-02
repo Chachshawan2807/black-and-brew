@@ -165,16 +165,26 @@ function SecretaryTaskOverlayBody({
   const handleSaveManualTask = () => {
     const title = editTitle.trim();
     if (!title) return;
+    const description = editDescription.trim();
+    const previous = task;
+    onTaskUpdated({
+      ...task,
+      title,
+      description: description || null,
+      updated_at: new Date().toISOString(),
+    });
+    onClose();
 
-    startTransition(async () => {
-      const result = await updateManualSecretaryTask({
-        taskId: task.id,
-        title,
-        description: editDescription.trim() || undefined,
-      });
-      if (!result.success || !result.task) return;
+    void updateManualSecretaryTask({
+      taskId: task.id,
+      title,
+      description: description || undefined,
+    }).then((result) => {
+      if (!result.success || !result.task) {
+        onTaskUpdated(previous);
+        return;
+      }
       onTaskUpdated(result.task);
-      onClose();
     });
   };
 
