@@ -12,7 +12,6 @@ import Link from 'next/link';
 import {
   fetchCountAccuracyStats,
   recordInventoryCountAndUpdateStock,
-  updateInventoryStock,
 } from '@/app/actions/inventory-actions';
 import type {
   CountAccuracyStatsResult,
@@ -1249,7 +1248,7 @@ export default function InventoryCountClient({
     setSavingState('saving');
 
     try {
-      const result = await updateInventoryStock(id, value, 'Stock count page - Adjust', {
+      const result = await recordInventoryCountAndUpdateStock(id, value, {
         clientSessionId: getClientSessionId(),
         suppressNotification: true,
         notificationContext: 'inventory_count',

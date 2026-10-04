@@ -24,14 +24,14 @@ describe('inventory count adjust tab', () => {
     expect(countPage).toContain('handleAdjustStock');
   });
 
-  test('adjust tab saves via updateInventoryStock without count verification', () => {
+  test('adjust tab records count verification so purchase order last count updates', () => {
     const countPage = read('src/app/[locale]/inventory/count/InventoryCountClient.tsx');
 
-    expect(countPage).toContain('updateInventoryStock');
     expect(countPage).toContain('handleAdjustStock');
     expect(countPage).toContain("notificationContext: 'inventory_count'");
     expect(countPage).toContain('suppressNotification: true');
-    expect(countPage).not.toMatch(/handleAdjustStock[\s\S]*recordInventoryCountAndUpdateStock/);
+    expect(countPage).toMatch(/handleAdjustStock[\s\S]*recordInventoryCountAndUpdateStock/);
+    expect(countPage).not.toMatch(/handleAdjustStock[\s\S]*updateInventoryStock/);
     expect(countPage).not.toMatch(/AdjustItemRow[\s\S]*Undo2/);
     expect(countPage).not.toContain('adjustUndoMap');
   });
