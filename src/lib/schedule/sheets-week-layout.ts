@@ -261,9 +261,29 @@ export function buildScheduleSheetsUpdates(
   return updates;
 }
 
+/** Clear name bands then sparse name writes. Safe for sheet COUNTA formulas (no "" cells). */
+export function buildScheduleSheetsSyncBatch(
+  weekStartMonday: string,
+  profiles: SheetsWeekProfile[],
+  shifts: SheetsWeekShift[],
+  tabName: string,
+  blockLayout: SheetsWeekBlockLayout,
+): { clearRanges: string[]; updates: SheetsValueUpdate[] } {
+  return {
+    clearRanges: buildScheduleSheetClearRanges(tabName, blockLayout),
+    updates: buildScheduleSheetsUpdates(
+      weekStartMonday,
+      profiles,
+      shifts,
+      tabName,
+      blockLayout,
+    ),
+  };
+}
+
 /**
  * Dense row writes for the full front-store / laundry / branch-2 bands.
- * Replaces clear + sparse cell updates: empty strings overwrite removed names.
+ * Empty strings overwrite removed names but COUNTA still counts them; do not use for sync.
  */
 export function buildScheduleSheetsDenseUpdates(
   weekStartMonday: string,

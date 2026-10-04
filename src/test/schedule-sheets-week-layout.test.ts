@@ -8,6 +8,7 @@ import {
 import {
   buildScheduleSheetClearRanges,
   buildScheduleSheetsDenseUpdates,
+  buildScheduleSheetsSyncBatch,
   buildScheduleSheetsUpdates,
   buildFrontStoreShiftSubRows,
   buildFohCountFormulaRow,
@@ -242,7 +243,32 @@ describe('buildScheduleSheetsUpdates', () => {
     }
   });
 
-  test('dense updates cover the same name cells as sparse updates', () => {
+  test('sync batch clears bands then sparse-writes (COUNTA-safe, no empty-string cells)', () => {
+    const weekStart = '2026-07-27';
+    const shifts = [
+      {
+        employee_id: 'p2',
+        start_time: '2026-07-28T00:00:00',
+        status: 'scheduled',
+        metadata: { location: '6:30' },
+      },
+    ];
+    const blockLayout = deriveWeekBlockLayout(2);
+    const tabName = 'ตารางงานเดือน ก.ค. 69';
+    const { clearRanges, updates } = buildScheduleSheetsSyncBatch(
+      weekStart,
+      profiles,
+      shifts,
+      tabName,
+      blockLayout,
+    );
+
+    expect(clearRanges).toEqual(buildScheduleSheetClearRanges(tabName, blockLayout));
+    expect(updates.some((entry) => entry.values.flat().some((value) => value === ''))).toBe(false);
+    expect(updates.find((entry) => entry.range.endsWith('!C4'))?.values).toEqual([['ปิ่น']]);
+  });
+
+  test('dense updates write empty strings (breaks COUNTA; not used for sync)', () => {
     const weekStart = '2026-07-27';
     const shifts = [
       {

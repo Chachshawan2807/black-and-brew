@@ -10,6 +10,7 @@ import { requireMutationAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import {
   batchReadGoogleSheetValues,
+  clearGoogleSheetRanges,
   createGoogleSheetsClient,
   getConfiguredSheetTabNameOverride,
   isGoogleSheetsSyncConfigured,
@@ -17,7 +18,7 @@ import {
   quoteSheetRange,
   writeGoogleSheetUpdates,
 } from '@/lib/google/sheets-api';
-import { buildScheduleSheetsDenseUpdates } from '@/lib/schedule/sheets-week-layout';
+import { buildScheduleSheetsSyncBatch } from '@/lib/schedule/sheets-week-layout';
 import { buildMonthlySheetTabsForWeekSync, parseMonthlySheetTabMonthYear } from '@/lib/schedule/sheets-month-tab';
 import {
   buildWeekDayIsoStrings,
@@ -121,7 +122,8 @@ export async function syncScheduleToGoogleSheet(
       tabName: string;
       dateRow: number;
       cellUpdates: number;
-      updates: ReturnType<typeof buildScheduleSheetsDenseUpdates>;
+      clearRanges: string[];
+      updates: ReturnType<typeof buildScheduleSheetsSyncBatch>['updates'];
     }> = [];
 
     for (let tabIndex = 0; tabIndex < tabCandidates.length; tabIndex += 1) {
@@ -147,7 +149,7 @@ export async function syncScheduleToGoogleSheet(
         match.sheetDayLabels,
       );
 
-      const updates = buildScheduleSheetsDenseUpdates(
+      const { clearRanges, updates } = buildScheduleSheetsSyncBatch(
         mondayStr,
         profiles,
         shifts,
@@ -159,6 +161,7 @@ export async function syncScheduleToGoogleSheet(
         tabName: candidate,
         dateRow: match.dateRow,
         cellUpdates: updates.length,
+        clearRanges,
         updates,
       });
     }
@@ -174,7 +177,10 @@ export async function syncScheduleToGoogleSheet(
     }
 
     await Promise.all(
-      tabsToSync.map((tab) => writeGoogleSheetUpdates(tab.updates, sheetsClient)),
+      tabsToSync.map(async (tab) => {
+        await clearGoogleSheetRanges(tab.clearRanges, sheetsClient);
+        await writeGoogleSheetUpdates(tab.updates, sheetsClient);
+      }),
     );
 
     return {
