@@ -31,6 +31,7 @@ import {
 } from '@/lib/shift-colors';
 import { createShiftDateLookup, getShiftForProfileDate } from '@/lib/schedule/shift-lookups';
 import { persistDashboardRosterRange, readDashboardRosterRangeFromStorage } from '@/lib/dashboard-date-range';
+import { isDashboardRosterRangeLoaded } from '../dashboard-data';
 import {
   ROSTER_INDIVIDUAL_DAY_LABELS_FULL,
   ROSTER_INDIVIDUAL_DAY_LABELS_SHORT,
@@ -200,44 +201,60 @@ export default function MonthlyRoster({
     };
   }, [selectedStaffId, data.shifts, holidays, startDate, endDate]);
 
-  const initialDataConsumedRef = useRef(false);
   const selectedStaffIdRef = useRef(selectedStaffId);
-  const hasInitialDataRef = useRef(hasInitialData);
+  const loadedRangeRef = useRef(
+    hasInitialData && initialStartDate && initialEndDate
+      ? { startDate: initialStartDate, endDate: initialEndDate }
+      : null,
+  );
 
   useEffect(() => {
     selectedStaffIdRef.current = selectedStaffId;
-    hasInitialDataRef.current = hasInitialData;
   });
 
   useEffect(() => {
-    async function loadData() {
-      if (!startDate || !endDate) return;
+    let isCurrentRequest = true;
 
-      const isBackgroundRefresh =
-        hasInitialDataRef.current && !initialDataConsumedRef.current;
-      if (isBackgroundRefresh) {
-        initialDataConsumedRef.current = true;
-      } else {
-        setLoading(true);
+    async function loadData() {
+      if (
+        !startDate ||
+        !endDate ||
+        isDashboardRosterRangeLoaded(loadedRangeRef.current, startDate, endDate)
+      ) {
+        return;
       }
 
-      const res = await fetchRosterData(startDate, endDate);
-      if (res.success) {
+      setLoading(true);
+
+      try {
+        const res = await fetchRosterData(startDate, endDate);
+        if (!isCurrentRequest || !res.success) return;
+
         setData({ profiles: res.profiles, shifts: res.shifts });
         setHolidays(
           (res.holidays ?? []).filter(
             (holiday) => holiday.date >= startDate && holiday.date <= endDate,
           ),
         );
+        loadedRangeRef.current = { startDate, endDate };
+
         if (res.profiles.length > 0 && !selectedStaffIdRef.current) {
           setSelectedStaffId(res.profiles[0].id);
         }
-      }
-      if (!isBackgroundRefresh) {
-        setLoading(false);
+      } catch (error) {
+        if (isCurrentRequest) {
+          console.error('[MonthlyRoster] Failed to load roster data:', error);
+        }
+      } finally {
+        if (isCurrentRequest) setLoading(false);
       }
     }
+
     void loadData();
+
+    return () => {
+      isCurrentRequest = false;
+    };
   }, [startDate, endDate]);
 
   useEffect(() => {

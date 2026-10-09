@@ -5,6 +5,11 @@ type ShiftRange = {
   rosterEnd: string;
 };
 
+export type DashboardRosterRange = {
+  startDate: string;
+  endDate: string;
+};
+
 type ShiftLike = {
   start_time?: string | null;
 };
@@ -56,6 +61,18 @@ export function getDashboardShiftQueryPlan({
     rosterStart,
     rosterEnd,
   };
+}
+
+export function isDashboardRosterRangeLoaded(
+  loadedRange: DashboardRosterRange | null,
+  startDate: string,
+  endDate: string,
+) {
+  return (
+    loadedRange !== null &&
+    loadedRange.startDate === startDate &&
+    loadedRange.endDate === endDate
+  );
 }
 
 function isShiftInRange(shift: ShiftLike, startDate: string, endDate: string) {

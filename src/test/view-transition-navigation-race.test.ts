@@ -76,7 +76,17 @@ describe('view transition navigation race', () => {
 
     expect(lib).not.toMatch(/startTransition\s*\(\s*\(\)\s*=>\s*\{\s*navigate\(href\)/);
     expect(lib).not.toContain("import { startTransition } from 'react'");
-    expect(lib).toMatch(/document\.startViewTransition\(\(\) => \{[\s\S]*navigate\(href\)/);
+    expect(lib).toMatch(
+      /document\.startViewTransition\(\(\) => \{[\s\S]*safeRouterNavigate\(navigate, href\)/,
+    );
+  });
+
+  test('sidebar navigation uses Next Link prefetch without custom warm-route event handlers', () => {
+    const sidebarLink = readFileSync(resolve(ROOT, 'src/components/sidebar/NavPreloadLink.tsx'), 'utf-8');
+
+    expect(sidebarLink).toContain('prefetch={true}');
+    expect(sidebarLink).not.toContain('preloadRouteChunk');
+    expect(sidebarLink).not.toContain('prefetch={false}');
   });
 
   test('programmatic navigateWithoutViewTransition cancels a pending view-transition soft nav', () => {

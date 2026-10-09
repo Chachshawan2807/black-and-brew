@@ -24,6 +24,15 @@ export type BulkPreview = {
 
 export type BulkQuickType = 'IN' | 'OUT' | 'ADJUST';
 
+export function resolveBulkPreviewAfterDisplay(
+  type: BulkQuickType,
+  qty: string,
+  after: number,
+): number | 'ใหม่' {
+  if (type === 'ADJUST' && qty.trim() === '') return 'ใหม่';
+  return after;
+}
+
 export function getBulkSubmitTypeLabel(type: BulkQuickType): string {
   if (type === 'IN') return 'รับเข้า';
   if (type === 'OUT') return 'นำออก';

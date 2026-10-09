@@ -55,7 +55,12 @@ import {
 } from '@/lib/inventory-quick-search-keyboard';
 import { blurQtyInputOnWheel, stepQuickQtyValue } from '@/lib/inventory-quick-qty-step';
 import type { BulkPreview, BulkQueueItem } from '@/lib/inventory-quick-bulk';
-import { formatBulkConfirmQty, getBulkSubmitTypeLabel, type BulkQuickType } from '@/lib/inventory-quick-bulk';
+import {
+  formatBulkConfirmQty,
+  getBulkSubmitTypeLabel,
+  resolveBulkPreviewAfterDisplay,
+  type BulkQuickType,
+} from '@/lib/inventory-quick-bulk';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { blurActiveElement } from '@/lib/blur-active-element';
 import { useMaxMd } from '@/hooks/use-max-md';
@@ -509,7 +514,7 @@ function BulkQueuePanel({
             <div className="min-w-0 flex-1">
               <div className="text-sm text-foreground truncate">{line.name}</div>
               <div className="text-[11px] text-muted-foreground tabular-nums">
-                {preview.before} → {preview.after} {line.unit}
+                {preview.before} → {resolveBulkPreviewAfterDisplay(quickType, line.qty, preview.after)} {line.unit}
                 {preview.error && line.qty.trim() !== '' ? ` · ${preview.error}` : ''}
               </div>
             </div>

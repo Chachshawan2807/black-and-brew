@@ -264,6 +264,29 @@
     font-family: inherit;
   }
 
+  @media (max-width: 767px) {
+    :where(
+      input:not([type]),
+      input[type='text'],
+      input[type='email'],
+      input[type='password'],
+      input[type='search'],
+      input[type='tel'],
+      input[type='url'],
+      input[type='number'],
+      input[type='date'],
+      input[type='datetime-local'],
+      input[type='month'],
+      input[type='time'],
+      input[type='week'],
+      textarea,
+      select,
+      [contenteditable='true']
+    ) {
+      font-size: 16px !important;
+    }
+  }
+
   /* Faster tap response on touch devices Baseline Widely available */
   :where(a[href], button, [role='button'], label[for]) {
     touch-action: manipulation;

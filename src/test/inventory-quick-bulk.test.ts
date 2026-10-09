@@ -6,6 +6,7 @@ import {
   computeOptimisticStockAfterTransaction,
   formatBulkConfirmQty,
   getBulkSubmitTypeLabel,
+  resolveBulkPreviewAfterDisplay,
   resolveBulkSubmitPayload,
   resolveInOutQuantity,
   setBulkLineQty,
@@ -20,6 +21,12 @@ const items: BulkStockItem[] = [
 ];
 
 describe('inventory-quick-bulk', () => {
+  test('shows a new-stock prompt instead of echoing current stock for an empty adjustment', () => {
+    expect(resolveBulkPreviewAfterDisplay('ADJUST', '', 11)).toBe('ใหม่');
+    expect(resolveBulkPreviewAfterDisplay('ADJUST', '14', 14)).toBe(14);
+    expect(resolveBulkPreviewAfterDisplay('IN', '', 13)).toBe(13);
+  });
+
   test('resolveInOutQuantity treats empty as 1 and rejects non-positive values', () => {
     expect(resolveInOutQuantity('')).toBe(1);
     expect(resolveInOutQuantity('   ')).toBe(1);

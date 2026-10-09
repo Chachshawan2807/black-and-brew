@@ -1,10 +1,31 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isDashboardRosterRangeLoaded,
   getDashboardShiftQueryPlan,
   splitDashboardShiftsByRange,
 } from '@/app/[locale]/dashboard/dashboard-data';
 
 describe('dashboard data loading plan', () => {
+  it('reuses server-provided roster data for the same date range', () => {
+    expect(
+      isDashboardRosterRangeLoaded(
+        { startDate: '2026-06-01', endDate: '2026-06-30' },
+        '2026-06-01',
+        '2026-06-30',
+      ),
+    ).toBe(true);
+  });
+
+  it('loads roster data when the requested date range has changed', () => {
+    expect(
+      isDashboardRosterRangeLoaded(
+        { startDate: '2026-06-01', endDate: '2026-06-30' },
+        '2026-07-01',
+        '2026-07-31',
+      ),
+    ).toBe(false);
+  });
+
   it('uses one union shift query when the selected week is inside the roster range', () => {
     expect(
       getDashboardShiftQueryPlan({
