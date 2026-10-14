@@ -289,7 +289,6 @@ function SecretaryTaskOverlayBody({
           items={scheduleReviewListItems}
           emptyMessage="ไม่มีรายละเอียดวันที่ต้องตรวจ"
           onClose={onClose}
-          layout="board-cards"
           module="schedule"
         />
       </Suspense>

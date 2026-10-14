@@ -67,7 +67,7 @@ describe('secretary mobile task overlays', () => {
     expect(code).not.toContain('SecretaryTaskDetailRow');
   });
 
-  test('schedule list overlay uses home-board card grid only for schedule review', () => {
+  test('schedule review list uses the same row layout as maintenance details', () => {
     const listOverlay = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/home/_components/SecretaryTaskListOverlay.tsx'),
       'utf-8',
@@ -79,9 +79,12 @@ describe('secretary mobile task overlays', () => {
     expect(listOverlay).toContain("layout = 'rows'");
     expect(listOverlay).toContain('SecretaryTaskDetailRow');
     expect(listOverlay).toContain('SecretaryTaskDetailCard');
-    expect(taskOverlay).toMatch(
-      /overlayKind === 'schedule_review_list'[\s\S]*layout="board-cards"/,
+    const scheduleReviewBlock = taskOverlay.slice(
+      taskOverlay.indexOf("overlayKind === 'schedule_review_list'"),
+      taskOverlay.indexOf('if (isManualSecretaryTask(task))'),
     );
+    expect(scheduleReviewBlock).not.toContain('layout="board-cards"');
+    expect(scheduleReviewBlock).toContain('<SecretaryTaskListOverlay');
     const maintenanceBlock = taskOverlay.slice(
       taskOverlay.indexOf("overlayKind === 'maintenance_list'"),
       taskOverlay.indexOf("overlayKind === 'schedule_review_list'"),
