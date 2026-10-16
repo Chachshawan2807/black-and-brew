@@ -412,7 +412,8 @@ function MenuWithSearchParams({ isOpen }: MenuProps) {
               <Button
                 variant={pathname.includes('/settings') ? 'secondary' : 'ghost'}
                 className={cn(
-                  'h-10 font-normal antialiased text-foreground w-full',
+                  'h-10 rounded-xl border border-border/60 font-normal antialiased text-foreground w-full',
+                  isOpen === false && 'bg-card hover:bg-muted/60',
                   collapsedFooterButtonClass(isOpen),
                 )}
                 asChild
@@ -443,7 +444,8 @@ function MenuWithSearchParams({ isOpen }: MenuProps) {
                 onClick={() => void performClientLogout()}
                 variant="outline"
                 className={cn(
-                  'h-10 rounded-2xl border border-red-500/30 bg-card text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 font-normal antialiased w-full',
+                  'h-10 rounded-xl border border-red-500/30 bg-card text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 font-normal antialiased w-full',
+                  isOpen === false && 'bg-transparent hover:bg-muted/60 dark:hover:bg-muted/60',
                   collapsedFooterButtonClass(isOpen),
                 )}
               >
