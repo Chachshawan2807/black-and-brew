@@ -5,7 +5,7 @@ import { CalendarClock } from '@/lib/icons';
 import { supabase } from '@/lib/supabase';
 import { useShiftRealtime } from '@/hooks/use-shift-realtime';
 import { useDebouncedShiftRefresh } from '@/hooks/useDebouncedShiftRefresh';
-import { fetchShiftsForDateIsoFromClient } from '@/lib/schedule/client-shift-queries';
+import { fetchShiftsForTwoDatesFromClient } from '@/lib/schedule/client-shift-queries';
 import {
   buildHomeShiftStatusRows,
   resolveTimedShiftCountdownView,
@@ -192,17 +192,18 @@ export default function HomeShiftStatusSection({
 
   const refreshPanels = useCallback(async () => {
     try {
-      const [shiftRows, tomorrowShiftRows, profileResult] = await Promise.all([
-        fetchShiftsForDateIsoFromClient(dateIso),
-        fetchShiftsForDateIsoFromClient(tomorrowDateIso),
+      const [shiftRange, profileResult] = await Promise.all([
+        fetchShiftsForTwoDatesFromClient(dateIso, tomorrowDateIso),
         supabase
           .from('profiles')
           .select('id, full_name, schedule_order')
           .order('schedule_order', { ascending: true }),
       ]);
 
-      if (shiftRows !== null) setShifts(shiftRows);
-      if (tomorrowShiftRows !== null) setTomorrowShifts(tomorrowShiftRows);
+      if (shiftRange !== null) {
+        setShifts(shiftRange.shifts);
+        setTomorrowShifts(shiftRange.tomorrowShifts);
+      }
       if (profileResult.data) setProfiles(profileResult.data as HomeShiftProfile[]);
     } catch (error) {
       if (error && typeof error === 'object' && 'message' in error) {

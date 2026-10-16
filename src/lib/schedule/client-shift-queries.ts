@@ -3,6 +3,8 @@ import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { startOfDay, endOfDay, parseISO } from 'date-fns';
 import type { Shift } from '@/types';
+import { getBangkokCalendarDayQueryBounds } from '@/lib/date-utils';
+import { splitHomeMemberPanelShifts } from '@/lib/schedule/home-member-panel';
 
 export type ClientShiftRow = Pick<
   Shift,
@@ -107,6 +109,39 @@ export async function fetchScheduleWeekGridFromClient(
 export async function fetchShiftsForDateIsoFromClient(dateIso: string): Promise<ClientShiftRow[] | null> {
   const bkkDate = toZonedTime(parseISO(`${dateIso}T12:00:00+07:00`), 'Asia/Bangkok');
   return fetchShiftsForBkkDayFromClient(bkkDate);
+}
+
+/** Fetch two adjacent home-panel dates in one session check and one database query. */
+export async function fetchShiftsForTwoDatesFromClient(
+  dateIso: string,
+  tomorrowDateIso: string,
+): Promise<{ shifts: ClientShiftRow[]; tomorrowShifts: ClientShiftRow[] } | null> {
+  const sessionOk = await ensureSupabaseSession();
+  if (!sessionOk) return null;
+
+  const firstDay = getBangkokCalendarDayQueryBounds(dateIso);
+  const secondDay = getBangkokCalendarDayQueryBounds(tomorrowDateIso);
+  const { data, error } = await supabase
+    .from('shifts')
+    .select(CLIENT_SHIFT_COLUMNS)
+    .gte('start_time', firstDay.startInclusive)
+    .lte('start_time', secondDay.endInclusive)
+    .not('status', 'is', null)
+    .not('status', 'eq', '')
+    .not('metadata->>location', 'is', null)
+    .not('metadata->>location', 'eq', '');
+
+  if (error) throw error;
+
+  const splitRows = splitHomeMemberPanelShifts(
+    (data ?? []) as ClientShiftRow[],
+    dateIso,
+    tomorrowDateIso,
+  );
+  return {
+    shifts: splitRows.shifts.map(normalizeClientShiftRow),
+    tomorrowShifts: splitRows.tomorrowShifts.map(normalizeClientShiftRow),
+  };
 }
 
 export async function fetchShiftsForBkkDayFromClient(bkkDate: Date): Promise<ClientShiftRow[] | null> {

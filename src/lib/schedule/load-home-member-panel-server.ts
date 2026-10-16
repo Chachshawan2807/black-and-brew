@@ -1,13 +1,13 @@
 import 'server-only';
 
-import { endOfDay, parseISO, startOfDay } from 'date-fns';
-import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { getBangkokCalendarDayQueryBounds } from '@/lib/date-utils';
 import {
   CLIENT_SHIFT_COLUMNS,
   normalizeClientShiftRow,
   type ClientShiftRow,
 } from '@/lib/schedule/client-shift-queries';
+import { splitHomeMemberPanelShifts } from '@/lib/schedule/home-member-panel';
 import {
   buildHomeDutySummary,
   buildHomeLeaveRows,
@@ -18,19 +18,19 @@ import type { HomeShiftProfile } from '@/lib/schedule/home-shift-status';
 
 export type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
 
-async function fetchShiftsForDateIsoAdmin(
+async function fetchShiftsForTwoDatesAdmin(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
-  targetDateIso: string,
+  dateIso: string,
+  tomorrowDateIso: string,
 ) {
-  const bkkDate = toZonedTime(parseISO(`${targetDateIso}T12:00:00+07:00`), 'Asia/Bangkok');
-  const startUtc = fromZonedTime(startOfDay(bkkDate), 'Asia/Bangkok').toISOString();
-  const endUtc = fromZonedTime(endOfDay(bkkDate), 'Asia/Bangkok').toISOString();
+  const firstDay = getBangkokCalendarDayQueryBounds(dateIso);
+  const secondDay = getBangkokCalendarDayQueryBounds(tomorrowDateIso);
 
   const shiftsRes = await supabaseAdmin
     .from('shifts')
     .select(CLIENT_SHIFT_COLUMNS)
-    .gte('start_time', startUtc)
-    .lte('start_time', endUtc)
+    .gte('start_time', firstDay.startInclusive)
+    .lte('start_time', secondDay.endInclusive)
     .not('status', 'is', null)
     .not('status', 'eq', '')
     .not('metadata->>location', 'is', null)
@@ -45,7 +45,15 @@ async function fetchShiftsForDateIsoAdmin(
     throw shiftsRes.error;
   }
 
-  return (shiftsRes.data ?? []).map((row) => normalizeClientShiftRow(row as ClientShiftRow));
+  const splitRows = splitHomeMemberPanelShifts(
+    (shiftsRes.data ?? []) as ClientShiftRow[],
+    dateIso,
+    tomorrowDateIso,
+  );
+  return {
+    shifts: splitRows.shifts.map(normalizeClientShiftRow),
+    tomorrowShifts: splitRows.tomorrowShifts.map(normalizeClientShiftRow),
+  };
 }
 
 export async function fetchHomeMemberPanelFromServer(
@@ -54,13 +62,12 @@ export async function fetchHomeMemberPanelFromServer(
   const supabaseAdmin = getSupabaseAdmin();
   const tomorrowDateIso = addCalendarDaysIsoBkk(dateIso, 1);
 
-  const [profilesRes, shifts, tomorrowShifts] = await Promise.all([
+  const [profilesRes, shiftRange] = await Promise.all([
     supabaseAdmin
       .from('profiles')
       .select('id, full_name, schedule_order')
       .order('schedule_order', { ascending: true }),
-    fetchShiftsForDateIsoAdmin(supabaseAdmin, dateIso),
-    fetchShiftsForDateIsoAdmin(supabaseAdmin, tomorrowDateIso),
+    fetchShiftsForTwoDatesAdmin(supabaseAdmin, dateIso, tomorrowDateIso),
   ]);
 
   if (profilesRes.error) {
@@ -77,10 +84,10 @@ export async function fetchHomeMemberPanelFromServer(
   return {
     dateIso,
     profiles,
-    shifts,
+    shifts: shiftRange.shifts,
     tomorrowDateIso,
-    tomorrowShifts,
-    leaveRows: buildHomeLeaveRows(profiles, shifts, dateIso),
-    dutySummary: buildHomeDutySummary(profiles, shifts, dateIso),
+    tomorrowShifts: shiftRange.tomorrowShifts,
+    leaveRows: buildHomeLeaveRows(profiles, shiftRange.shifts, dateIso),
+    dutySummary: buildHomeDutySummary(profiles, shiftRange.shifts, dateIso),
   };
 }
