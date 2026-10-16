@@ -103,6 +103,18 @@ describe('home secretary board load', () => {
     );
   });
 
+  test('status writes update the task directly without fetching the full row first', () => {
+    const source = readFileSync(homeActionsPath, 'utf-8');
+    const start = source.indexOf('export async function updateSecretaryTaskStatus');
+    const end = source.indexOf('export async function deleteManualSecretaryTask', start);
+    const action = source.slice(start, end);
+
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    expect(action).not.toContain('.select(TASK_SELECT)');
+    expect(action).toMatch(/\.from\('operational_tasks'\)[\s\S]*?\.update\(patch\)/);
+  });
+
   test('client entry loads board after PIN without a checkAuth poll loop', () => {
     const source = readFileSync(homeEntryPath, 'utf-8');
     expect(source).toContain('waitForPinReadAccess');

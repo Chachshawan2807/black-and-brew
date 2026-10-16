@@ -602,17 +602,6 @@ export async function updateSecretaryTaskStatus(
   if (!gate.success) return gate;
 
   try {
-    const { error: fetchError } = await getSupabaseAdmin()
-      .from('operational_tasks')
-      .select(TASK_SELECT)
-      .eq('id', taskId)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error('Supabase Error:', fetchError.message, fetchError.details);
-      return { success: false, error: fetchError.message };
-    }
-
     const patch: Record<string, unknown> = {
       status,
       updated_at: new Date().toISOString(),
