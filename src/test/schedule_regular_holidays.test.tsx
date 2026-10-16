@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { AppTooltipProvider } from '@/components/providers/AppTooltipProvider';
+import { INSIGHT_THRESHOLDS } from '@/lib/proactive-insights/thresholds';
 import type { RegularHolidayMap } from '@/lib/regular-holidays';
 import type { Profile, Shift } from '@/types';
 
@@ -219,7 +220,7 @@ describe('ScheduleClient regular holiday persistence', () => {
     fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
 
     const modal = screen.getByRole('dialog', { name: 'จัดการวันหยุดประจำ' });
-    const summary = within(modal).getByRole('heading', { name: 'สรุปวันหยุดประจำของพนักงาน' }).parentElement as HTMLElement;
+    const summary = within(modal).getByTestId('regular-holiday-summary-scroll');
 
     expect(within(summary).getByText('นิด')).toBeInTheDocument();
     expect(within(summary).getByText('แป้ง')).toBeInTheDocument();
@@ -250,6 +251,22 @@ describe('ScheduleClient regular holiday persistence', () => {
     expect(within(grid).getByText('มุก')).toBeInTheDocument();
   });
 
+  test('keeps each holiday day label together and lets long summaries wrap between days', async () => {
+    renderSchedule({
+      initialProfiles: [{ id: 'p1', full_name: 'หนูดี' }],
+      initialRegularHolidays: { p1: [1, 2, 3, 4, 5, 6] },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
+
+    const card = within(screen.getByTestId('regular-holiday-summary-grid')).getByRole('listitem');
+    const dayLabels = card.querySelectorAll('span span.whitespace-nowrap');
+
+    expect(dayLabels).toHaveLength(6);
+    expect(Array.from(dayLabels, label => label.textContent)).toEqual(['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.']);
+    expect(card.className).toMatch(/min-h-\[62px\]/);
+  });
+
   test('shows all weekly day buttons above the summary without burying the picker on mobile', async () => {
     renderSchedule({
       initialProfiles: [{ id: 'p1', full_name: 'นิด' }],
@@ -270,10 +287,8 @@ describe('ScheduleClient regular holiday persistence', () => {
       expect(within(dayPicker).getByRole('button', { name: label })).toBeInTheDocument();
     }
 
-    const summaryHeading = within(modal).getByRole('heading', { name: 'สรุปวันหยุดประจำของพนักงาน' });
-    expect(
-      dayPicker.compareDocumentPosition(summaryHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    const summary = within(modal).getByTestId('regular-holiday-summary-scroll');
+    expect(dayPicker.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   test('uses an inner scroll region so holiday summary cards are reachable on mobile', async () => {
@@ -297,10 +312,9 @@ describe('ScheduleClient regular holiday persistence', () => {
     expect(modal.className).toMatch(/max-md:h-\[90dvh\]/);
     expect(body.className).toMatch(/flex-1/);
     expect(body.className).toMatch(/min-h-0/);
-    expect(body.className).toMatch(/max-md:overflow-hidden/);
-    expect(summaryScroll.className).toMatch(/flex-1/);
-    expect(summaryScroll.className).toMatch(/min-h-0/);
+    expect(body.className).toMatch(/max-md:overflow-y-auto/);
     expect(summaryScroll.className).toMatch(/overflow-y-auto/);
+    expect(summaryScroll.className).toMatch(/pb-3/);
     expect(within(summaryScroll).getByTestId('regular-holiday-summary-grid')).toBeInTheDocument();
   });
 
@@ -331,9 +345,6 @@ describe('ScheduleClient regular holiday persistence', () => {
     const layout = within(modal).getByTestId('regular-holiday-modal-layout');
     const summaryScroll = within(modal).getByTestId('regular-holiday-summary-scroll');
 
-    expect(layout.className).toMatch(/max-md:flex-1/);
-    expect(layout.className).toMatch(/max-md:min-h-0/);
-    expect(summaryScroll.className).toMatch(/flex-1/);
     expect(summaryScroll.className).toMatch(/overflow-y-auto/);
     expect(within(modal).getByTestId('regular-holiday-modal-footer')).toBeInTheDocument();
     expect(within(summaryScroll).getByText('ชัช')).toBeInTheDocument();

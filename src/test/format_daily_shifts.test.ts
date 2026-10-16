@@ -58,6 +58,18 @@ describe('formatDailyShifts', () => {
     expect(frontStoreShifts).not.toContain('11:00');
   });
 
+  test('does not count cancelled shifts as working staff', () => {
+    const shifts = [
+      { employee_id: 'p1', status: 'scheduled', metadata: { location: '6:30' } },
+      { employee_id: 'p2', status: 'cancelled', metadata: { location: '7:00' } },
+    ];
+
+    const result = formatDailyShifts(profiles, shifts);
+
+    expect(result.front_store.map((entry) => entry.name)).toEqual(['มุก']);
+    expect(result.off_or_leave.find((entry) => entry.name === 'ปิ่น')?.shift).toBe('วันหยุด');
+  });
+
   test('sorts front-store staff by shift time then schedule row order', () => {
     const orderedProfiles = [
       { id: 'p1', full_name: 'เม', schedule_order: 3 },

@@ -29,6 +29,10 @@ interface ShiftRow {
   metadata?: { location?: string | null; remark?: string | null } | null;
 }
 
+function isCancelledShift(shift: ShiftRow): boolean {
+  return shift.status === 'cancelled';
+}
+
 export function normalizeShiftLocation(
   raw: string | null | undefined,
   status?: string | null,
@@ -86,7 +90,7 @@ export function formatDailyShifts(
   shifts: ShiftRow[],
 ): FormattedDailyShifts {
   const entries: DailyShiftEntry[] = profiles.map((profile, index) => {
-    const shift = shifts.find((row) => row.employee_id === profile.id);
+    const shift = shifts.find((row) => row.employee_id === profile.id && !isCancelledShift(row));
     const shiftText = normalizeShiftLocation(
       shift?.metadata?.location ?? undefined,
       shift?.status ?? undefined,

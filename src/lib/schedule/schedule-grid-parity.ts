@@ -10,6 +10,7 @@ export function isScheduleGridShiftAssigned(
   shift: ClientShiftRow | undefined,
 ): shift is ClientShiftRow {
   if (!shift) return false;
+  if (shift.status === 'cancelled') return false;
   return Boolean(shift.status && shift.metadata?.location);
 }
 

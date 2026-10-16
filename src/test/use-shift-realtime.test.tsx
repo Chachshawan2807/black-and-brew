@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 let shiftChangeHandler: (() => void) | null = null;
+let holidayChangeHandler: (() => void) | null = null;
 
 vi.mock('@/lib/supabase-session', () => ({
   ensureSupabaseSession: vi.fn().mockResolvedValue(true),
@@ -13,6 +14,7 @@ vi.mock('@/lib/supabase', () => ({
     channel: vi.fn(() => ({
       on: vi.fn(function on(this: { on: ReturnType<typeof vi.fn> }, event, filter, handler) {
         if (filter?.table === 'shifts') shiftChangeHandler = handler;
+        if (filter?.table === 'holidays') holidayChangeHandler = handler;
         return this;
       }),
       subscribe: vi.fn().mockReturnThis(),
@@ -25,6 +27,7 @@ describe('useShiftRealtime listener lifecycle', () => {
   beforeEach(() => {
     vi.resetModules();
     shiftChangeHandler = null;
+    holidayChangeHandler = null;
   });
 
   afterEach(() => {
@@ -125,5 +128,25 @@ describe('useShiftRealtime listener lifecycle', () => {
     shiftCallCount = 0;
     shiftChangeHandler!();
     expect(shiftCallCount).toBe(0);
+  });
+
+  test('notifies a holiday listener when holiday rows change', async () => {
+    const { useShiftRealtime } = await import('@/hooks/use-shift-realtime');
+    const onHolidaysChange = vi.fn();
+
+    function TestComponent() {
+      useShiftRealtime({ onHolidaysChange });
+      return null;
+    }
+
+    const view = render(<TestComponent />);
+    await waitFor(() => expect(holidayChangeHandler).not.toBeNull());
+
+    holidayChangeHandler!();
+    expect(onHolidaysChange).toHaveBeenCalledTimes(1);
+
+    view.unmount();
+    holidayChangeHandler!();
+    expect(onHolidaysChange).toHaveBeenCalledTimes(1);
   });
 });

@@ -8,6 +8,7 @@ import {
   Download,
   Settings,
   RefreshCw,
+  Copy,
 } from '@/lib/icons';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -33,6 +34,8 @@ interface ScheduleToolbarProps {
   syncWeekLabel?: string;
   onShowAddEmployeeModal: () => void;
   onShowShiftSettings: () => void;
+  onCopyPreviousWeek: () => void;
+  isCopyingPreviousWeek: boolean;
 }
 
 export default function ScheduleToolbar({
@@ -51,6 +54,8 @@ export default function ScheduleToolbar({
   syncWeekLabel,
   onShowAddEmployeeModal,
   onShowShiftSettings,
+  onCopyPreviousWeek,
+  isCopyingPreviousWeek,
 }: ScheduleToolbarProps) {
   const canUndo = !isReadOnly && undoStackLength > 0;
   const canRedo = !isReadOnly && redoStackLength > 0;
@@ -112,6 +117,13 @@ export default function ScheduleToolbar({
               icon={<Settings className="w-4 h-4" strokeWidth={1.5} />}
             >
               ตั้งค่า
+            </ScheduleToolbarButton>
+            <ScheduleToolbarButton
+              onClick={onCopyPreviousWeek}
+              disabled={isReadOnly || isCopyingPreviousWeek}
+              icon={<Copy className="w-4 h-4" strokeWidth={1.5} />}
+            >
+              {isCopyingPreviousWeek ? 'กำลังคัดลอก…' : 'คัดลอกสัปดาห์ก่อน'}
             </ScheduleToolbarButton>
           </div>
 

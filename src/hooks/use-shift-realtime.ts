@@ -14,6 +14,7 @@ type Listener = () => void;
 
 const shiftListeners = new Set<Listener>();
 const profileListeners = new Set<Listener>();
+const holidayListeners = new Set<Listener>();
 let channel: ReturnType<typeof supabase.channel> | null = null;
 let subscriberCount = 0;
 let channelStarting: Promise<void> | null = null;
@@ -56,6 +57,9 @@ async function ensureSharedShiftChannel() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
         profileListeners.forEach((listener) => listener());
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'holidays' }, () => {
+        holidayListeners.forEach((listener) => listener());
+      })
       .subscribe();
   })();
 
@@ -81,13 +85,16 @@ function teardownSharedShiftChannel() {
 export function useShiftRealtime(options?: {
   onShiftsChange?: () => void;
   onProfilesChange?: () => void;
+  onHolidaysChange?: () => void;
 }) {
   const onShiftsRef = useRef(options?.onShiftsChange);
   const onProfilesRef = useRef(options?.onProfilesChange);
+  const onHolidaysRef = useRef(options?.onHolidaysChange);
 
   useEffect(() => {
     onShiftsRef.current = options?.onShiftsChange;
     onProfilesRef.current = options?.onProfilesChange;
+    onHolidaysRef.current = options?.onHolidaysChange;
   });
 
   const shiftListener = useCallback(() => {
@@ -96,9 +103,13 @@ export function useShiftRealtime(options?: {
   const profileListener = useCallback(() => {
     onProfilesRef.current?.();
   }, []);
+  const holidayListener = useCallback(() => {
+    onHolidaysRef.current?.();
+  }, []);
 
   const wantsShifts = Boolean(options?.onShiftsChange);
   const wantsProfiles = Boolean(options?.onProfilesChange);
+  const wantsHolidays = Boolean(options?.onHolidaysChange);
 
   useEffect(() => {
     subscriberCount += 1;
@@ -119,12 +130,14 @@ export function useShiftRealtime(options?: {
   useEffect(() => {
     if (wantsShifts) shiftListeners.add(shiftListener);
     if (wantsProfiles) profileListeners.add(profileListener);
+    if (wantsHolidays) holidayListeners.add(holidayListener);
 
     return () => {
       if (wantsShifts) shiftListeners.delete(shiftListener);
       if (wantsProfiles) profileListeners.delete(profileListener);
+      if (wantsHolidays) holidayListeners.delete(holidayListener);
     };
-  }, [wantsShifts, wantsProfiles, shiftListener, profileListener]);
+  }, [wantsShifts, wantsProfiles, wantsHolidays, shiftListener, profileListener, holidayListener]);
 }
 
 /** @internal Test-only introspection for listener lifecycle assertions. */

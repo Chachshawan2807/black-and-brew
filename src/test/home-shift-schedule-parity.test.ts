@@ -38,6 +38,16 @@ describe('home shift schedule parity', () => {
         metadata: {},
       }),
     ).toBe(false);
+    expect(
+      isScheduleGridShiftAssigned({
+        id: 'cancelled',
+        employee_id: 'a',
+        start_time: '2026-09-18T00:00:00',
+        end_time: '2026-09-18T23:59:59',
+        status: 'cancelled',
+        metadata: { location: '6:30' },
+      }),
+    ).toBe(false);
   });
 
   test('resolveScheduleGridShift uses the same profile+date key as the schedule grid', () => {

@@ -17,6 +17,7 @@ import {
   MGMT_HISTORY_QUERY_OR,
 } from '@/lib/schedule/mgmt-history';
 import { addBangkokCalendarDays, bangkokCalendarIsoToDate } from '@/lib/date-utils';
+import { buildMissingWeekShiftCopies } from '@/lib/schedule/copy-week-shifts';
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
 import { requireServiceRoleKey } from '@/lib/security/server-auth';
 
@@ -608,89 +609,57 @@ export async function fetchRosterData(startDate: string, endDate: string) {
   }
 }
 
-/**
- * คัดลอกตารางงานจากสัปดาห์หนึ่งไปยังอีกสัปดาห์หนึ่ง
- * บังคับใช้ Atomic Weekly Flush Protocol (DEC-047)
- */
+/** คัดลอกกะที่จัดไว้จากสัปดาห์ก่อน เติมเฉพาะช่องว่างในสัปดาห์เป้าหมาย */
 export async function copyWeeklyShifts(sourceStartDate: string, targetStartDate: string) {
   noStore();
 
   const authError = await ensureShiftMutationAuthorized();
-  if (authError) return { success: false, error: authError };
+  if (authError) return { success: false as const, error: authError };
 
   try {
     const sStart = sourceStartDate.split('T')[0];
     const tStart = targetStartDate.split('T')[0];
 
-    // 1. คำนวณวันสิ้นสุดของสัปดาห์เป้าหมาย (7 วัน)
+    // 1. คำนวณช่วงสัปดาห์ต้นทางและปลายทาง
+    const sourceEndDate = new Date(`${sStart}T00:00:00.000Z`);
+    sourceEndDate.setUTCDate(sourceEndDate.getUTCDate() + 6);
+    const sEnd = sourceEndDate.toISOString().slice(0, 10);
     const targetEndDate = new Date(tStart);
-    targetEndDate.setDate(targetEndDate.getDate() + 6);
-    const tEnd = targetEndDate.toISOString().split('T')[0];
+    targetEndDate.setUTCDate(targetEndDate.getUTCDate() + 6);
+    const tEnd = targetEndDate.toISOString().slice(0, 10);
 
-    // 2. ATOMIC FLUSH: ลบข้อมูลเก่าในสัปดาห์เป้าหมายทิ้งทั้งหมดก่อน เพื่อป้องกัน Conflict 409
-    // นี่คือวิธีที่ปลอดภัยที่สุดเพื่อให้แน่ใจว่าไม่มีข้อมูลใด (เช่น วันลา) มาขวางการคัดลอก
-    const { error: deleteError } = await supabaseAdmin
+    // 2. อ่านทั้งสองช่วงให้ทันข้อมูลล่าสุด และคงคำขอ/กะเดิมในสัปดาห์ปลายทาง
+    const [sourceResult, targetResult] = await Promise.all([
+      supabaseAdmin
       .from('shifts')
-      .delete()
-      .gte('start_time', `${tStart}T00:00:00`)
-      .lte('start_time', `${tEnd}T23:59:59`);
-
-    if (deleteError) {
-      console.error('[copyWeeklyShifts] Delete Error:', deleteError);
-      throw deleteError;
-    }
-
-    // 3. ดึงข้อมูลจากสัปดาห์ต้นทาง
-    const sourceEndDate = new Date(sStart);
-    sourceEndDate.setDate(sourceEndDate.getDate() + 6);
-    const sEnd = sourceEndDate.toISOString().split('T')[0];
-
-    const { data: sourceShifts, error: fetchError } = await supabaseAdmin
-      .from('shifts')
-      .select('employee_id, status, metadata, start_time')
+      .select('employee_id, status, metadata, start_time, end_time')
       .gte('start_time', `${sStart}T00:00:00`)
-      .lte('start_time', `${sEnd}T23:59:59`);
+      .lte('start_time', `${sEnd}T23:59:59`),
+      supabaseAdmin
+        .from('shifts')
+        .select('id, employee_id, status, metadata, start_time, end_time')
+        .gte('start_time', `${tStart}T00:00:00`)
+        .lte('start_time', `${tEnd}T23:59:59`),
+    ]);
 
-    if (fetchError) throw fetchError;
-    if (!sourceShifts || sourceShifts.length === 0) {
-      return { success: true, message: 'ไม่มีข้อมูลกะงานในสัปดาห์ก่อนหน้าที่จะคัดลอก' };
+    if (sourceResult.error) throw sourceResult.error;
+    if (targetResult.error) throw targetResult.error;
+
+    const result = buildMissingWeekShiftCopies({
+      sourceShifts: sourceResult.data ?? [],
+      targetShifts: targetResult.data ?? [],
+      sourceStartDate: sStart,
+      targetStartDate: tStart,
+    });
+    if (result.copies.length === 0) {
+      return { success: true as const, data: [], previousShifts: targetResult.data ?? [], ...result };
     }
 
-    // 3.1 DEDUPLICATION: กรองข้อมูลต้นทางให้เหลือ 1 คนต่อ 1 วันเท่านั้น เพื่อป้องกัน Error 409 Conflict
-    const uniqueShiftsMap = new Map();
-    sourceShifts.forEach(shift => {
-      const dateOnly = shift.start_time.split('T')[0];
-      const key = `${shift.employee_id}_${dateOnly}`;
-      // เก็บเฉพาะรายการล่าสุดหากมีความซ้ำซ้อนในสัปดาห์ต้นทาง
-      uniqueShiftsMap.set(key, shift);
-    });
-    const deduplicatedSourceShifts = Array.from(uniqueShiftsMap.values());
-
-    // 4. แปลงข้อมูลวันที่จากต้นทางไปปลายทาง (Day-to-Day Mapping)
-    const sourceBase = new Date(sStart).getTime();
-    const targetBase = new Date(tStart);
-
-    const newShifts = deduplicatedSourceShifts.map(shift => {
-      const currentShiftDate = new Date(shift.start_time.split('T')[0]).getTime();
-      const dayOffset = Math.round((currentShiftDate - sourceBase) / (1000 * 60 * 60 * 24));
-      
-      const newDate = new Date(targetBase);
-      newDate.setDate(targetBase.getDate() + dayOffset);
-      const newDateStr = newDate.toISOString().split('T')[0];
-
-      return {
-        employee_id: shift.employee_id,
-        status: shift.status,
-        metadata: shift.metadata,
-        start_time: `${newDateStr}T00:00:00`,
-        end_time: `${newDateStr}T23:59:59`
-      };
-    });
-
-    // 5. บันทึกข้อมูลใหม่แบบ Bulk Insert (เนื่องจากเราล้างข้อมูลเป้าหมายไปแล้วในขั้นตอนที่ 2)
-    const { error: insertError } = await supabaseAdmin
+    // 3. เพิ่มเฉพาะช่องว่างโดยไม่แตะรายการเดิม
+    const { data, error: insertError } = await supabaseAdmin
       .from('shifts')
-      .insert(newShifts);
+      .insert(result.copies)
+      .select('id, employee_id, start_time, end_time, status, metadata');
 
     if (insertError) {
       console.error('[copyWeeklyShifts] Insert Error:', insertError);
@@ -700,11 +669,11 @@ export async function copyWeeklyShifts(sourceStartDate: string, targetStartDate:
     scheduleDailyReportRefreshForRange(tStart, tEnd);
 
     revalidateAppPaths();
-    return { success: true };
+    return { success: true as const, data: data ?? [], previousShifts: targetResult.data ?? [], ...result };
   } catch (err: unknown) {
     console.error('[copyWeeklyShifts] CRITICAL FAILURE:', err);
     const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดรุนแรงในการคัดลอกข้อมูล';
-    return { success: false, error: message };
+    return { success: false as const, error: message };
   }
 }
 

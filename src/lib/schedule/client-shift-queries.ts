@@ -9,6 +9,12 @@ export type ClientShiftRow = Pick<
   'id' | 'employee_id' | 'start_time' | 'end_time' | 'status' | 'metadata'
 >;
 
+export type ClientHolidayRow = {
+  id: string;
+  date: string;
+  name: string;
+};
+
 /** Shared with ScheduleClient week refresh and home member panel day refresh. */
 export const CLIENT_SHIFT_COLUMNS =
   'id, employee_id, start_time, end_time, status, metadata' as const;
@@ -60,11 +66,17 @@ export async function fetchWeekShiftsFromClient(
   return (data ?? []).map((shift) => normalizeClientShiftRow(shift as ClientShiftRow));
 }
 
-export type ClientHolidayRow = {
-  id: string;
-  date: string;
-  name: string;
-};
+export async function fetchWeekHolidaysFromClient(
+  weekStart: string,
+  weekEnd: string,
+): Promise<ClientHolidayRow[] | null> {
+  const sessionOk = await ensureSupabaseSession();
+  if (!sessionOk) return null;
+
+  const { data, error } = await queryWeekHolidaysFromClient(weekStart, weekEnd);
+  if (error) throw error;
+  return (data ?? []) as ClientHolidayRow[];
+}
 
 export async function fetchScheduleWeekGridFromClient(
   weekStart: string,

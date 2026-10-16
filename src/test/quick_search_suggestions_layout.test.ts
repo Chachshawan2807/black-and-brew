@@ -52,6 +52,20 @@ describe('quick search suggestions layout', () => {
     expect(style.maxHeight).toBe(172);
   });
 
+  test('keeps mobile keyboard suggestions below the input when space below is limited', () => {
+    const style = getAnchoredSuggestionsOverlayStyle(
+      { top: 180, bottom: 220, left: 16, width: 320 },
+      { offsetTop: 0, visibleHeight: 220 },
+      8,
+      true,
+    );
+
+    expect(style.placement).toBe('below');
+    expect(style.top).toBe(228);
+    expect(style.bottom).toBeUndefined();
+    expect(style.maxHeight).toBe(80);
+  });
+
   test('FAB quick search always anchors suggestions below the input', () => {
     const style = getAnchoredSuggestionsOverlayStyle(
       { top: 180, bottom: 220, left: 16, width: 320 },

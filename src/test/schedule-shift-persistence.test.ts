@@ -38,6 +38,47 @@ describe('schedule shift persistence across navigation', () => {
     );
   });
 
+  test('ScheduleClient listens for holiday changes and refreshes only current week holiday data', () => {
+    expect(scheduleClientCode).toContain('onHolidaysChange');
+    expect(scheduleClientCode).toContain('fetchScheduleWeekGridFromClient(weekStart, weekEnd)');
+    expect(scheduleClientCode).toContain('syncHolidays(weekDays[0], weekDays[6])');
+    expect(scheduleClientCode).toContain('setHolidaySyncNotice(false)');
+    expect(scheduleClientCode).toContain('}, 3000);');
+    expect(scheduleClientCode).not.toMatch(/router\.refresh\(\).*holiday/i);
+  });
+
+  test('schedule page does not launch a duplicate background holiday sync', () => {
+    expect(schedulePageCode).not.toContain('fetchAndPersistHolidays');
+    expect(schedulePageCode).not.toContain('after(async () =>');
+  });
+
+  test('public holiday staffing warnings use the shared configured threshold', () => {
+    expect(scheduleClientCode).toContain('fohCount <= INSIGHT_THRESHOLDS.publicHolidayHeadcountLimit');
+    expect(scheduleClientCode).not.toContain('fohCount < 5');
+  });
+
+  test('public holiday total shows actual headcount against its configured threshold', () => {
+    expect(scheduleClientCode).toMatch(/fohCount}\s*\/\s*\{INSIGHT_THRESHOLDS\.publicHolidayHeadcountLimit\}/);
+  });
+
+  test('weekly copy adds missing assigned shifts without deleting destination data', () => {
+    const copyBody = shiftActionsCode.slice(
+      shiftActionsCode.indexOf('export async function copyWeeklyShifts'),
+      shiftActionsCode.indexOf('/** Rename metadata.location'),
+    );
+
+    expect(copyBody).toContain('buildMissingWeekShiftCopies');
+    expect(copyBody).toContain(".insert(result.copies)");
+    expect(copyBody).not.toContain(".from('shifts')\n      .delete()");
+    expect(copyBody).toContain('...result');
+  });
+
+  test('weekly copy result is wired into schedule undo and reports skipped rows', () => {
+    expect(scheduleClientCode).toContain('copyWeeklyShifts');
+    expect(scheduleClientCode).toContain('pushToHistory(profiles, orderedProfileIds, shifts)');
+    expect(scheduleClientCode).toContain('skippedExisting');
+  });
+
   test('ScheduleClient does not reset shifts from initialShifts on every server prop refresh', () => {
     expect(scheduleClientCode).toMatch(
       /if \(initialDateStr !== hydratedWeekRef\.current\) \{[\s\S]*setShifts\(initialShifts\)/,

@@ -52,23 +52,12 @@ import {
   registerHomeBoardPerfDevTools,
 } from '@/lib/perf/home-board-perf';
 import type { SecretaryTask } from '@/lib/secretary/types';
-import { groupTasksIntoHomeSceneZones, type HomeSceneZoneId } from '@/lib/home-scene-zones';
+import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
 
 const SecretaryTaskOverlay = dynamic(
   () => import('./_components/SecretaryTaskOverlay'),
   { ssr: false },
 );
-const HomeSceneZoneOverlay = dynamic(() => import('./_components/HomeSceneZoneOverlay'), {
-  ssr: false,
-});
-const HomeCafeScene = dynamic(() => import('./_components/HomeCafeScene'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-[min(58svh,460px)] min-h-[300px] items-center justify-center rounded-3xl border border-border bg-card text-sm text-muted-foreground">
-      กำลังเตรียมฉากร้าน...
-    </div>
-  ),
-});
 const SecretaryManualTaskDialog = dynamic(
   () => import('./_components/SecretaryManualTaskDialog'),
   { ssr: false },
@@ -135,8 +124,6 @@ export function HomeTaskBoard({
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [overlayTask, setOverlayTask] = useState<SecretaryBoardDisplayTask | null>(null);
-  const [homeView, setHomeView] = useState<'3d' | '2d'>('3d');
-  const [selectedZone, setSelectedZone] = useState<HomeSceneZoneId | null>(null);
   const visibility = useMemo(() => ({ workDateIso }), [workDateIso]);
 
   const consolidatedAllTasks = useMemo(
@@ -146,13 +133,6 @@ export function HomeTaskBoard({
       ),
     [board.tasks, visibility],
   );
-
-  const sceneZones = useMemo(
-    () => groupTasksIntoHomeSceneZones(consolidatedAllTasks),
-    [consolidatedAllTasks],
-  );
-  const selectedZoneData = sceneZones.find((zone) => zone.id === selectedZone);
-  const zoneCounts = Object.fromEntries(sceneZones.map((zone) => [zone.id, zone.activeCount])) as Record<HomeSceneZoneId, number>;
 
   const applyBoardSync = useCallback((payload: BoardSyncPayload) => {
     setBoard((prev) => applySecretaryBoardSync(prev, payload));
@@ -322,10 +302,6 @@ export function HomeTaskBoard({
         dismiss: () => setOverlayTask(null),
       },
       {
-        active: selectedZoneData !== undefined,
-        dismiss: () => setSelectedZone(null),
-      },
-      {
         active: showCreateDialog,
         dismiss: () => {
           setShowCreateDialog(false);
@@ -334,7 +310,7 @@ export function HomeTaskBoard({
         },
       },
     ],
-    [overlayTask, selectedZoneData, showCreateDialog],
+    [overlayTask, showCreateDialog],
   );
 
   useMobileBackOverlayStack('home-overlay', homeOverlayLayers);
@@ -385,27 +361,7 @@ export function HomeTaskBoard({
         aria-label="รายการงาน"
         className={cn(BB_DATA_CARD, 'min-w-0 space-y-3 p-3 sm:p-4')}
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="px-1 text-sm text-muted-foreground">สถานะงานในร้าน · {workDateIso}</p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              aria-pressed={homeView === '3d'}
-              onClick={() => setHomeView('3d')}
-              className={cn('min-h-10 rounded-2xl border border-border px-3 text-[13px] text-foreground', homeView === '3d' ? 'bg-muted' : 'bg-card', BB_FOCUS_RING)}
-            >
-              ฉาก 3D
-            </button>
-            <button
-              type="button"
-              aria-pressed={homeView === '2d'}
-              onClick={() => setHomeView('2d')}
-              className={cn('min-h-10 rounded-2xl border border-border px-3 text-[13px] text-foreground', homeView === '2d' ? 'bg-muted' : 'bg-card', BB_FOCUS_RING)}
-            >
-              ข้อมูลย่อ 2D
-            </button>
-          </div>
-        </div>
+        <p className="px-1 text-sm text-muted-foreground">สถานะงานในร้าน · {workDateIso}</p>
         <div className="flex flex-wrap gap-2">
           <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
             <button
@@ -430,40 +386,32 @@ export function HomeTaskBoard({
             </button>
           </HintTooltip>
         </div>
-        {homeView === '3d' ? (
-          <HomeCafeScene counts={zoneCounts} onSelectZone={setSelectedZone} />
-        ) : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {sceneZones.map((zone) => (
-              <button
-                key={zone.id}
-                type="button"
-                onClick={() => setSelectedZone(zone.id)}
-                className={cn('min-h-24 rounded-2xl border border-border bg-card p-3 text-left text-foreground', BB_FOCUS_RING)}
-              >
-                <span className="block text-sm">{zone.label}</span>
-                <span className="mt-1 block text-xs text-muted-foreground">{zone.description}</span>
-                <span className="mt-2 block text-xs text-muted-foreground">ค้าง {zone.activeCount} งาน</span>
-              </button>
+        {consolidatedAllTasks.length > 0 ? (
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {consolidatedAllTasks.map((task) => (
+              <li key={task.id}>
+                <button
+                  type="button"
+                  disabled={!canOpenSecretaryTaskDetail(task)}
+                  onClick={() => {
+                    warmTaskCard(task);
+                    setOverlayTask(task);
+                  }}
+                  className={cn('flex min-h-24 w-full flex-col items-start justify-center gap-1 rounded-2xl border border-border bg-card p-3 text-left text-foreground disabled:opacity-60', BB_FOCUS_RING)}
+                >
+                  <span className="text-sm font-medium">{task.title}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {task.status === 'done' ? 'เสร็จแล้ว' : task.status === 'in_progress' ? 'กำลังทำ' : task.status === 'skipped' ? 'ข้ามแล้ว' : task.priority === 'urgent' ? 'เร่งด่วน' : 'รอดำเนินการ'}
+                  </span>
+                </button>
+              </li>
             ))}
-          </div>
-        )}
-        {homeView === '2d' && consolidatedAllTasks.length === 0 ? (
+          </ul>
+        ) : (
           <HomePanelEmptyState compact icon={<ClipboardList size={22} strokeWidth={1.5} />} title="ไม่มีงานวันนี้" subtitle="เพิ่มงานด้วยตนเองได้จากปุ่มด้านบน" />
-        ) : null}
+        )}
       </section>
 
-      {selectedZoneData ? (
-        <HomeSceneZoneOverlay
-          zone={selectedZoneData}
-          onClose={() => setSelectedZone(null)}
-          onOpenTask={(task) => {
-            setSelectedZone(null);
-            warmTaskCard(task);
-            setOverlayTask(task);
-          }}
-        />
-      ) : null}
       {overlayTask ? (
         <SecretaryTaskOverlay
           task={overlayTask}

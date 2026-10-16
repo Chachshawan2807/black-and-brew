@@ -1,10 +1,8 @@
 import { startOfWeek, addDays, format } from 'date-fns';
 import { redirect } from 'next/navigation';
-import { after } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { checkAuth } from '@/app/actions/auth';
 import { groupRegularHolidayRows } from '@/lib/regular-holidays';
-import { fetchAndPersistHolidays } from '@/lib/holiday-sync';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import dynamic from 'next/dynamic';
 import { RouteLoadingSkeleton } from '@/components/ui/route-loading-skeleton';
@@ -39,13 +37,6 @@ export default async function SchedulePage({
 
   const mondayStr = format(monday, 'yyyy-MM-dd');
   const sundayStr = format(sunday, 'yyyy-MM-dd');
-
-  after(async () => {
-    const holidaySync = await fetchAndPersistHolidays(mondayStr, sundayStr);
-    if (!holidaySync.success && holidaySync.error !== 'Missing API Key') {
-      console.error('Holiday sync failed:', holidaySync.error);
-    }
-  });
 
   const [profilesRes, shiftsRes, regularHolidaysRes, holidaysRes] = await Promise.all([
     supabaseAdmin.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true }),

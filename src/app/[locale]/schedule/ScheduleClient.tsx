@@ -31,11 +31,12 @@ import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
-import { saveRegularHolidays } from '@/app/actions/holiday-actions';
+import { saveRegularHolidays, syncHolidays } from '@/app/actions/holiday-actions';
+import { INSIGHT_THRESHOLDS } from '@/lib/proactive-insights/thresholds';
 import { syncScheduleToGoogleSheet } from '@/app/actions/schedule-sheets-sync-actions';
 import { formatScheduleWeekRangeLabel } from '@/lib/schedule/sheets-sync-policy';
 
-import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations, fetchManagementHistoryPage, saveManagementHistoryRange } from '@/app/actions/shift-actions';
+import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations, fetchManagementHistoryPage, saveManagementHistoryRange, copyWeeklyShifts } from '@/app/actions/shift-actions';
 import dynamic from 'next/dynamic';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
@@ -521,6 +522,10 @@ export default function ScheduleClient({
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
   const [holidays, setHolidays] = useState<ScheduleHoliday[]>(initialHolidays);
+  const [holidaySyncNotice, setHolidaySyncNotice] = useState(false);
+  const [copyWeekNotice, setCopyWeekNotice] = useState('');
+  const [isCopyingPreviousWeek, setIsCopyingPreviousWeek] = useState(false);
+  const holidaySyncNoticeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [loading, setLoading] = useState(false);
   const [isExportingImage, setIsExportingImage] = useState(false);
@@ -966,9 +971,61 @@ export default function ScheduleClient({
 
   useEffect(() => clearClientRefreshRetry, [clearClientRefreshRetry]);
 
+  const showHolidaySyncNotice = useCallback(() => {
+    setHolidaySyncNotice(true);
+    if (holidaySyncNoticeTimeoutRef.current) clearTimeout(holidaySyncNoticeTimeoutRef.current);
+    holidaySyncNoticeTimeoutRef.current = setTimeout(() => {
+      setHolidaySyncNotice(false);
+      holidaySyncNoticeTimeoutRef.current = null;
+    }, 3000);
+  }, []);
+
+  const refreshWeekHolidays = useCallback(async (showNotice = false) => {
+    if (weekDays.length < 7) return;
+    try {
+      const data = await fetchScheduleWeekGridFromClient(weekDays[0], weekDays[6]);
+      if (data === null) return;
+      setHolidays(data.holidays);
+      if (showNotice) showHolidaySyncNotice();
+    } catch (error) {
+      if (error && typeof error === 'object' && 'message' in error) {
+        const supabaseError = error as { message: string; details?: string };
+        console.error('Supabase Error (Schedule holiday refresh):', supabaseError.message, supabaseError.details);
+      } else {
+        console.error('Supabase Error (Schedule holiday refresh):', error);
+      }
+    }
+  }, [showHolidaySyncNotice, weekDays]);
+
+  useEffect(() => () => {
+    if (holidaySyncNoticeTimeoutRef.current) clearTimeout(holidaySyncNoticeTimeoutRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (isReadOnly || weekDays.length < 7) return;
+    let cancelled = false;
+    const syncCurrentWeekHolidays = async () => {
+      const result = await syncHolidays(weekDays[0], weekDays[6]);
+      if (cancelled || !result?.success) return;
+      const refreshed = await fetchScheduleWeekGridFromClient(weekDays[0], weekDays[6]);
+      if (cancelled || refreshed === null) return;
+      setHolidays(refreshed.holidays);
+      showHolidaySyncNotice();
+    };
+    void syncCurrentWeekHolidays().catch((error) => {
+      console.error('Holiday sync failed:', error);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isReadOnly, showHolidaySyncNotice, weekDays]);
+
   useShiftRealtime({
     onShiftsChange: () => {
       scheduleRefresh();
+    },
+    onHolidaysChange: () => {
+      void refreshWeekHolidays();
     },
   });
 
@@ -1626,6 +1683,49 @@ export default function ScheduleClient({
     void loadScheduleWeekGrid(weekStart, weekEnd);
   };
 
+  const handleCopyPreviousWeek = async () => {
+    if (blockIfReadOnly() || isCopyingPreviousWeek) return;
+    const targetStartDate = weekDays[0];
+    if (!targetStartDate) return;
+    const sourceStart = new Date(`${targetStartDate}T00:00:00.000Z`);
+    sourceStart.setUTCDate(sourceStart.getUTCDate() - 7);
+    const sourceStartDate = sourceStart.toISOString().slice(0, 10);
+
+    setIsCopyingPreviousWeek(true);
+    try {
+      const result = await copyWeeklyShifts(sourceStartDate, targetStartDate);
+      if (!result.success) throw new Error(result.error || 'คัดลอกตารางไม่สำเร็จ');
+      if (weekDays[0] !== targetStartDate) return;
+
+      const previousShifts = (result.previousShifts ?? []) as Shift[];
+      const copiedShifts = (result.data ?? []) as Shift[];
+      if (copiedShifts.length > 0) {
+        pushToHistory(profiles, orderedProfileIds, previousShifts);
+        setShifts([...previousShifts, ...copiedShifts]);
+        scheduleRefresh();
+      }
+
+      const skipped = [
+        result.skippedExisting ? `มีข้อมูลเดิม ${result.skippedExisting}` : '',
+        result.skippedCancelled ? `กะยกเลิก ${result.skippedCancelled}` : '',
+        result.skippedRequests ? `คำขอลา ${result.skippedRequests}` : '',
+        result.skippedUnassigned ? `ข้อมูลไม่ครบ ${result.skippedUnassigned}` : '',
+      ].filter(Boolean).join(' · ');
+      setCopyWeekNotice(
+        copiedShifts.length > 0
+          ? `คัดลอกแล้ว ${copiedShifts.length} กะ${skipped ? ` ข้าม: ${skipped}` : ''}`
+          : `ไม่มีช่องว่างให้เติม${skipped ? ` ข้าม: ${skipped}` : ''}`,
+      );
+      setTimeout(() => setCopyWeekNotice(''), 4000);
+    } catch (error) {
+      console.error('Failed to copy previous schedule week:', error);
+      setCopyWeekNotice(error instanceof Error ? error.message : 'คัดลอกตารางไม่สำเร็จ');
+      setTimeout(() => setCopyWeekNotice(''), 4000);
+    } finally {
+      setIsCopyingPreviousWeek(false);
+    }
+  };
+
   const handleSaveHoliday = async (date: string) => {
     if (blockIfReadOnly()) return;
     try {
@@ -1766,6 +1866,8 @@ export default function ScheduleClient({
         }
         onShowAddEmployeeModal={() => setShowAddEmployeeModal(true)}
         onShowShiftSettings={() => setShowShiftSettingsModal(true)}
+        onCopyPreviousWeek={handleCopyPreviousWeek}
+        isCopyingPreviousWeek={isCopyingPreviousWeek}
       />
 
       <main className="bb-schedule-main flex-1 min-h-0 p-3 md:p-5 overflow-hidden flex flex-col">
@@ -1949,10 +2051,17 @@ export default function ScheduleClient({
                         const loc = s.metadata?.location?.trim();
                         const isSameDay = isSameThaiDay(s.start_time, date);
                         const isActiveEmployee = s.employee_id && activeProfileIds.has(s.employee_id);
-                        return isSameDay && s.status !== 'on_leave' && isActiveEmployee && validShiftValues.has(loc || '');
+                        return isSameDay
+                          && s.status !== 'cancelled'
+                          && s.status !== 'on_leave'
+                          && isActiveEmployee
+                          && validShiftValues.has(loc || '');
                       })
                       .map(s => s.employee_id)
                   ).size;
+                  const holiday = holidayByDate.get(date);
+                  const isUnderstaffedHoliday = Boolean(holiday)
+                    && fohCount <= INSIGHT_THRESHOLDS.publicHolidayHeadcountLimit;
                   const isToday = date === todayStr;
                   return (
                     <div
@@ -1962,10 +2071,29 @@ export default function ScheduleClient({
                         'bb-schedule-foh-cell p-1.5 border-r last:border-0 border-border flex items-center justify-center transition-colors duration-150',
                         scheduleCrosshairColumnHeaderClass(date, gridFocus),
                         isToday && 'is-today',
+                        isUnderstaffedHoliday && 'bg-amber-50/80 dark:bg-amber-950/30',
                       )}
                     >
-                      <span className={cn('bb-schedule-foh-count tabular-nums', fohCount > 0 ? 'has-staff' : 'is-empty')}>
-                        {fohCount}
+                      <span
+                        className={cn(
+                          'bb-schedule-foh-count tabular-nums inline-flex items-center gap-1.5',
+                          fohCount > 0 ? 'has-staff' : 'is-empty',
+                        )}
+                        aria-label={isUnderstaffedHoliday
+                          ? `${holiday?.name} มีพนักงาน ${fohCount} คน จาก ${INSIGHT_THRESHOLDS.publicHolidayHeadcountLimit} คนที่ต้องการ`
+                          : undefined}
+                      >
+                        {holiday
+                          ? <>{fohCount} / {INSIGHT_THRESHOLDS.publicHolidayHeadcountLimit}</>
+                          : fohCount}
+                        {isUnderstaffedHoliday && (
+                          <span
+                            aria-hidden="true"
+                            className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-100 px-1 text-[10px] font-semibold leading-none text-amber-900 ring-1 ring-amber-300 dark:bg-amber-900/70 dark:text-amber-100 dark:ring-amber-700"
+                          >
+                            !
+                          </span>
+                        )}
                       </span>
                     </div>
                   );
@@ -2045,6 +2173,23 @@ export default function ScheduleClient({
         title="กำลังบันทึกข้อมูล"
         subtitle="กรุณารอสักครู่..."
       />
+      {holidaySyncNotice && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed right-4 top-4 z-50 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-sm"
+        >
+          อัปเดตแล้ว
+        </div>
+      )}
+      {copyWeekNotice && (
+        <div
+          role="status"
+          className="fixed right-4 top-14 z-50 max-w-[calc(100vw-2rem)] rounded-full border border-border bg-card px-3 py-1.5 text-xs text-foreground shadow-sm"
+        >
+          {copyWeekNotice}
+        </div>
+      )}
 
       <ShiftSettingsModal
         open={showShiftSettingsModal}
@@ -2388,18 +2533,17 @@ export default function ScheduleClient({
             <ScheduleModalHeader
               icon={<Calendar className="h-5 w-5" strokeWidth={1.5} />}
               title="จัดการวันหยุดประจำ"
-              subtitle="กำหนดวันหยุดประจำสัปดาห์ของแต่ละพนักงาน"
               tone="calendar"
               onClose={() => setShowRegularHolidayModal(false)}
             />
 
             <div
               data-testid="regular-holiday-modal-scroll"
-              className="flex flex-1 min-h-0 min-w-0 flex-col px-5 max-md:overflow-hidden md:overflow-y-auto md:bb-smooth-scroll md:bb-scroll-xy md:overscroll-y-contain md:pb-6"
+              className="flex flex-1 min-h-0 min-w-0 flex-col overflow-y-auto px-5 bb-smooth-scroll bb-scroll-xy overscroll-y-contain md:pb-6"
             >
               <div
                 data-testid="regular-holiday-modal-layout"
-                className="flex flex-col md:flex-row gap-6 max-md:flex-1 max-md:min-h-0"
+                className="flex flex-col md:flex-row gap-6"
               >
                 {/* Form first on mobile so day picker is not buried under the summary grid */}
                 <div className="flex flex-col w-full md:w-[260px] shrink-0">
@@ -2487,14 +2631,11 @@ export default function ScheduleClient({
                   </div>
                 </div>
 
-                {/* Summary overview 3-column cards; fills remaining height on mobile */}
-                <div className="flex flex-1 w-full min-w-0 min-h-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-muted/10 p-4">
-                  <h4 className="mb-3 shrink-0 px-0.5 text-[13px] font-normal uppercase tracking-[0.08em] text-muted-foreground">
-                    สรุปวันหยุดประจำของพนักงาน
-                  </h4>
+                {/* Summary overview cards */}
+                <div className="flex w-full min-w-0 flex-col rounded-2xl border border-border/80 bg-muted/10 p-4">
                   <div
                     data-testid="regular-holiday-summary-scroll"
-                    className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll bb-scroll-xy overscroll-y-contain -mx-1 px-1"
+                    className="overflow-y-auto bb-smooth-scroll bb-scroll-xy overscroll-y-contain -mx-1 px-1 pb-3"
                   >
                     <ul
                       data-testid="regular-holiday-summary-grid"
@@ -2509,11 +2650,15 @@ export default function ScheduleClient({
                         return (
                           <li
                             key={p.id}
-                            className="flex min-w-0 flex-col gap-1 rounded-2xl border border-border/80 bg-card px-2.5 py-2.5 shadow-sm"
+                            className="flex min-h-[62px] min-w-0 flex-col items-start gap-1.5 rounded-2xl border border-border/80 bg-card px-2.5 py-2.5 shadow-sm"
                           >
-                            <span className="text-[13px] font-normal text-foreground truncate">{p.full_name}</span>
-                            <span className="text-[12px] font-normal text-foreground/70 leading-snug break-words">
-                              {sortedDays.map(d => dayLabels[d]).join(', ')}
+                            <span className="w-full truncate text-[13px] font-normal leading-5 text-foreground" title={p.full_name}>
+                              {p.full_name}
+                            </span>
+                            <span className="flex w-full flex-wrap gap-x-1.5 gap-y-0.5 text-[12px] font-normal leading-4 text-foreground/70">
+                              {sortedDays.map(d => (
+                                <span key={d} className="whitespace-nowrap">{dayLabels[d]}</span>
+                              ))}
                             </span>
                           </li>
                         );

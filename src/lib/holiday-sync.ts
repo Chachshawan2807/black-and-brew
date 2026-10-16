@@ -16,6 +16,70 @@ type GoogleCalendarEvent = {
   };
 };
 
+type GoogleCalendarEventsResponse = {
+  items?: GoogleCalendarEvent[];
+  nextPageToken?: string;
+  error?: { message?: string };
+};
+
+const FIXED_THAI_HOLIDAYS: Record<string, string> = {
+  '01-01': 'วันขึ้นปีใหม่',
+  '04-06': 'วันจักรี',
+  '04-13': 'วันสงกรานต์',
+  '04-14': 'วันสงกรานต์',
+  '04-15': 'วันสงกรานต์',
+  '05-01': 'วันแรงงานแห่งชาติ',
+  '05-04': 'วันฉัตรมงคล',
+  '06-03': 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ พระบรมราชินี',
+  '07-28': 'วันเฉลิมพระชนมพรรษาพระบาทสมเด็จพระเจ้าอยู่หัว',
+  '08-12': 'วันเฉลิมพระชนมพรรษาสมเด็จพระบรมราชชนนีพันปีหลวง',
+  '10-13': 'วันนวมินทรมหาราช',
+  '10-23': 'วันปิยมหาราช',
+  '12-05': 'วันคล้ายวันพระบรมราชสมภพ รัชกาลที่ 9',
+  '12-10': 'วันรัฐธรรมนูญ',
+  '12-31': 'วันสิ้นปี',
+};
+
+const OVERRIDE_THAI_HOLIDAYS: Record<string, string> = {
+  '2027-01-01': 'วันขึ้นปีใหม่',
+  '2027-02-22': 'ชดเชยวันมาฆบูชา',
+  '2027-04-06': 'วันจักรี',
+  '2027-04-13': 'วันสงกรานต์',
+  '2027-04-14': 'วันสงกรานต์',
+  '2027-04-15': 'วันสงกรานต์',
+  '2027-05-03': 'ชดเชยวันแรงงานแห่งชาติ',
+  '2027-05-04': 'วันฉัตรมงคล',
+  '2027-05-20': 'วันวิสาขบูชา',
+  '2027-06-03': 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าฯ พระบรมราชินี',
+  '2027-07-19': 'ชดเชยวันอาสาฬหบูชา',
+  '2027-07-28': 'วันเฉลิมพระชนมพรรษาพระบาทสมเด็จพระเจ้าอยู่หัว',
+  '2027-08-12': 'วันแม่แห่งชาติ',
+  '2027-10-13': 'วันนวมินทรมหาราช',
+  '2027-10-25': 'ชดเชยวันปิยมหาราช',
+  '2027-12-06': 'ชดเชยวันชาติและวันพ่อแห่งชาติ',
+  '2027-12-10': 'วันรัฐธรรมนูญ',
+  '2027-12-31': 'วันสิ้นปี',
+};
+
+function getKnownThaiHolidays(startDate: string, endDate: string): Map<string, string> {
+  const holidays = new Map<string, string>();
+  const start = new Date(`${startDate}T00:00:00.000Z`);
+  const end = new Date(`${endDate}T00:00:00.000Z`);
+
+  for (const day = new Date(start); day <= end; day.setUTCDate(day.getUTCDate() + 1)) {
+    const date = day.toISOString().slice(0, 10);
+    if (date.startsWith('2027-')) {
+      const override = OVERRIDE_THAI_HOLIDAYS[date];
+      if (override) holidays.set(date, override);
+      continue;
+    }
+    const holiday = FIXED_THAI_HOLIDAYS[date.slice(5)];
+    if (holiday) holidays.set(date, holiday);
+  }
+
+  return holidays;
+}
+
 function groupHolidayNamesByDate(items: GoogleCalendarEvent[]): Map<string, string> {
   const grouped = new Map<string, string[]>();
 
@@ -52,21 +116,46 @@ export async function fetchAndPersistHolidays(
   }
 
   try {
-    const timeMin = `${parsed.data.startDate}T00:00:00Z`;
-    const timeMax = `${parsed.data.endDate}T23:59:59Z`;
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?key=${apiKey}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true`;
+    const timeMin = new Date(`${parsed.data.startDate}T00:00:00+07:00`).toISOString();
+    const exclusiveEndDate = new Date(`${parsed.data.endDate}T00:00:00.000Z`);
+    exclusiveEndDate.setUTCDate(exclusiveEndDate.getUTCDate() + 1);
+    const timeMax = new Date(`${exclusiveEndDate.toISOString().slice(0, 10)}T00:00:00+07:00`).toISOString();
+    const baseUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`;
+    const items: GoogleCalendarEvent[] = [];
+    let pageToken: string | undefined;
 
-    const response = await fetch(url);
-    const data = await response.json();
+    do {
+      const url = new URL(baseUrl);
+      url.searchParams.set('key', apiKey);
+      url.searchParams.set('timeMin', timeMin);
+      url.searchParams.set('timeMax', timeMax);
+      url.searchParams.set('singleEvents', 'true');
+      url.searchParams.set('maxResults', '2500');
+      if (pageToken) url.searchParams.set('pageToken', pageToken);
 
-    if (!data.items) {
-      return { success: true, count: 0 };
+      const response = await fetch(url.toString(), { signal: AbortSignal.timeout(5_000) });
+      const data = await response.json() as GoogleCalendarEventsResponse;
+
+      if (!response.ok) {
+        const message = typeof data?.error?.message === 'string' ? data.error.message : response.statusText;
+        return { success: false, error: `Google Calendar API error (${response.status}): ${message}` };
+      }
+
+      if (!Array.isArray(data.items)) {
+        return { success: false, error: 'Google Calendar API returned an invalid response' };
+      }
+
+      items.push(...data.items);
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+
+    const holidaysByDate = groupHolidayNamesByDate(items);
+    for (const [date, name] of getKnownThaiHolidays(parsed.data.startDate, parsed.data.endDate)) {
+      const existingName = holidaysByDate.get(date);
+      const mergedNames = [...new Set([...(existingName?.split(' / ') ?? []), name])];
+      holidaysByDate.set(date, mergedNames.join(' / '));
     }
-
-    const holidaysByDate = groupHolidayNamesByDate(data.items as GoogleCalendarEvent[]);
-    if (holidaysByDate.size === 0) {
-      return { success: true, count: 0 };
-    }
+    if (holidaysByDate.size === 0) return { success: true, count: 0 };
 
     const supabaseAdmin = getSupabaseAdmin();
     const dates = [...holidaysByDate.keys()];
@@ -85,16 +174,11 @@ export async function fetchAndPersistHolidays(
     );
 
     const toInsert: { date: string; name: string }[] = [];
-    const toUpdate: { id: string; name: string }[] = [];
 
     for (const [date, name] of holidaysByDate) {
       const existing = existingByDate.get(date);
       if (!existing) {
         toInsert.push({ date, name });
-        continue;
-      }
-      if (existing.name !== name) {
-        toUpdate.push({ id: existing.id, name });
       }
     }
 
@@ -106,19 +190,6 @@ export async function fetchAndPersistHolidays(
         return { success: false, error: insertError.message };
       }
       syncedCount += toInsert.length;
-    }
-
-    if (toUpdate.length > 0) {
-      const results = await Promise.all(
-        toUpdate.map((row) =>
-          supabaseAdmin.from('holidays').update({ name: row.name }).eq('id', row.id),
-        ),
-      );
-      const updateError = results.find((r) => r.error)?.error;
-      if (updateError) {
-        return { success: false, error: updateError.message };
-      }
-      syncedCount += toUpdate.length;
     }
 
     return { success: true, count: syncedCount };

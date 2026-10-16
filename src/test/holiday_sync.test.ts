@@ -56,8 +56,71 @@ describe('fetchAndPersistHolidays', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('returns an error when Google Calendar responds with a failure', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({ error: { message: 'API key rejected' } }),
+    });
+
+    const result = await fetchAndPersistHolidays('2026-07-27', '2026-08-02');
+
+    expect(result).toEqual({ success: false, error: 'Google Calendar API error (403): API key rejected' });
+  });
+
+  it('sets a request timeout for Google Calendar', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
+
+    await fetchAndPersistHolidays('2026-07-27', '2026-08-02');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it('uses Bangkok date boundaries and requests every page of holiday events', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [{ summary: 'วันขึ้นปีใหม่', start: { date: '2027-01-01' } }],
+          nextPageToken: 'next-page',
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ items: [{ summary: 'วันสิ้นปี', start: { date: '2026-12-31' } }] }),
+      });
+
+    const result = await fetchAndPersistHolidays('2026-12-28', '2027-01-03');
+
+    expect(result).toEqual({ success: true, count: 2 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][0]).toContain('timeMin=2026-12-27T17%3A00%3A00.000Z');
+    expect(fetchMock.mock.calls[0][0]).toContain('timeMax=2027-01-03T17%3A00%3A00.000Z');
+    expect(fetchMock.mock.calls[1][0]).toContain('pageToken=next-page');
+    expect(mockInsert).toHaveBeenCalledWith([
+      { date: '2027-01-01', name: 'วันขึ้นปีใหม่' },
+      { date: '2026-12-31', name: 'วันสิ้นปี' },
+    ]);
+  });
+
+  it('adds a missing New Year holiday from the Thai holiday fallback', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
+
+    const result = await fetchAndPersistHolidays('2026-12-28', '2027-01-03');
+
+    expect(result).toEqual({ success: true, count: 2 });
+    expect(mockInsert).toHaveBeenCalledWith([
+      { date: '2026-12-31', name: 'วันสิ้นปี' },
+      { date: '2027-01-01', name: 'วันขึ้นปีใหม่' },
+    ]);
+  });
+
   it('inserts holidays fetched from Google Calendar', async () => {
     fetchMock.mockResolvedValue({
+      ok: true,
       json: async () => ({
         items: [
           {
@@ -73,17 +136,19 @@ describe('fetchAndPersistHolidays', () => {
     expect(result).toEqual({ success: true, count: 1 });
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('th.th%23holiday%40group.v.calendar.google.com'),
+      expect.any(Object),
     );
     expect(mockInsert).toHaveBeenCalledWith([
       {
         date: '2026-07-28',
-        name: 'วันเฉลิมพระชนมพรรษา',
+        name: 'วันเฉลิมพระชนมพรรษา / วันเฉลิมพระชนมพรรษาพระบาทสมเด็จพระเจ้าอยู่หัว',
       },
     ]);
   });
 
   it('merges multiple holidays on the same date', async () => {
     fetchMock.mockResolvedValue({
+      ok: true,
       json: async () => ({
         items: [
           {
@@ -104,13 +169,14 @@ describe('fetchAndPersistHolidays', () => {
     expect(mockInsert).toHaveBeenCalledWith([
       {
         date: '2026-07-28',
-        name: 'วันเฉลิมพระชนมพรรษา สมเด็จพระเจ้าอยู่หัวมหาวชิราลงกรณ บดินทรเทพยวรางกูร / วันอาสาฬหบูชา',
+        name: 'วันเฉลิมพระชนมพรรษา สมเด็จพระเจ้าอยู่หัวมหาวชิราลงกรณ บดินทรเทพยวรางกูร / วันอาสาฬหบูชา / วันเฉลิมพระชนมพรรษาพระบาทสมเด็จพระเจ้าอยู่หัว',
       },
     ]);
   });
 
-  it('updates an existing holiday when merged name changes', async () => {
+  it('preserves a manager-edited holiday when Google has a different name', async () => {
     fetchMock.mockResolvedValue({
+      ok: true,
       json: async () => ({
         items: [
           { summary: 'วันอาสาฬหบูชา', start: { date: '2026-07-28' } },
@@ -128,15 +194,36 @@ describe('fetchAndPersistHolidays', () => {
 
     const result = await fetchAndPersistHolidays('2026-07-27', '2026-08-02');
 
-    expect(result).toEqual({ success: true, count: 1 });
-    expect(mockUpdate).toHaveBeenCalledWith({
-      name: 'วันอาสาฬหบูชา / วันเฉลิมพระชนมพรรษา สมเด็จพระเจ้าอยู่หัวมหาวชิราลงกรณ บดินทรเทพยวรางกูร',
-    });
+    expect(result).toEqual({ success: true, count: 0 });
+    expect(mockUpdate).not.toHaveBeenCalled();
     expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('inserts Google holidays only for dates that do not already have a row', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: [
+          { summary: 'วันของ Google', start: { date: '2026-07-28' } },
+          { summary: 'วันหยุดที่ขาด', start: { date: '2026-07-29' } },
+        ],
+      }),
+    });
+    mockIn.mockResolvedValue({
+      data: [{ id: 'holiday-1', date: '2026-07-28', name: 'วันหยุดที่ผู้จัดการแก้' }],
+      error: null,
+    });
+
+    const result = await fetchAndPersistHolidays('2026-07-27', '2026-08-02');
+
+    expect(result).toEqual({ success: true, count: 1 });
+    expect(mockInsert).toHaveBeenCalledWith([{ date: '2026-07-29', name: 'วันหยุดที่ขาด' }]);
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   it('skips writes when holiday already matches', async () => {
     fetchMock.mockResolvedValue({
+      ok: true,
       json: async () => ({
         items: [{ summary: 'วันอาสาฬหบูชา', start: { date: '2026-07-28' } }],
       }),

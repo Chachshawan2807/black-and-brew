@@ -821,7 +821,7 @@ export function InventoryQuickActionBar({
             visibleWidth: viewportWidth,
           },
           8,
-          isFabPanel,
+          isFabPanel || (isMobile && viewportInsets.isKeyboardOpen),
         ),
       );
     };
@@ -829,6 +829,7 @@ export function InventoryQuickActionBar({
     updatePortaledSuggestionsStyle();
   }, [
     isFabPanel,
+    isMobile,
     portalSuggestions,
     showSuggestions,
     viewportInsets.offsetLeft,
@@ -856,7 +857,7 @@ export function InventoryQuickActionBar({
             visibleWidth: viewportWidth,
           },
           8,
-          isFabPanel,
+          isFabPanel || (isMobile && viewportInsets.isKeyboardOpen),
         ),
       );
     };
@@ -874,6 +875,7 @@ export function InventoryQuickActionBar({
     };
   }, [
     isFabPanel,
+    isMobile,
     portalSuggestions,
     showSuggestions,
     viewportInsets.offsetLeft,

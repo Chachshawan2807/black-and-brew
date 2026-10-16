@@ -64,12 +64,6 @@ function useNowTick(enabled: boolean, clockEpochMs?: number): Date | null {
 const SHIFT_TIME_PILL =
   'inline-flex max-w-full items-center rounded-full border border-black/10 bg-white/60 px-2 py-0.5 text-[10px] font-normal tabular-nums tracking-wide text-black/80';
 
-const SHIFT_DUTY_PILL =
-  'inline-flex max-w-full items-center rounded-full border border-black/10 bg-white/60 px-2 py-0.5 text-[10px] font-normal tracking-wide text-black/80';
-
-/** Fixed slots so timed and non-timed cards stay the same height. */
-const SHIFT_MIDDLE_SLOT = 'flex h-[1.375rem] shrink-0 items-center';
-
 const SHIFT_STATUS_PANEL =
   'flex h-[2rem] shrink-0 w-full flex-col items-center justify-center rounded-xl border border-black/10 bg-white/55 px-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]';
 
@@ -82,46 +76,53 @@ function ShiftStatusEmployeeCard({
 }) {
   return (
     <article
-      aria-label={`${row.fullName} กะ ${row.timedWindowLabel ?? row.shiftLabel}`}
+      aria-label={`${row.fullName} ${row.isTimedShift ? 'กะ' : 'ปฏิบัติงานที่'} ${row.timedWindowLabel ?? row.shiftLabel}`}
       className={cn(
         row.colorClass,
-        'group relative flex w-[8.25rem] shrink-0 flex-col gap-1.5 overflow-hidden rounded-2xl border p-3 bb-shadow-sm ring-1 ring-inset ring-black/[0.04] bb-transition motion-reduce:transition-none hover:bb-shadow-md hover:brightness-[0.99]',
+        'group relative flex w-[8.25rem] shrink-0 flex-col gap-1 overflow-hidden rounded-2xl border p-2.5 bb-shadow-sm ring-1 ring-inset ring-black/[0.04] bb-transition motion-reduce:transition-none hover:bb-shadow-md hover:brightness-[0.99]',
       )}
       style={row.colorStyle}
     >
-      <p className="truncate text-[0.8125rem] font-normal leading-snug tracking-tight text-black">
-        {row.fullName}
-      </p>
-
-      <div className={SHIFT_MIDDLE_SLOT}>
-        {row.timedWindowLabel ? (
-          <span className={SHIFT_TIME_PILL}>{row.timedWindowLabel}</span>
-        ) : (
-          <span className={cn(SHIFT_DUTY_PILL, 'truncate')}>{row.shiftLabel}</span>
-        )}
+      <div className="flex min-h-[1.5rem] min-w-0 items-center justify-between gap-1">
+        <p className="min-w-0 flex-1 truncate text-[0.8125rem] font-normal leading-snug tracking-tight text-black">
+          {row.fullName}
+        </p>
+        {row.isTimedShift && row.timedWindowLabel ? (
+          <span className={cn(SHIFT_TIME_PILL, 'shrink-0 px-1.5 text-[9px]')}>
+            {row.timedWindowLabel}
+          </span>
+        ) : null}
       </div>
 
-      <div className={SHIFT_STATUS_PANEL}>
-        {countdown ? (
-          countdown.phase === 'ended' ? (
-            <span className="text-[11px] font-normal leading-none text-black/75">เลิกงานแล้ว</span>
+      {row.isTimedShift ? (
+        <div className={SHIFT_STATUS_PANEL}>
+          {countdown ? (
+            countdown.phase === 'ended' ? (
+              <span className="text-[11px] font-normal leading-none text-black/75">เลิกงานแล้ว</span>
+            ) : (
+              <span
+                className="text-[0.9375rem] font-normal leading-none tabular-nums tracking-tight text-black"
+                aria-live="polite"
+              >
+                {formatCountdownClock(countdown.countdownMs)}
+              </span>
+            )
           ) : (
             <span
-              className="text-[0.9375rem] font-normal leading-none tabular-nums tracking-tight text-black"
-              aria-live="polite"
+              className="text-[0.9375rem] font-normal leading-none text-black/30 select-none"
+              aria-hidden
             >
-              {formatCountdownClock(countdown.countdownMs)}
+              —
             </span>
-          )
-        ) : (
-          <span
-            className="text-[0.9375rem] font-normal leading-none text-black/30 select-none"
-            aria-hidden
-          >
-            —
+          )}
+        </div>
+      ) : (
+        <div className={SHIFT_STATUS_PANEL}>
+          <span className="max-w-full truncate text-[0.9375rem] font-normal leading-none tracking-tight text-black">
+            {row.shiftLabel}
           </span>
-        )}
-      </div>
+        </div>
+      )}
     </article>
   );
 }
