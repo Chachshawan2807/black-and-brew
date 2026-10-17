@@ -24,8 +24,18 @@ describe('isDayUnderstaffed', () => {
   test('uses weekday limits on regular days', () => {
     expect(isDayUnderstaffed(day({ dayIndex: 0, headcount: 3 }))).toBe(true);
     expect(isDayUnderstaffed(day({ dayIndex: 0, headcount: 4 }))).toBe(false);
+    expect(isDayUnderstaffed(day({ dayIndex: 1, headcount: 3 }))).toBe(true);
+    expect(isDayUnderstaffed(day({ dayIndex: 1, headcount: 4 }))).toBe(false);
     expect(isDayUnderstaffed(day({ dayIndex: 2, headcount: 4 }))).toBe(true);
     expect(isDayUnderstaffed(day({ dayIndex: 2, headcount: 5 }))).toBe(false);
+    expect(isDayUnderstaffed(day({ dayIndex: 3, headcount: 4 }))).toBe(true);
+    expect(isDayUnderstaffed(day({ dayIndex: 3, headcount: 5 }))).toBe(false);
+    expect(isDayUnderstaffed(day({ dayIndex: 4, headcount: 3 }))).toBe(true);
+    expect(isDayUnderstaffed(day({ dayIndex: 4, headcount: 4 }))).toBe(false);
+    expect(isDayUnderstaffed(day({ dayIndex: 5, headcount: 4 }))).toBe(true);
+    expect(isDayUnderstaffed(day({ dayIndex: 5, headcount: 5 }))).toBe(false);
+    expect(isDayUnderstaffed(day({ dayIndex: 6, headcount: 4 }))).toBe(true);
+    expect(isDayUnderstaffed(day({ dayIndex: 6, headcount: 5 }))).toBe(false);
   });
 
   test('uses public holiday limit when day is a public holiday', () => {

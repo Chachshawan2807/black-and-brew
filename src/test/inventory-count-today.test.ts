@@ -3,6 +3,7 @@ import {
   applyItemTodayCount,
   attachLatestInventoryCountTimes,
   buildLatestCountedAtByItemId,
+  buildLatestStockChangedAtByItemId,
   buildTodayCountStatusFromLogs,
   buildTodayCountStatusFromVerifications,
   extractStockQtyFromCountLog,
@@ -154,6 +155,16 @@ describe('inventory count today status', () => {
     });
   });
 
+  test('latest stock timestamp ignores other fields and stock writes that keep the same value', () => {
+    expect(buildLatestStockChangedAtByItemId([
+      { entity_id: 'a', occurred_at: '2026-09-18T00:20:00.000Z', field_changes: [{ field: 'name', old_value: 'Milk', new_value: 'Milk 2' }] },
+      { entity_id: 'a', occurred_at: '2026-09-18T00:15:00.000Z', field_changes: [{ field: 'stock', old_value: '5', new_value: 5 }] },
+      { entity_id: 'a', occurred_at: '2026-09-18T00:10:00.000Z', field_changes: [{ field: 'stock', old_value: 4, new_value: 5 }] },
+      { entity_id: 'a', occurred_at: '2026-09-17T00:10:00.000Z', field_changes: [{ field: 'stock', old_value: 2, new_value: 4 }] },
+      { entity_id: 'b', occurred_at: '2026-09-18T00:12:00.000Z', field_changes: [{ field: 'stock', old_value: 7, new_value: 7 }] },
+    ])).toEqual({ a: '2026-09-18T00:10:00.000Z' });
+  });
+
   test('attachLatestInventoryCountTimes merges last_counted_at onto inventory rows', () => {
     const items = attachLatestInventoryCountTimes(
       [{ id: 'a', name: 'Milk' }, { id: 'b', name: 'Sugar' }],
@@ -197,8 +208,8 @@ describe('inventory count today status', () => {
   });
 });
 
-describe('purchase order modal last count column', () => {
-  test('PurchaseOrdersModal loads counted_at from inventory_count_verifications', async () => {
+describe('purchase order modal latest stock change column', () => {
+  test('PurchaseOrdersModal labels the latest stock change time', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const modal = fs.readFileSync(
@@ -206,13 +217,13 @@ describe('purchase order modal last count column', () => {
       'utf-8',
     );
 
-    expect(modal).toContain('fetchLatestInventoryCountTimesClient');
-    expect(modal).toContain('ตรวจนับล่าสุด');
-    expect(modal).toContain('last_counted_at');
+    expect(modal).toContain('fetchLatestInventoryStockChangeTimesClient');
+    expect(modal).toContain('เปลี่ยนแปลงล่าสุด');
+    expect(modal).toContain('lastStockChangedAtByItemId');
     expect(modal).not.toMatch(/item\.updated_at[\s\S]*toLocaleString/);
   });
 
-  test('latest count times paginate instead of silently dropping older items', async () => {
+  test('latest stock change times paginate instead of silently dropping older items', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const client = fs.readFileSync(
@@ -227,7 +238,7 @@ describe('purchase order modal last count column', () => {
 });
 
 describe('fetchTodayInventoryCountStatus persistence source', () => {
-  test('reads durable inventory_count_verifications instead of deferred audit logs', async () => {
+  test('count status still reads its durable verification and count audit sources', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const actionsCode = fs.readFileSync(

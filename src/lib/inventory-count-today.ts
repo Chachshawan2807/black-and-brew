@@ -64,6 +64,31 @@ export type LatestCountVerificationRow = Pick<
   'inventory_item_id' | 'counted_at'
 >;
 
+export type StockChangeLogRow = Pick<CountLogRow, 'entity_id' | 'occurred_at' | 'field_changes'>;
+
+/** First event per item where the stock value actually changed, from newest-first audit rows. */
+export function buildLatestStockChangedAtByItemId(rows: StockChangeLogRow[]): Record<string, string> {
+  const byItemId: Record<string, string> = {};
+  for (const row of rows) {
+    const itemId = row.entity_id;
+    if (!itemId || byItemId[itemId]) continue;
+    const stockChange = parseFieldChanges(row.field_changes).find((change) => change.field === 'stock');
+    if (!stockChange) continue;
+
+    const oldValue = stockChange.old_value;
+    const newValue = stockChange.new_value;
+    const oldNumber = oldValue == null ? null : Number(oldValue);
+    const newNumber = newValue == null ? null : Number(newValue);
+    const valuesAreNumeric = (oldValue == null || Number.isFinite(oldNumber))
+      && (newValue == null || Number.isFinite(newNumber));
+    const changed = valuesAreNumeric
+      ? oldNumber !== newNumber
+      : JSON.stringify(oldValue) !== JSON.stringify(newValue);
+    if (changed) byItemId[itemId] = row.occurred_at;
+  }
+  return byItemId;
+}
+
 /** First row per item_id when rows are ordered by counted_at descending. */
 export function buildLatestCountedAtByItemId(
   rows: LatestCountVerificationRow[],

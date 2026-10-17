@@ -57,8 +57,9 @@ describe('schedule shift persistence across navigation', () => {
     expect(scheduleClientCode).not.toContain('fohCount < 5');
   });
 
-  test('public holiday total shows actual headcount against its configured threshold', () => {
-    expect(scheduleClientCode).toMatch(/fohCount}\s*\/\s*\{INSIGHT_THRESHOLDS\.publicHolidayHeadcountLimit\}/);
+  test('schedule total shows actual headcount without a slash threshold', () => {
+    expect(scheduleClientCode).toContain('{fohCount}');
+    expect(scheduleClientCode).not.toMatch(/fohCount}\s*\/\s*\{/);
   });
 
   test('weekly copy adds missing assigned shifts without deleting destination data', () => {

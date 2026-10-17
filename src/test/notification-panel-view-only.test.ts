@@ -65,6 +65,14 @@ describe('Notification panel view-only iron rule', () => {
     expect(code).not.toContain('useRouter');
   });
 
+  test('clearing notification history requires explicit confirmation', () => {
+    const code = readFile(PANEL_PATH);
+    expect(code).toContain('onClick={() => setClearConfirmOpen(true)}');
+    expect(code).toContain('notification-clear-confirm-title');
+    expect(code).toContain('onClick={confirmClearAll}');
+    expect(code).toContain("isTh ? 'ยกเลิก' : 'Cancel'");
+  });
+
   test('Web Push click focuses app without deep-link navigation', () => {
     const pwa = readFile('components/PwaRegister.tsx');
     const sw = readFile('../public/sw.js');

@@ -2,11 +2,13 @@
 
 /** IRON RULE: in-app notification rows are view-only no links or navigation. See AGENTS.md § notification-panel-view-only-standard */
 
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Bell, CheckCheck, Trash2 } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import {
+  modalContent,
   notificationOverlay,
   notificationPanel,
   toFramerPhaseVariants,
@@ -117,7 +119,10 @@ export function NotificationPanel() {
   const params = useParams();
   const locale = (params?.locale as string) || 'th';
   const isTh = locale === 'th';
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+  const clearConfirmRef = useRef<HTMLDialogElement>(null);
   const reduced = usePrefersReducedMotion();
+  const confirmMotion = withReducedMotion(modalContent, reduced);
   const overlayMotion = withReducedMotion(notificationOverlay, reduced);
   const panelPhases = toFramerPhaseVariants(notificationPanel, reduced);
 
@@ -133,6 +138,20 @@ export function NotificationPanel() {
   const viewportInsets = useVisualViewportInsets(panelOpen);
 
   useMobileBackLayer('notification-panel', panelOpen, closePanel);
+
+  useEffect(() => {
+    const dialog = clearConfirmRef.current;
+    if (!dialog) return;
+    if (clearConfirmOpen && !dialog.open) dialog.showModal();
+    if (!clearConfirmOpen && dialog.open) dialog.close();
+  }, [clearConfirmOpen]);
+
+  const cancelClearAll = () => setClearConfirmOpen(false);
+  const confirmClearAll = () => {
+    clearAll();
+    setClearConfirmOpen(false);
+  };
+
   const backdropStyle = getModalBackdropKeyboardAwareStyle({ insets: viewportInsets });
   const panelStyle = getModalContentKeyboardAwareStyle({ insets: viewportInsets });
 
@@ -217,7 +236,7 @@ export function NotificationPanel() {
                       <HintTooltip tip={isTh ? 'ล้างประวัติ' : 'Clear history'}>
                         <button
                           type="button"
-                          onClick={clearAll}
+                          onClick={() => setClearConfirmOpen(true)}
                           className={PANEL_HEADER_ICON_BTN_CLASS}
                           aria-label={isTh ? 'ล้างประวัติ' : 'Clear history'}
                         >
@@ -283,6 +302,45 @@ export function NotificationPanel() {
             </motion.aside>
           </div>
         </motion.div>
+      )}
+      {clearConfirmOpen && (
+        <dialog
+          ref={clearConfirmRef}
+          aria-labelledby="notification-clear-confirm-title"
+          className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/40"
+          onCancel={(event) => {
+            event.preventDefault();
+            cancelClearAll();
+          }}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) cancelClearAll();
+          }}
+        >
+          <motion.div
+            initial={confirmMotion.initial}
+            animate={confirmMotion.animate}
+            exit={confirmMotion.exit}
+            transition={confirmMotion.transition}
+            className="space-y-5 p-5 sm:p-6"
+          >
+            <div className="space-y-1.5">
+              <h3 id="notification-clear-confirm-title" className="text-base font-medium">
+                {isTh ? 'ยืนยันการล้างประวัติ' : 'Clear notification history?'}
+              </h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {isTh ? 'การแจ้งเตือนทั้งหมดจะถูกลบ และไม่สามารถกู้คืนได้' : 'All notifications will be deleted and cannot be recovered.'}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={cancelClearAll} className="min-h-10 rounded-lg border border-border px-3.5 text-sm text-foreground bb-transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                {isTh ? 'ยกเลิก' : 'Cancel'}
+              </button>
+              <button type="button" onClick={confirmClearAll} className="min-h-10 rounded-lg border border-red-600/25 bg-red-600/10 px-3.5 text-sm font-medium !text-red-700 bb-transition hover:bg-red-600/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:!text-red-400">
+                {isTh ? 'ล้างประวัติ' : 'Clear history'}
+              </button>
+            </div>
+          </motion.div>
+        </dialog>
       )}
     </AnimatePresence>
   );

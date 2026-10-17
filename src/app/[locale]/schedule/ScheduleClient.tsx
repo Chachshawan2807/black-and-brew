@@ -2060,8 +2060,10 @@ export default function ScheduleClient({
                       .map(s => s.employee_id)
                   ).size;
                   const holiday = holidayByDate.get(date);
-                  const isUnderstaffedHoliday = Boolean(holiday)
-                    && fohCount <= INSIGHT_THRESHOLDS.publicHolidayHeadcountLimit;
+                  const headcountLimit = holiday
+                    ? INSIGHT_THRESHOLDS.publicHolidayHeadcountLimit
+                    : INSIGHT_THRESHOLDS.weeklyHeadcountLimits[(new Date(`${date}T00:00:00`).getDay() + 6) % 7];
+                  const isUnderstaffed = fohCount <= headcountLimit;
                   const isToday = date === todayStr;
                   return (
                     <div
@@ -2071,7 +2073,7 @@ export default function ScheduleClient({
                         'bb-schedule-foh-cell p-1.5 border-r last:border-0 border-border flex items-center justify-center transition-colors duration-150',
                         scheduleCrosshairColumnHeaderClass(date, gridFocus),
                         isToday && 'is-today',
-                        isUnderstaffedHoliday && 'bg-amber-50/80 dark:bg-amber-950/30',
+                        isUnderstaffed && 'bg-amber-50/80 dark:bg-amber-950/30',
                       )}
                     >
                       <span
@@ -2079,14 +2081,12 @@ export default function ScheduleClient({
                           'bb-schedule-foh-count tabular-nums inline-flex items-center gap-1.5',
                           fohCount > 0 ? 'has-staff' : 'is-empty',
                         )}
-                        aria-label={isUnderstaffedHoliday
-                          ? `${holiday?.name} มีพนักงาน ${fohCount} คน จาก ${INSIGHT_THRESHOLDS.publicHolidayHeadcountLimit} คนที่ต้องการ`
+                        aria-label={isUnderstaffed
+                          ? `${holiday?.name ? `${holiday.name} ` : ''}มีพนักงาน ${fohCount} คน ต้องมีมากกว่า ${headcountLimit} คนจึงไม่แสดงการแจ้งเตือน`
                           : undefined}
                       >
-                        {holiday
-                          ? <>{fohCount} / {INSIGHT_THRESHOLDS.publicHolidayHeadcountLimit}</>
-                          : fohCount}
-                        {isUnderstaffedHoliday && (
+                        {fohCount}
+                        {isUnderstaffed && (
                           <span
                             aria-hidden="true"
                             className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-100 px-1 text-[10px] font-semibold leading-none text-amber-900 ring-1 ring-amber-300 dark:bg-amber-900/70 dark:text-amber-100 dark:ring-amber-700"

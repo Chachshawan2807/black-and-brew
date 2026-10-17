@@ -1,5 +1,5 @@
 import {
-  buildLatestCountedAtByItemId,
+  buildLatestStockChangedAtByItemId,
   LATEST_COUNT_PAGE_SIZE,
   LATEST_COUNT_SCAN_MAX_ROWS,
   shouldContinueLatestCountScan,
@@ -9,10 +9,10 @@ import { supabase } from '@/lib/supabase';
 
 let inflightLatestCountTimes: Promise<Record<string, string>> | null = null;
 
-async function loadLatestInventoryCountTimesByItemId(): Promise<Record<string, string>> {
+async function loadLatestInventoryStockChangeTimesByItemId(): Promise<Record<string, string>> {
   const sessionOk = await ensureSupabaseSession();
   if (!sessionOk) {
-    console.error('[loadLatestInventoryCountTimesByItemId] Supabase session unavailable');
+    console.error('[loadLatestInventoryStockChangeTimesByItemId] Supabase session unavailable');
     return {};
   }
 
@@ -22,9 +22,12 @@ async function loadLatestInventoryCountTimesByItemId(): Promise<Record<string, s
 
   while (true) {
     const { data, error } = await supabase
-      .from('inventory_count_verifications')
-      .select('inventory_item_id, counted_at')
-      .order('counted_at', { ascending: false })
+      .from('data_change_logs')
+      .select('entity_id, occurred_at, field_changes')
+      .eq('module', 'inventory')
+      .eq('entity_type', 'inventory_item')
+      .eq('status', 'success')
+      .order('occurred_at', { ascending: false })
       .range(offset, offset + pageSize - 1);
 
     if (error) {
@@ -37,7 +40,7 @@ async function loadLatestInventoryCountTimesByItemId(): Promise<Record<string, s
     }
 
     const page = data ?? [];
-    const pageLatest = buildLatestCountedAtByItemId(page);
+    const pageLatest = buildLatestStockChangedAtByItemId(page);
     for (const [itemId, countedAt] of Object.entries(pageLatest)) {
       if (!byItemId[itemId]) byItemId[itemId] = countedAt;
     }
@@ -59,10 +62,10 @@ async function loadLatestInventoryCountTimesByItemId(): Promise<Record<string, s
   return byItemId;
 }
 
-/** Latest counted_at per inventory item (client read via RLS). */
-export function fetchLatestInventoryCountTimesClient(): Promise<Record<string, string>> {
+/** Latest actual stock value change per inventory item (client read via RLS). */
+export function fetchLatestInventoryStockChangeTimesClient(): Promise<Record<string, string>> {
   if (!inflightLatestCountTimes) {
-    inflightLatestCountTimes = loadLatestInventoryCountTimesByItemId().finally(() => {
+    inflightLatestCountTimes = loadLatestInventoryStockChangeTimesByItemId().finally(() => {
       inflightLatestCountTimes = null;
     });
   }

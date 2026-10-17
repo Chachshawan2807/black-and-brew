@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchLatestInventoryCountTimesClient } from '@/lib/inventory-latest-count-times-client';
+import { fetchLatestInventoryStockChangeTimesClient } from '@/lib/inventory-latest-count-times-client';
 import { preloadCaptureLibraries } from '@/lib/capture-element-png';
 import { motion } from 'framer-motion';
 import { CloseIcon } from '@/components/ui/close-icon';
@@ -72,15 +72,15 @@ export default function PurchaseOrdersModal({
   exportTableId = 'blackandbrew-po-table-export',
 }: PurchaseOrdersModalProps) {
   const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
-  const [lastCountedAtByItemId, setLastCountedAtByItemId] = useState<
+  const [lastStockChangedAtByItemId, setLastStockChangedAtByItemId] = useState<
     Record<string, string>
   >({});
 
   useEffect(() => {
     let cancelled = false;
-    void fetchLatestInventoryCountTimesClient().then((data) => {
+    void fetchLatestInventoryStockChangeTimesClient().then((data) => {
       if (cancelled || !data) return;
-      setLastCountedAtByItemId(data);
+      setLastStockChangedAtByItemId(data);
     });
     return () => {
       cancelled = true;
@@ -291,13 +291,13 @@ export default function PurchaseOrdersModal({
                     isExportMode
                       ? "bg-slate-50/90 text-black/40"
                       : "sticky top-0 bg-card text-muted-foreground z-10",
-                  )}>ตรวจนับล่าสุด</th>
+                  )}>เปลี่ยนแปลงล่าสุด</th>
                 </tr>
               </thead>
               <tbody>
                 {itemsToShow.map((item, idx) => {
-                  const lastCountedAt =
-                    lastCountedAtByItemId[item.id] ?? item.last_counted_at;
+                  const lastStockChangedAt =
+                    lastStockChangedAtByItemId[item.id] ?? null;
                   return (
                   <tr
                     key={item.id}
@@ -339,8 +339,8 @@ export default function PurchaseOrdersModal({
                       "py-2 sm:py-4 text-[12px] sm:text-[13px] text-center tabular-nums",
                       isExportMode ? "text-black/40" : "text-muted-foreground",
                     )}>
-                      {lastCountedAt
-                        ? new Date(lastCountedAt).toLocaleString('th-TH', {
+                      {lastStockChangedAt
+                        ? new Date(lastStockChangedAt).toLocaleString('th-TH', {
                             dateStyle: 'short',
                             timeStyle: 'short',
                             timeZone: 'Asia/Bangkok',
@@ -384,7 +384,7 @@ export default function PurchaseOrdersModal({
         exit={fadeOverlay.exit}
         transition={fadeOverlay.transition}
         className={cn(
-          'fixed inset-0 overflow-y-auto overscroll-contain bb-smooth-scroll bg-black/20 backdrop-blur-md',
+          'fixed inset-0 overflow-hidden overscroll-none bg-black/20 backdrop-blur-md',
           INVENTORY_MODAL_Z_CLASS,
         )}
         style={modalBackdropStyle}
