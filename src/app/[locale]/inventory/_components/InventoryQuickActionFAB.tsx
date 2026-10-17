@@ -254,7 +254,7 @@ export default function InventoryQuickActionFAB() {
   }, [fabStackHidden, fabStackSuppressed, setShowHistoryModal]);
 
   useEffect(() => {
-    if (!isMounted || !isPanelRendered || !isMobile) return;
+    if (!isMounted || (!isPanelRendered && !showPurchaseOrderModal) || !isMobile) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -262,7 +262,7 @@ export default function InventoryQuickActionFAB() {
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [isMounted, isMobile, isPanelRendered]);
+  }, [isMounted, isMobile, isPanelRendered, showPurchaseOrderModal]);
 
   useEffect(() => {
     if (!isMounted) return;

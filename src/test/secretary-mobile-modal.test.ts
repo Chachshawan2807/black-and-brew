@@ -92,12 +92,26 @@ describe('secretary mobile task overlays', () => {
     expect(maintenanceBlock).not.toContain('layout="board-cards"');
   });
 
-  test('purchase orders modal from inventory uses scrollable centered shell', () => {
+  test('mobile quick action keeps the page locked while purchase orders are open', () => {
+    const fab = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+    const bodyLockEffect = fab.match(
+      /useEffect\(\(\) => \{\s*if \(!isMounted \|\| \(!isPanelRendered && !showPurchaseOrderModal\) \|\| !isMobile\) return;[\s\S]*?\}, \[isMounted, isMobile, isPanelRendered, showPurchaseOrderModal\]\);/,
+    )?.[0];
+
+    expect(bodyLockEffect).toBeTruthy();
+    expect(bodyLockEffect).toContain('showPurchaseOrderModal');
+  });
+
+  test('purchase orders modal keeps the table as the scroll region', () => {
     const modal = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/inventory/_components/PurchaseOrdersModal.tsx'),
       'utf-8',
     );
-    expect(modal).toContain('overflow-y-auto overscroll-contain bb-smooth-scroll');
+    expect(modal).toContain('overflow-auto bb-smooth-scroll bb-smooth-scroll-chain-y');
+    expect(modal).toContain('fixed inset-0 overflow-hidden overscroll-none');
     expect(modal).toContain('flex min-h-full min-w-0 items-center justify-center');
     expect(modal).toContain('getModalBackdropKeyboardAwareStyle');
     expect(modal).toContain("verticalAlign: 'center'");
