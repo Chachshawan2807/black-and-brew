@@ -31,7 +31,6 @@ export default async function BranchWithdrawPage({
       <BranchWithdrawClient
         initialItems={itemsResult.data ?? []}
         initialHistory={historyResult.success ? historyResult.data : []}
-        locale={locale}
       />
     </div>
   );

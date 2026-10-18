@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import {
   memo,
   useCallback,
@@ -12,7 +11,7 @@ import {
 } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingIcon } from '@/components/ui/loading-icon';
-import { ChevronLeft, Copy, Eye, ICON_STROKE, PackagePlus, Plus, Save, Search, Trash2 } from '@/lib/icons';
+import { Copy, Eye, ICON_STROKE, PackagePlus, Plus, Save, Search, Trash2 } from '@/lib/icons';
 import { CloseIcon } from '@/components/ui/close-icon';
 import {
   saveBranchWithdrawal,
@@ -68,7 +67,6 @@ type Item = BranchWithdrawDisplayItem;
 type Props = {
   initialItems: InventoryRealtimeItem[];
   initialHistory: BranchWithdrawHistoryRow[];
-  locale: string;
   embedded?: boolean;
   /** True while the full inventory catalog is still loading in an embedded overlay. */
   catalogLoading?: boolean;
@@ -94,11 +92,11 @@ const BRANCH_WITHDRAW_HISTORY_INITIAL_COUNT = 3;
 const DESKTOP_GRID_COLS =
   'md:grid-cols-[minmax(0,1fr)_4.25rem_4.25rem_minmax(6.75rem,8.5rem)]';
 const INPUT_LABEL_CLASS =
-  'text-center text-[10px] font-normal leading-tight text-muted-foreground md:text-xs';
+  'text-center text-[11px] font-normal leading-tight text-muted-foreground md:text-xs';
 const INPUT_FOCUS_CLASS =
   'outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 focus:bg-card bb-transition';
 const INPUT_FIELD_CLASS = cn(
-  'h-10 w-full min-w-0 rounded-xl border border-border bg-background px-1 text-center text-sm tabular-nums md:h-9 md:px-2',
+  'h-11 w-full min-w-0 rounded-xl border border-border bg-background px-1 text-center text-sm tabular-nums md:h-9 md:px-2',
   INPUT_FOCUS_CLASS,
 );
 const UNIT_INPUT_FIELD_CLASS = cn(
@@ -130,15 +128,14 @@ const DIALOG_CLOSE_BUTTON_CLASS =
   'inline-flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-xl border border-border text-foreground transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15';
 const DIALOG_SECONDARY_BUTTON_CLASS =
   'inline-flex min-h-[44px] touch-manipulation items-center justify-center rounded-xl border border-border bg-background px-4 py-2 text-sm transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15';
-const ADD_FROM_CATALOG_BAR_CLASS = 'shrink-0 pb-3';
+const ADD_FROM_CATALOG_BAR_CLASS = 'shrink-0 pb-3 max-md:pt-3';
 const COPY_ICON_BUTTON_CLASS =
   'inline-flex min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center rounded-xl border border-border bg-background p-2 text-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 disabled:cursor-not-allowed disabled:opacity-50';
 const ITEM_ROW_BADGE_CLASS =
   'inline-flex rounded-md border border-border bg-background px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground md:text-xs';
 const MANUAL_ITEM_REMOVE_BUTTON_CLASS = cn(
-  'inline-flex touch-manipulation items-center justify-center rounded-md px-2 py-0.5',
-  INVENTORY_QUICK_ACTION_COLORS.out,
-  'hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15',
+  'inline-flex h-6 w-6 shrink-0 touch-manipulation items-center justify-center rounded-md border border-border bg-background p-0 transition-colors',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15',
 );
 
 function WithdrawRowInputs({
@@ -203,7 +200,7 @@ type BranchWithdrawItemRowProps = {
   item: Item;
   row: BranchWithdrawDraftRow;
   onUpdateRow: (itemId: string, patch: Partial<BranchWithdrawDraftRow>) => void;
-  onRemoveManualItem: (itemId: string) => void;
+  onRemoveManualItem: (itemId: string, itemName: string) => void;
 };
 
 function branchWithdrawItemRowPropsEqual(
@@ -243,33 +240,33 @@ const BranchWithdrawItemRow = memo(function BranchWithdrawItemRow({
     [item.id, onUpdateRow],
   );
   const handleRemove = useCallback(
-    () => onRemoveManualItem(item.id),
+    () => onRemoveManualItem(item.id, item.name),
     [item.id, onRemoveManualItem],
   );
 
   return (
-    <article className="rounded-2xl border border-border bg-card p-3.5 transition-colors md:p-4">
-      <div className={`flex flex-col gap-3 md:grid md:items-end md:gap-x-2 ${DESKTOP_GRID_COLS}`}>
+    <article className="rounded-2xl border border-border bg-card p-3 transition-colors md:p-4">
+      <div className={`flex flex-col gap-2.5 md:grid md:items-end md:gap-x-2 ${DESKTOP_GRID_COLS}`}>
         <div className="min-w-0">
-          <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+          <div className="mb-1.5 flex min-w-0 flex-wrap items-start gap-1.5">
             <div className={ITEM_ROW_BADGE_CLASS}>
               {String(item.sort_order ?? 0).padStart(2, '0')}
             </div>
+            <p className="min-w-0 text-[15px] leading-snug text-foreground md:text-base">{item.name}</p>
             {item.isManual ? (
-              <span className={ITEM_ROW_BADGE_CLASS}>เพิ่มจากคลัง</span>
-            ) : null}
-            {item.isManual ? (
-              <button
-                type="button"
-                onClick={handleRemove}
-                className={MANUAL_ITEM_REMOVE_BUTTON_CLASS}
-                aria-label={`ลบ ${item.name} ออกจากรายการ`}
-              >
-                <Trash2 className="h-4 w-4 shrink-0" strokeWidth={ICON_STROKE} aria-hidden />
-              </button>
+              <>
+                <span className={ITEM_ROW_BADGE_CLASS}>เพิ่มจากคลัง</span>
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  className={MANUAL_ITEM_REMOVE_BUTTON_CLASS}
+                  aria-label={`ลบ ${item.name} ออกจากรายการ`}
+                >
+                  <Trash2 className="h-3.5 w-3.5 shrink-0 !text-red-700 dark:!text-red-400" strokeWidth={ICON_STROKE} aria-hidden />
+                </button>
+              </>
             ) : null}
           </div>
-          <p className="text-[15px] leading-snug text-foreground md:text-base">{item.name}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             หน่วย (สาขา 1): {item.unit || '-'}
           </p>
@@ -312,7 +309,6 @@ const BranchWithdrawItemRow = memo(function BranchWithdrawItemRow({
 export default function BranchWithdrawClient({
   initialItems,
   initialHistory,
-  locale,
   embedded = false,
   catalogLoading = false,
 }: Props) {
@@ -381,6 +377,11 @@ export default function BranchWithdrawClient({
   const previewDialogRef = useRef<HTMLDialogElement | null>(null);
   const historyLineDialogRef = useRef<HTMLDialogElement | null>(null);
   const addItemDialogRef = useRef<HTMLDialogElement | null>(null);
+  const removeManualItemDialogRef = useRef<HTMLDialogElement | null>(null);
+  const [pendingManualItemRemoval, setPendingManualItemRemoval] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [nativeDialogOpen, setNativeDialogOpen] = useState(false);
   const draftPersistSignatureRef = useRef<string | null>(null);
 
@@ -455,7 +456,8 @@ export default function BranchWithdrawClient({
       Boolean(previewDialogRef.current?.open) ||
       Boolean(saveResultDialogRef.current?.open) ||
       Boolean(historyLineDialogRef.current?.open) ||
-      Boolean(addItemDialogRef.current?.open);
+      Boolean(addItemDialogRef.current?.open) ||
+      Boolean(removeManualItemDialogRef.current?.open);
     setNativeDialogOpen(open);
   }, []);
 
@@ -472,7 +474,13 @@ export default function BranchWithdrawClient({
   }, [syncNativeDialogOpen]);
 
   useEffect(() => {
-    const refs = [previewDialogRef, saveResultDialogRef, historyLineDialogRef, addItemDialogRef];
+    const refs = [
+      previewDialogRef,
+      saveResultDialogRef,
+      historyLineDialogRef,
+      addItemDialogRef,
+      removeManualItemDialogRef,
+    ];
     const cleanups: (() => void)[] = [];
     for (const ref of refs) {
       const el = ref.current;
@@ -489,6 +497,11 @@ export default function BranchWithdrawClient({
       {
         active: nativeDialogOpen || lineMessageDialog !== null,
         dismiss: () => {
+          if (removeManualItemDialogRef.current?.open) {
+            closeDialog(removeManualItemDialogRef.current);
+            setPendingManualItemRemoval(null);
+            return;
+          }
           if (addItemDialogRef.current?.open) {
             closeDialog(addItemDialogRef.current);
             return;
@@ -640,6 +653,26 @@ export default function BranchWithdrawClient({
       return next;
     });
   }, []);
+
+  const requestManualItemRemoval = useCallback(
+    (itemId: string, itemName: string) => {
+      setPendingManualItemRemoval({ id: itemId, name: itemName });
+      openDialog(removeManualItemDialogRef.current);
+    },
+    [openDialog],
+  );
+
+  const closeManualItemRemovalDialog = useCallback(() => {
+    closeDialog(removeManualItemDialogRef.current);
+    setPendingManualItemRemoval(null);
+  }, [closeDialog]);
+
+  const confirmManualItemRemoval = useCallback(() => {
+    if (pendingManualItemRemoval) {
+      handleRemoveManualItem(pendingManualItemRemoval.id);
+    }
+    closeManualItemRemovalDialog();
+  }, [closeManualItemRemovalDialog, handleRemoveManualItem, pendingManualItemRemoval]);
 
   const handleCopyLineMessage = useCallback(async () => {
     try {
@@ -801,7 +834,7 @@ export default function BranchWithdrawClient({
                   item={item}
                   row={rows[item.id] ?? emptyDraftRow()}
                   onUpdateRow={updateRow}
-                  onRemoveManualItem={handleRemoveManualItem}
+                  onRemoveManualItem={requestManualItemRemoval}
                 />
               ))}
             </>
@@ -880,18 +913,6 @@ export default function BranchWithdrawClient({
             : 'mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col overflow-hidden'
         }
       >
-        {!embedded ? (
-          <header className="flex shrink-0 items-center justify-between pb-3 max-md:pb-2 max-md:pt-1 md:pb-4">
-            <Link
-              href={`/${locale}/inventory`}
-              className="inline-flex min-h-[44px] touch-manipulation items-center gap-1.5 rounded-xl px-1 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
-            >
-              <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
-              <span>กลับไปคลังสินค้า</span>
-            </Link>
-          </header>
-        ) : null}
-
         {addFromCatalogBar}
         <div
           className={cn(
@@ -959,6 +980,43 @@ export default function BranchWithdrawClient({
           </div>
         </div>
       </dialog>
+      </ModalPortal>
+
+      <ModalPortal>
+        <dialog
+          ref={removeManualItemDialogRef}
+          className={BRANCH_WITHDRAW_DIALOG_NARROW_CLASS}
+          aria-labelledby="branch-withdraw-remove-title"
+          onCancel={(event) => {
+            event.preventDefault();
+            closeManualItemRemovalDialog();
+          }}
+        >
+          <div className="p-4 md:p-5">
+            <h3 id="branch-withdraw-remove-title" className={DIALOG_TITLE_CLASS}>
+              ยืนยันการลบรายการ
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              ต้องการนำ “{pendingManualItemRemoval?.name ?? ''}” ออกจากรายการเบิกของสาขา 2 หรือไม่
+            </p>
+            <div className={DIALOG_FOOTER_CLASS}>
+              <button
+                type="button"
+                onClick={closeManualItemRemovalDialog}
+                className={DIALOG_SECONDARY_BUTTON_CLASS}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={confirmManualItemRemoval}
+                className="inline-flex min-h-[44px] touch-manipulation items-center justify-center rounded-xl border border-red-600/25 bg-background px-4 py-2 text-sm !text-red-700 transition-colors hover:bg-red-600/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/25 dark:!text-red-400"
+              >
+                ยืนยันลบ
+              </button>
+            </div>
+          </div>
+        </dialog>
       </ModalPortal>
 
       <ModalPortal>
