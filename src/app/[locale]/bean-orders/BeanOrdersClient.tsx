@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import {
   BEAN_ORDER_BTN_PRIMARY_LINK,
+  BEAN_ORDER_BTN_DIALOG,
   BEAN_ORDER_INPUT,
   BEAN_ORDER_LIST_CARD,
   BEAN_ORDER_LIST_GRID,
@@ -135,6 +136,7 @@ export default function BeanOrdersClient({
             type="search"
             id="bean-orders-search"
             name="bean-orders-search"
+            aria-label="ค้นหาเลขออเดอร์หรือชื่อลูกค้า"
             value={search}
             onChange={(e) => startTransition(() => setSearch(e.target.value))}
             placeholder="ค้นหาเลขออเดอร์ / ชื่อลูกค้า"
@@ -143,6 +145,7 @@ export default function BeanOrdersClient({
         </div>
         <RoundedSelect
           name="bean-orders-payment-filter"
+          aria-label="กรองตามสถานะการชำระเงิน"
           value={paymentFilter}
           onChange={(e) => setPaymentFilter(e.target.value as typeof paymentFilter)}
         >
@@ -152,20 +155,39 @@ export default function BeanOrdersClient({
         </RoundedSelect>
         <RoundedSelect
           name="bean-orders-fulfillment-filter"
+          aria-label="กรองตามสถานะการจัดส่ง"
           value={fulfillmentFilter}
           onChange={(e) => setFulfillmentFilter(e.target.value as typeof fulfillmentFilter)}
         >
           <option value="all">จัดส่ง: ทั้งหมด</option>
           <option value="pending">ยังไม่ส่ง</option>
-          <option value="shipped">ส่งแล้ว</option>
+          <option value="shipped">จัดส่งแล้ว</option>
         </RoundedSelect>
       </div>
 
       <div className={BEAN_ORDER_LIST_CARD}>
         {filtered.length === 0 ? (
-          <BeanOrderEmptyState message="ไม่พบออเดอร์" />
+          orders.length === 0 ? (
+            <BeanOrderEmptyState message="ยังไม่มีออเดอร์" />
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <BeanOrderEmptyState message="ไม่พบออเดอร์ที่ตรงกับการค้นหาหรือตัวกรอง" />
+              <button
+                type="button"
+                className={BEAN_ORDER_BTN_DIALOG}
+                onClick={() => {
+                  setSearch('');
+                  setPaymentFilter('all');
+                  setFulfillmentFilter('all');
+                }}
+              >
+                ล้างการค้นหาและตัวกรอง
+              </button>
+            </div>
+          )
         ) : (
           <ul
+            role="list"
             className={`w-full p-2 lg:p-0 lg:grid lg:[&>li:not(:last-child)]:border-b lg:[&>li:not(:last-child)]:border-border/60 ${BEAN_ORDER_LIST_GRID} lg:gap-x-0`}
           >
             <li

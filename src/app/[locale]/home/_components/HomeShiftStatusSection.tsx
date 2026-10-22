@@ -62,7 +62,7 @@ function useNowTick(enabled: boolean, clockEpochMs?: number): Date | null {
 }
 
 const SHIFT_TIME_PILL =
-  'inline-flex max-w-full items-center rounded-full border border-black/10 bg-white/60 px-2 py-0.5 text-[10px] font-normal tabular-nums tracking-wide text-black/80';
+  'inline-flex max-w-full items-center whitespace-nowrap rounded-full border border-black/10 bg-white/60 px-1.5 py-0.5 text-xs font-normal tabular-nums text-black/80';
 
 const SHIFT_STATUS_PANEL =
   'flex h-[2rem] shrink-0 w-full flex-col items-center justify-center rounded-xl border border-black/10 bg-white/55 px-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]';
@@ -84,11 +84,11 @@ function ShiftStatusEmployeeCard({
       style={row.colorStyle}
     >
       <div className="flex min-h-[1.5rem] min-w-0 items-center justify-between gap-1">
-        <p className="min-w-0 flex-1 truncate text-[0.8125rem] font-normal leading-snug tracking-tight text-black">
+        <p className="min-w-0 flex-1 whitespace-normal break-words text-xs font-normal leading-none text-black">
           {row.fullName}
         </p>
         {row.isTimedShift && row.timedWindowLabel ? (
-          <span className={cn(SHIFT_TIME_PILL, 'shrink-0 px-1.5 text-[9px]')}>
+          <span className={cn(SHIFT_TIME_PILL, 'shrink-0')}>
             {row.timedWindowLabel}
           </span>
         ) : null}
@@ -98,7 +98,7 @@ function ShiftStatusEmployeeCard({
         <div className={SHIFT_STATUS_PANEL}>
           {countdown ? (
             countdown.phase === 'ended' ? (
-              <span className="text-[11px] font-normal leading-none text-black/75">เลิกงานแล้ว</span>
+              <span className="text-xs font-normal leading-5 text-black/75">เลิกงานแล้ว</span>
             ) : (
               <span
                 className="text-[0.9375rem] font-normal leading-none tabular-nums tracking-tight text-black"

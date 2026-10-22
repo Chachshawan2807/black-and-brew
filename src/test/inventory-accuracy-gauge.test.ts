@@ -1,4 +1,7 @@
-import { describe, expect, test } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { describe, expect, test, vi } from 'vitest';
+import { AccuracyGauge } from '@/app/[locale]/inventory/accuracy/_components/AccuracyGauge';
 import {
   ACCURACY_GAUGE_ZONES,
   clampAccuracyGaugeValue,
@@ -10,6 +13,19 @@ import {
 } from '@/lib/inventory-accuracy-gauge';
 
 describe('inventory accuracy gauge', () => {
+  test('renders its accessible title without an SSR warning', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      const markup = renderToStaticMarkup(createElement(AccuracyGauge, { accuracyPct: 90 }));
+
+      expect(markup).toContain('<title>ความแม่นยำ 90%</title>');
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
   test('clamps gauge input between 0 and 100', () => {
     expect(clampAccuracyGaugeValue(-5)).toBe(0);
     expect(clampAccuracyGaugeValue(150)).toBe(100);

@@ -87,6 +87,16 @@ export default function PurchaseOrdersModal({
     };
   }, []);
 
+  useEffect(() => {
+    if (isExportMode) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isExportMode]);
+
   const viewportInsets = useVisualViewportInsets(!isExportMode);
   const modalBackdropStyle = getModalBackdropKeyboardAwareStyle({
     insets: viewportInsets,
@@ -253,44 +263,44 @@ export default function PurchaseOrdersModal({
               ? "bg-white border-black/5 overflow-hidden"
               : "flex-1 bg-card border-border overflow-auto bb-smooth-scroll bb-smooth-scroll-chain-y",
           )}>
-            <table className="w-full text-left border-collapse min-w-[600px]">
+            <table className="w-full text-left border-separate border-spacing-0 min-w-[600px]">
               <thead>
                 <tr className={isExportMode ? "border-b border-black/5" : "border-b border-border"}>
                   <th className={cn(
                     "py-2 sm:py-4 font-normal text-[12px] sm:text-[13px] w-12 text-center border-r",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40 border-black/5"
-                      : "sticky top-0 bg-card text-muted-foreground border-border z-10",
+                      : "sticky top-0 left-0 bg-card text-muted-foreground border-border z-30",
                   )}>#</th>
                   <th className={cn(
                     "py-2 sm:py-4 font-normal text-[12px] sm:text-[13px] text-left pl-3 sm:pl-4 border-r max-w-[10.5rem] w-[10.5rem]",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40 border-black/5"
-                      : "sticky top-0 bg-card text-muted-foreground border-border z-10",
+                      : "sticky top-0 left-12 bg-card text-muted-foreground border-border z-30",
                   )}>รายการ</th>
                   <th className={cn(
                     "py-2 sm:py-4 font-normal text-[12px] sm:text-[13px] text-center w-32 border-r",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40 border-black/5"
-                      : "sticky top-0 bg-card text-muted-foreground border-border z-10",
+                      : "sticky top-0 bg-card text-muted-foreground border-border z-20",
                   )}>จำนวนสั่งซื้อ</th>
                   <th className={cn(
                     "py-2 sm:py-4 font-normal text-[12px] sm:text-[13px] text-center w-24 border-r",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40 border-black/5"
-                      : "sticky top-0 bg-card text-muted-foreground border-border z-10",
+                      : "sticky top-0 bg-card text-muted-foreground border-border z-20",
                   )}>คงเหลือ</th>
                   <th className={cn(
                     "py-2 sm:py-4 font-normal text-[12px] sm:text-[13px] w-24 text-center border-r",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40 border-black/5"
-                      : "sticky top-0 bg-card text-muted-foreground border-border z-10",
+                      : "sticky top-0 bg-card text-muted-foreground border-border z-20",
                   )}>หน่วย</th>
                   <th className={cn(
                     "py-2 sm:py-4 font-normal text-[12px] sm:text-[13px] w-32 text-center",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40"
-                      : "sticky top-0 bg-card text-muted-foreground z-10",
+                      : "sticky top-0 bg-card text-muted-foreground z-20",
                   )}>เปลี่ยนแปลงล่าสุด</th>
                 </tr>
               </thead>
@@ -302,7 +312,7 @@ export default function PurchaseOrdersModal({
                   <tr
                     key={item.id}
                     className={cn(
-                      "border-b last:border-0 transition-colors",
+                      "group border-b last:border-0 transition-colors",
                       isExportMode
                         ? "border-black/5 hover:bg-[#000000]/5"
                         : "border-border hover:bg-muted/50",
@@ -311,10 +321,12 @@ export default function PurchaseOrdersModal({
                     <td className={cn(
                       "py-2 sm:py-4 text-[13px] sm:text-[14px] text-center border-r",
                       isExportMode ? "text-black/30 border-black/5" : "text-muted-foreground border-border",
+                      !isExportMode && "sticky left-0 z-10 bg-card group-hover:bg-muted/50",
                     )}>{idx + 1}</td>
                     <td className={cn(
                       "py-2 sm:py-4 text-[14px] sm:text-[15px] font-normal text-left pl-3 sm:pl-4 border-r max-w-[10.5rem] w-[10.5rem] truncate",
                       isExportMode ? "text-black border-black/5" : "text-foreground border-border",
+                      !isExportMode && "sticky left-12 z-10 bg-card group-hover:bg-muted/50",
                     )}>{item.name}</td>
                     <td className={cn(
                       "py-2 sm:py-4 text-[14px] sm:text-[16px] text-center tabular-nums font-normal border-r",

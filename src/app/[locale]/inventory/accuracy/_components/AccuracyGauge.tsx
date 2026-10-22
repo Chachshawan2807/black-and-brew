@@ -59,7 +59,7 @@ export function AccuracyGauge({ accuracyPct, className = '' }: AccuracyGaugeProp
       role="img"
       aria-label={`ความแม่นยำ ${value}% ระดับ${zone.label}`}
     >
-      <title>ความแม่นยำ {value}%</title>
+      <title>{`ความแม่นยำ ${value}%`}</title>
       <defs>
         <filter id="accuracy-gauge-shadow" x="-20%" y="-20%" width="140%" height="140%">
           <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#0f172a" floodOpacity="0.18" />

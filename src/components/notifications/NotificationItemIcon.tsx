@@ -20,7 +20,10 @@ import {
 import { cn } from '@/lib/utils';
 import type { InventoryNotification } from '@/lib/notification-types';
 import { resolveNotificationDisplayIcon } from '@/lib/notification-display-icon';
-import { BB_ICON_BADGE_OUTLINE } from '@/lib/ui-outlined-tokens';
+import {
+  BB_ICON_BADGE_OUTLINE,
+  BB_ICON_BADGE_OUTLINE_PASTEL,
+} from '@/lib/ui-outlined-tokens';
 
 type NotificationItemIconProps = {
   item: InventoryNotification;
@@ -61,7 +64,8 @@ export function NotificationItemIcon({
       className={cn(
         'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border',
         useHighPriority ? highPriorityFallbackClass : containerClass,
-        !useHighPriority && BB_ICON_BADGE_OUTLINE,
+        !useHighPriority &&
+          (isPastelKind ? BB_ICON_BADGE_OUTLINE_PASTEL : BB_ICON_BADGE_OUTLINE),
         className,
       )}
     >

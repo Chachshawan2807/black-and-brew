@@ -37,7 +37,7 @@ export function resolvePendingBeanOrderStatusLabel(
 
   const shortLabels = formatBeanOrderIncompleteStatusLines(order).map((line) => {
     if (line.includes('ค้างชำระ')) return 'ค้างชำระเงิน';
-    if (line.includes('รอจัดส่ง') || line.includes('ส่งแล้ว')) return 'ค้างจัดส่ง';
+    if (line.includes('รอจัดส่ง') || line.includes('ส่งแล้ว') || line.includes('จัดส่งแล้ว')) return 'ค้างจัดส่ง';
     return line;
   });
 

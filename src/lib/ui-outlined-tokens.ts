@@ -39,9 +39,13 @@ export const BB_BTN_ICON =
 
 export const BB_BTN_ICON_ACTIVE = 'text-foreground bg-muted/35 border-border';
 
-/** Black outline + stroke glyph for icon badges and nested icon frames */
+/** Theme-aware outline + glyph for icon badges on standard surfaces */
 export const BB_ICON_BADGE_OUTLINE =
-  'border-black/75 text-black [&_svg]:text-black dark:border-black/80 dark:text-black dark:[&_svg]:text-black';
+  'border-black/75 text-black [&_svg]:text-black dark:border-border dark:text-foreground dark:[&_svg]:text-foreground';
+
+/** Black outline + glyph for icon badges placed on pastel surfaces */
+export const BB_ICON_BADGE_OUTLINE_PASTEL =
+  'border-black/75 text-black [&_svg]:text-black dark:border-black/75 dark:text-black dark:[&_svg]:text-black';
 
 /** Icon frame nested inside labeled buttons (toolbar pattern) */
 export const BB_ICON_FRAME =

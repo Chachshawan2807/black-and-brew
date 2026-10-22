@@ -22,8 +22,11 @@ describe('thai postal lookup', () => {
     });
   });
 
-  test('returns empty list for incomplete postal code', () => {
-    expect(lookupThaiPostalAreas('502')).toEqual([]);
+  test('returns matching area options while typing an incomplete postal code', () => {
+    const areas = lookupThaiPostalAreas('502');
+
+    expect(areas.length).toBeGreaterThan(0);
+    expect(areas.every((area) => area.postalCode.startsWith('502'))).toBe(true);
   });
 
   test('formats a full Thai address line', () => {

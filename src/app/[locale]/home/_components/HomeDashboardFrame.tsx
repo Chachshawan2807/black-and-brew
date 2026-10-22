@@ -40,7 +40,8 @@ export function HomeDashboardFrame({
       <div
         className={cn(
           'space-y-4',
-          desktopSplit && 'md:grid md:grid-cols-2 md:items-start md:gap-4 md:space-y-0',
+          // Keep mobile and tablet stacked; split from 1024px when the sidebar is collapsed.
+          desktopSplit && 'lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0',
         )}
       >
         {children}

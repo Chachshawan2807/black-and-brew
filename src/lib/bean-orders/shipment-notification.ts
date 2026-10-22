@@ -50,7 +50,7 @@ export function buildBeanOrderShippedCopy(
   locale = 'th',
 ): { title: string; summary: string; fieldSummary: string } {
   const isTh = locale === 'th';
-  const title = isTh ? 'ส่งแล้ว' : 'Shipped';
+  const title = isTh ? 'จัดส่งแล้ว' : 'Shipped';
   const summary = formatBeanOrderShippedSummary(input.customerName, input.trackingNumber, locale);
   return { title, summary, fieldSummary: summary };
 }
@@ -164,7 +164,7 @@ export function formatBeanOrderShippedNotification(
       ? meta.notificationLogId
       : beanOrderShippedNotificationLogId(row.entity_id ?? row.id);
 
-  const title = typeof meta.title === 'string' ? meta.title : isTh ? 'ส่งแล้ว' : 'Shipped';
+  const title = isTh ? 'จัดส่งแล้ว' : 'Shipped';
   const customerName = typeof meta.customerName === 'string' ? meta.customerName : null;
   const trackingNumber =
     typeof meta.trackingNumber === 'string'

@@ -16,9 +16,11 @@ export function normalizeThaiPostalCode(value: string): string {
 
 export function lookupThaiPostalAreas(postalCode: string): ThaiPostalAreaOption[] {
   const normalized = normalizeThaiPostalCode(postalCode);
-  if (normalized.length !== 5) return [];
+  if (!normalized) return [];
 
-  const rows = searchAddress(normalized, 100).filter((row) => row.postalCode === normalized);
+  const rows = searchAddress(normalized, 100).filter((row) =>
+    row.postalCode.startsWith(normalized),
+  );
   const seen = new Set<string>();
 
   return rows.flatMap((row) => {

@@ -14,6 +14,8 @@ import {
   BB_BTN_OUTLINE_PRIMARY,
   BB_ICON_BADGE_BASE,
   BB_ICON_BADGE_FILL,
+  BB_ICON_BADGE_OUTLINE,
+  BB_ICON_BADGE_OUTLINE_PASTEL,
 } from '@/lib/ui-outlined-tokens';
 
 /** Toolbar action pill (44px touch target, token surfaces). */
@@ -36,7 +38,7 @@ export const SCHEDULE_MODAL_PANEL_SHEET =
   'fixed bottom-0 left-0 right-0 rounded-t-[28px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl md:relative md:rounded-2xl md:max-w-sm md:max-h-none md:translate-y-0 border border-border';
 
 export const SCHEDULE_FORM_LABEL =
-  'text-[11px] font-normal text-muted-foreground uppercase tracking-[0.12em] px-0.5 block';
+  'text-xs font-normal text-muted-foreground px-0.5 block';
 
 export const SCHEDULE_FIELD_INPUT =
   'w-full h-11 bg-background border border-border rounded-2xl px-4 text-base md:text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/10 focus:border-foreground/30 bb-transition';
@@ -301,6 +303,7 @@ export function ScheduleIconBadge({
         BB_ICON_BADGE_BASE,
         size === 'lg' ? 'h-11 w-11' : 'h-9 w-9',
         SCHEDULE_ICON_TONE_CLASS[tone],
+        tone === 'calendar' ? BB_ICON_BADGE_OUTLINE_PASTEL : BB_ICON_BADGE_OUTLINE,
         className,
       )}
       aria-hidden

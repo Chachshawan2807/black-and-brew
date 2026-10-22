@@ -44,30 +44,24 @@ interface MenuProps {
   isOpen: boolean | undefined;
 }
 
-function menuItemBadgeClass(isOpen: boolean | undefined) {
+function menuItemBadgeClass(isOpen: boolean | undefined, collapsed = false) {
   return cn(
     'inline-flex min-w-[1.25rem] items-center justify-center rounded-full border border-foreground/80 bg-card px-1.5 py-0.5 text-[10px] tabular-nums text-foreground shrink-0',
     isOpen !== false && 'ml-auto',
+    collapsed && 'pointer-events-none absolute -right-3 top-1/2 z-10 -translate-y-1/2',
   );
 }
 
-function collapsedMenuButtonClass(isOpen: boolean | undefined, hasBadge: boolean) {
+function collapsedMenuButtonClass(isOpen: boolean | undefined) {
   if (isOpen !== false) {
     return 'flex-1 w-full justify-start';
   }
-  const collapsedBase = 'mx-auto flex-none gap-0 px-0';
-  if (hasBadge) {
-    return cn(
-      collapsedBase,
-      'h-10 w-auto min-w-10 max-w-full justify-center gap-1 px-1.5',
-    );
-  }
-  return cn(collapsedBase, 'size-10 justify-center');
+  return 'relative mx-auto size-10 min-w-10 flex-none justify-center gap-0 px-0';
 }
 
 function collapsedFooterButtonClass(isOpen: boolean | undefined) {
   if (isOpen === false) {
-    return 'size-10 mx-auto justify-center gap-0 px-0';
+    return 'h-10 w-10 min-w-10 flex-none mx-auto justify-center gap-0 px-0';
   }
   return 'justify-start';
 }
@@ -112,11 +106,11 @@ function StaticMenuItem({
               variant={active ? 'secondary' : 'ghost'}
               className={cn(
                 'h-10 font-normal antialiased',
-                collapsedMenuButtonClass(isOpen, hasBadge),
+                collapsedMenuButtonClass(isOpen),
               )}
               asChild
             >
-              <NavPreloadLink href={href} onClick={onLinkClick}>
+              <NavPreloadLink href={href} aria-label={label} onClick={onLinkClick}>
                 <span className={cn('text-foreground shrink-0', isOpen === false ? '' : 'mr-4')}>
                   <Icon size={18} strokeWidth={1.75} />
                 </span>
@@ -126,7 +120,7 @@ function StaticMenuItem({
                   </p>
                 ) : null}
                 {hasBadge ? (
-                  <span className={menuItemBadgeClass(isOpen)}>
+                  <span className={menuItemBadgeClass(isOpen, isOpen === false)}>
                     {menu.badgeCount! > 99 ? '99+' : menu.badgeCount}
                   </span>
                 ) : null}
@@ -204,7 +198,7 @@ function SortableMenuItem({
               className="h-10 font-normal antialiased flex-1 justify-start"
               asChild
             >
-              <NavPreloadLink href={href} onClick={onLinkClick}>
+              <NavPreloadLink href={href} aria-label={label} onClick={onLinkClick}>
                 <span className="mr-4 text-foreground">
                   <Icon size={18} strokeWidth={1.75} />
                 </span>
@@ -403,7 +397,9 @@ function MenuWithSearchParams({ isOpen }: MenuProps) {
       {/* Theme, Settings & Logout */}
       <div className={cn(
         'w-full pt-4 pb-[calc(0.5rem+env(safe-area-inset-bottom))] border-t border-black/5 dark:border-white/10 mt-auto space-y-2',
-        isOpen === false ? 'overflow-hidden px-0' : 'px-2',
+        isOpen === false
+          ? 'overflow-hidden px-0 flex flex-col items-center'
+          : 'px-2',
       )}>
         <SidebarThemeToggle locale={locale} isOpen={isOpen} />
         <TooltipProvider disableHoverableContent>
@@ -418,7 +414,11 @@ function MenuWithSearchParams({ isOpen }: MenuProps) {
                 )}
                 asChild
               >
-                <NavPreloadLink href={`/${locale}/settings`} onClick={handleLinkClick}>
+                <NavPreloadLink
+                  href={`/${locale}/settings`}
+                  aria-label={locale === 'th' ? 'ตั้งค่า' : 'Settings'}
+                  onClick={handleLinkClick}
+                >
                   <span className={cn(isOpen === false ? '' : 'mr-4')}>
                     <Settings2 size={18} strokeWidth={1.75} />
                   </span>
@@ -442,6 +442,7 @@ function MenuWithSearchParams({ isOpen }: MenuProps) {
             <TooltipTrigger asChild>
               <Button
                 onClick={() => void performClientLogout()}
+                aria-label={locale === 'th' ? 'ออกจากระบบ' : 'Logout'}
                 variant="outline"
                 className={cn(
                   'h-10 rounded-xl border border-red-500/30 bg-card text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 font-normal antialiased w-full',

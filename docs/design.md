@@ -66,11 +66,12 @@ Pastel hex backgrounds (shift types, inventory quick actions) **ไม่เป�
 ### Font Stack
 
 ```css
-font-family: 'Sarabun', 'Inter', system-ui, sans-serif;
+font-family: 'Prompt', 'IBM Plex Sans Thai', 'Inter', system-ui, sans-serif;
 ```
 
-- **Sarabun** Primary font สำหรับ Thai text metrics
-- **Inter** Fallback สำหรับ Latin characters
+- **Prompt** Primary font สำหรับข้อความภาษาไทยและละติน
+- **IBM Plex Sans Thai** Fallback สำหรับ glyph ภาษาไทยที่ Prompt ไม่มี
+- **Inter** Fallback สำหรับ glyph ละตินที่ Prompt และ IBM Plex ไม่มี
 
 ### Sizes
 

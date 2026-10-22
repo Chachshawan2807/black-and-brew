@@ -16,14 +16,14 @@ export function SidebarToggle({ isOpen, setIsOpen }: SidebarToggleProps) {
       className={cn(
         "invisible lg:visible absolute z-[130] shrink-0 top-1/2 -translate-y-1/2",
         isOpen === false
-          ? "left-full ml-1.5"
+          ? "left-full -ml-1.5"
           : "right-0",
       )}
     >
       <HintTooltip tip={isOpen === false ? "ขยายเมนูด้านข้าง" : "ย่อเมนูด้านข้าง"} side="right">
         <Button
           onClick={() => setIsOpen?.()}
-          className="rounded-full h-7 w-7 min-h-0 min-w-0 p-0 bg-card border border-border bb-shadow-sm hover:bg-muted dark:hover:bg-muted/80 bb-transition text-foreground"
+          className="rounded-full h-11 w-11 min-h-11 min-w-11 p-0 bg-card border border-border bb-shadow-sm hover:bg-muted dark:hover:bg-muted/80 bb-transition text-foreground"
           variant="ghost"
           size="icon"
           aria-label={isOpen === false ? "ขยายเมนูด้านข้าง" : "ย่อเมนูด้านข้าง"}

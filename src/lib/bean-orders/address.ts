@@ -256,6 +256,37 @@ export function formatAddressProfileLabel(value: ThaiPostalAddressValue): string
   return parts.join(BEAN_ORDER_FIELD_SEPARATOR) || value.name.trim() || 'ที่อยู่';
 }
 
+export function formatBeanOrderDetailAddress(
+  addressLine: string,
+  province?: string | null,
+  postalCode?: string | null,
+): string {
+  const normalizedProvince = province?.trim() ?? '';
+  const normalizedPostalCode = normalizeThaiPostalCode(postalCode ?? '');
+  let baseAddress = addressLine.trim();
+  let previousAddress: string;
+  do {
+    previousAddress = baseAddress;
+    if (normalizedPostalCode) {
+      baseAddress = baseAddress.replace(
+        new RegExp(`(?:^|\\s)${escapeRegExp(normalizedPostalCode)}\\s*$`),
+        '',
+      ).trim();
+    }
+    if (normalizedProvince) {
+      baseAddress = baseAddress.replace(
+        new RegExp(
+          `(?:^|\\s)(?:(?:จ\\.?|จังหวัด)\\s*)?${escapeRegExp(normalizedProvince)}\\s*$`,
+          'i',
+        ),
+        '',
+      ).trim();
+    }
+  } while (baseAddress !== previousAddress);
+
+  return [baseAddress, normalizedProvince, normalizedPostalCode].filter(Boolean).join(' ');
+}
+
 /** สรุปปลายทางจัดส่งสำหรับรายการออเดอร์ (จังหวัด) */
 export function formatOrderDeliveryDestination(options: {
   recipientAddress: string;

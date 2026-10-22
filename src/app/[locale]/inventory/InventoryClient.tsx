@@ -353,10 +353,10 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
       </div>
 
       {/* Card Body: Stats Grid */}
-      <div className="grid grid-cols-6 gap-1 pt-0.5">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 pt-0.5">
         {/* Stock */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
+          <span className="text-xs text-muted-foreground font-normal text-center whitespace-normal break-words leading-5">
             {stockCol?.label || 'คงเหลือ'}
           </span>
           {stockCol && (
@@ -375,7 +375,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
 
         {/* Order Qty (Computed Read-only) */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
+          <span className="text-xs text-muted-foreground font-normal text-center whitespace-normal break-words leading-5">
             {orderQtyCol?.label || 'สั่งซื้อ'}
           </span>
           {orderQtyCol && (
@@ -395,7 +395,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
 
         {/* Order Point */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
+          <span className="text-xs text-muted-foreground font-normal text-center whitespace-normal break-words leading-5">
             {orderPointCol?.label || 'จุดสั่ง'}
           </span>
           {orderPointCol && (
@@ -414,7 +414,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
 
         {/* Target Stock */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
+          <span className="text-xs text-muted-foreground font-normal text-center whitespace-normal break-words leading-5">
             {targetStockCol?.label || 'ต้องมี'}
           </span>
           {targetStockCol && (
@@ -433,7 +433,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
 
         {/* Unit */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
+          <span className="text-xs text-muted-foreground font-normal text-center whitespace-normal break-words leading-5">
             {unitCol?.label || 'หน่วย'}
           </span>
           {unitCol && (
@@ -452,7 +452,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
 
         {/* Source */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
+          <span className="text-xs text-muted-foreground font-normal text-center whitespace-normal break-words leading-5">
             {sourceCol?.label || 'ช่องทาง'}
           </span>
           {sourceCol && (
@@ -573,10 +573,10 @@ const MobileSortableRow = React.memo(({
       </div>
 
       {/* Card Body: Single Row Grid */}
-      <div className="grid grid-cols-6 gap-1 pt-1 min-w-0 overflow-hidden">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 pt-1 min-w-0">
         {/* Stock */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">คงเหลือ</span>
+          <span className="text-xs text-muted-foreground font-normal text-center whitespace-normal break-words leading-5">คงเหลือ</span>
           <MobileEditableCell
             item={item}
             col={stockCol}
@@ -593,7 +593,7 @@ const MobileSortableRow = React.memo(({
 
         {/* Order Qty (Computed / Read-only) */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">สั่งซื้อ</span>
+          <span className="text-xs text-muted-foreground font-normal text-center whitespace-normal break-words leading-5">สั่งซื้อ</span>
           {orderQtyCol && (
             <MobileEditableCell
               item={item}
@@ -614,7 +614,7 @@ const MobileSortableRow = React.memo(({
 
         {/* Order Point */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">จุดสั่ง</span>
+          <span className="text-xs text-muted-foreground font-normal text-center whitespace-normal break-words leading-5">จุดสั่ง</span>
           <MobileEditableCell
             item={item}
             col={orderPointCol}
@@ -628,7 +628,7 @@ const MobileSortableRow = React.memo(({
 
         {/* Target Stock */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">ต้องมี</span>
+          <span className="text-xs text-muted-foreground font-normal text-center whitespace-normal break-words leading-5">ต้องมี</span>
           <MobileEditableCell
             item={item}
             col={targetStockCol}
@@ -642,7 +642,7 @@ const MobileSortableRow = React.memo(({
 
         {/* Unit */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">หน่วย</span>
+          <span className="text-xs text-muted-foreground font-normal text-center whitespace-normal break-words leading-5">หน่วย</span>
           <input
             type="text"
             name={getInventoryCellInputName(item.id, 'unit')}
@@ -659,7 +659,7 @@ const MobileSortableRow = React.memo(({
 
         {/* Source */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">ช่องทาง</span>
+          <span className="text-xs text-muted-foreground font-normal text-center whitespace-normal break-words leading-5">ช่องทาง</span>
           <input
             type="text"
             name={getInventoryCellInputName(item.id, 'source')}

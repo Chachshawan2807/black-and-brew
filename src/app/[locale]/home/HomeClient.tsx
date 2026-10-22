@@ -53,6 +53,7 @@ import {
 } from '@/lib/perf/home-board-perf';
 import type { SecretaryTask } from '@/lib/secretary/types';
 import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
+import { EspressoShotTimer } from './_components/EspressoShotTimer';
 
 const SecretaryTaskOverlay = dynamic(
   () => import('./_components/SecretaryTaskOverlay'),
@@ -385,6 +386,7 @@ export function HomeTaskBoard({
               เพิ่มงาน
             </button>
           </HintTooltip>
+          <EspressoShotTimer locale={locale} />
         </div>
         {consolidatedAllTasks.length > 0 ? (
           <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">

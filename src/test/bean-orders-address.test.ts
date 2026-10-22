@@ -3,6 +3,7 @@ import {
   dedupeAddressProfiles,
   finalizeCustomerAddress,
   formatAddressProfileLabel,
+  formatBeanOrderDetailAddress,
   formatOrderDeliveryDestination,
   parseThaiPostalAddressLine,
 } from '@/lib/bean-orders/address';
@@ -72,6 +73,16 @@ describe('bean order address helpers', () => {
         recipientPostalCode: '21110',
       }),
     ).toBe('จ.ระยอง');
+  });
+
+  test('formats detail address with province and postal code only once', () => {
+    expect(
+      formatBeanOrderDetailAddress(
+        '99/5 หมู่ 1 ระยอง 21210 ระยอง 21210',
+        'ระยอง',
+        '21210',
+      ),
+    ).toBe('99/5 หมู่ 1 ระยอง 21210');
   });
 
   test('strips postal area fields from address line when structured fields are populated', () => {

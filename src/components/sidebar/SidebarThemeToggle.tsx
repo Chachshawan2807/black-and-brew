@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Check } from '@/lib/icons';
+import { Sun, Moon } from '@/lib/icons';
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -10,18 +10,6 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-
-type ThemeValue = "light" | "dark";
-
-const THEME_OPTIONS: {
-  value: ThemeValue;
-  icon: typeof Sun;
-  labelTh: string;
-  labelEn: string;
-}[] = [
-  { value: "light", icon: Sun, labelTh: "สว่าง", labelEn: "Light" },
-  { value: "dark", icon: Moon, labelTh: "มืด", labelEn: "Dark" },
-];
 
 interface SidebarThemeToggleProps {
   locale: string;
@@ -45,104 +33,69 @@ export default function SidebarThemeToggle({
     return (
       <div
         className={cn(
-          "rounded-2xl bg-muted/40 animate-pulse",
-          isOpen === false ? "h-10 w-10 mx-auto" : "h-16 w-full",
+          "rounded-full bg-muted/40 animate-pulse",
+          isOpen === false ? "h-11 w-14 mx-auto" : "h-11 w-full",
         )}
         aria-hidden
       />
     );
   }
 
-  const activeTheme: ThemeValue =
+  const activeTheme =
     theme === "dark" || (theme === "system" && resolvedTheme === "dark")
       ? "dark"
       : "light";
+  const isDark = activeTheme === "dark";
+  const nextThemeLabel = isDark
+    ? isTh ? "สว่าง" : "light"
+    : isTh ? "มืด" : "dark";
+  const switchLabel = isTh
+    ? `สลับเป็นธีม${nextThemeLabel}`
+    : `Switch to ${nextThemeLabel} theme`;
 
-  const renderOption = (
-    { value, icon: Icon, labelTh, labelEn }: (typeof THEME_OPTIONS)[number],
-    compact: boolean,
-  ) => {
-    const isActive = activeTheme === value;
-    const previewDark = value === "dark";
-    const label = isTh ? labelTh : labelEn;
-
-    const button = (
-      <button
-        key={value}
-        type="button"
-        role="radio"
-        aria-checked={isActive}
-        aria-label={label}
-        onClick={() => setTheme(value)}
-        className={cn(
-          "relative bb-transition touch-manipulation active:scale-[0.98]",
-          compact
-            ? cn(
-                "flex h-10 w-10 items-center justify-center rounded-xl border",
-                isActive
-                  ? "border-foreground/20 bg-muted"
-                  : "border-border/60 hover:bg-muted/60",
-              )
-            : cn(
-                "flex flex-1 flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-2 min-h-[64px]",
-                isActive
-                  ? "border-black/15 bg-black/[0.06] dark:border-white/20 dark:bg-white/10"
-                  : "border-border/60 bg-card hover:bg-black/[0.04] dark:border-white/10 dark:hover:bg-white/5",
-              ),
-        )}
-      >
-        <span
-          className={cn(
-            "flex items-center justify-center rounded-full bb-transition",
-            compact ? "h-8 w-8" : "h-8 w-8",
-            previewDark
-              ? "bg-[#2a2a28] text-[#f5f4e8]"
-              : "bg-[#f7f5e8] text-[#1a1a1a] border border-black/8",
-          )}
-        >
-          <Icon size={15} strokeWidth={1.75} />
-        </span>
-        {!compact && (
-          <span className="text-[13px] font-normal leading-normal text-foreground/85">
-            {label}
-          </span>
-        )}
-        {isActive && !compact && (
-          <Check
-            size={11}
-            strokeWidth={2.5}
-            className="absolute top-2 right-2 text-foreground/50"
-            aria-hidden
-          />
-        )}
-      </button>
-    );
-
-    if (!compact) return button;
-
-    return (
-      <TooltipProvider disableHoverableContent key={value}>
-        <Tooltip delayDuration={100}>
-          <TooltipTrigger asChild>{button}</TooltipTrigger>
-          <TooltipContent side="right">{label}</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  };
-
-  return (
-    <div
-      role="radiogroup"
-      aria-label={isTh ? "เลือกธีม" : "Choose theme"}
+  const control = (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={isDark}
+      aria-label={switchLabel}
+      onClick={() => setTheme(activeTheme === 'dark' ? 'light' : 'dark')}
       className={cn(
+        "relative flex touch-manipulation items-center bb-transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:active:scale-100",
         isOpen === false
-          ? "flex flex-col items-center gap-1"
-          : "flex gap-2 w-full",
+          ? "mx-auto size-10 min-w-10 flex-none justify-center gap-0 rounded-xl border border-border/60 bg-card p-0 hover:bg-muted/60"
+          : "h-11 w-full justify-between rounded-xl border border-border/60 bg-card px-3 text-foreground hover:bg-muted/40",
       )}
     >
-      {THEME_OPTIONS.map((option) =>
-        renderOption(option, isOpen === false),
+      {isOpen !== false && (
+        <span className="text-[13px] font-normal text-foreground">
+          {isTh ? `ธีม${isDark ? 'มืด' : 'สว่าง'}` : `${isDark ? 'Dark' : 'Light'} theme`}
+        </span>
       )}
-    </div>
+      <span
+        data-theme-icon-stage
+        data-theme={activeTheme}
+        aria-hidden
+        className="theme-toggle-icon-stage"
+      >
+        <span data-theme-icon="sun" className="theme-toggle-icon theme-toggle-icon-sun">
+          <Sun size={17} strokeWidth={1.75} className="text-amber-700 dark:text-amber-300" />
+        </span>
+        <span data-theme-icon="moon" className="theme-toggle-icon theme-toggle-icon-moon">
+          <Moon size={17} strokeWidth={1.75} className="text-foreground" />
+        </span>
+      </span>
+    </button>
+  );
+
+  if (isOpen !== false) return control;
+
+  return (
+    <TooltipProvider disableHoverableContent>
+      <Tooltip delayDuration={100}>
+        <TooltipTrigger asChild>{control}</TooltipTrigger>
+        <TooltipContent side="right">{switchLabel}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

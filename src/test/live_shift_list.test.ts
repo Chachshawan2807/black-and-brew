@@ -26,4 +26,17 @@ describe('LiveShiftList realtime strategy', () => {
     const hookSource = await fs.readFile(hookPath, 'utf8');
     expect(hookSource).toContain('bb-shifts-shared');
   });
+
+  it('keeps staff summary cards visible on the first painted frame', async () => {
+    const fs = await import('node:fs/promises');
+    const path = await import('node:path');
+    const filePath = path.join(
+      process.cwd(),
+      'src/app/[locale]/dashboard/_components/LiveShiftList.tsx'
+    );
+    const source = await fs.readFile(filePath, 'utf8');
+
+    expect(source).toContain('initial={false}');
+    expect(source).not.toContain('relative opacity-50');
+  });
 });

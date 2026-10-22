@@ -13,6 +13,7 @@ import {
 import {
   getNotificationPermissionState,
   requestNotificationPermission } from '@/lib/pwa-notification-bridge';
+import type { NotificationPermissionState } from '@/lib/pwa-notification-bridge';
 import { getPushDiagnostics } from '@/app/actions/push-actions';
 import {
   buildPushRegistrationSupportBundle,
@@ -33,7 +34,10 @@ import {
   syncPushPrefsToServer,
   warmPushRegistrationStack,
   wantsPushRegistration } from '@/lib/push-subscription-client';
-import type { NotificationPreferences } from '@/lib/notification-types';
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  type NotificationPreferences,
+} from '@/lib/notification-types';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import {
   SETTINGS_BTN_PRIMARY,
@@ -91,8 +95,9 @@ function ToggleRow({
 export default function NotificationPreferencesSection({
   locale }: NotificationPreferencesSectionProps) {
   const isTh = locale === 'th';
-  const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPreferences());
-  const [permission, setPermission] = useState(() => getNotificationPermissionState());
+  const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
+  const [permission, setPermission] = useState<NotificationPermissionState>('unsupported');
+  const [prefsHydrated, setPrefsHydrated] = useState(false);
   const [devicePushState, setDevicePushState] = useState<'none' | 'local_only' | 'server'>('none');
   const [registering, setRegistering] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
@@ -105,6 +110,7 @@ export default function NotificationPreferencesSection({
     thisDeviceRegistered: boolean;
   } | null>(null);
   const prefsHydratedRef = useRef(false);
+  const deviceStateInitializedRef = useRef(false);
   const skipNextAutomaticPrefsSyncRef = useRef(false);
   const wantsPush = wantsPushRegistration(prefs);
 
@@ -129,26 +135,39 @@ export default function NotificationPreferencesSection({
   }, [isTh, locale, prefs]);
 
   useEffect(() => {
-    if (!prefsHydratedRef.current) {
-      prefsHydratedRef.current = true;
-      warmPushRegistrationStack();
-      schedulePushSubscriptionMaintenance(locale, { immediate: true });
-      void refreshDeviceState();
-      const cancelRetry = scheduleIdleWork(() => {
-        void refreshDeviceState();
-      }, { timeout: 900 });
-      return () => {
-        cancelRetry();
-      };
-    }
+    const loadedPrefs = loadNotificationPreferences();
+    setPrefs(loadedPrefs);
+    setPermission(getNotificationPermissionState());
+    setPrefsHydrated(true);
+  }, []);
 
+  useEffect(() => {
+    if (!prefsHydrated || deviceStateInitializedRef.current) return;
+    deviceStateInitializedRef.current = true;
+    warmPushRegistrationStack();
+    schedulePushSubscriptionMaintenance(locale, { immediate: true });
+    void refreshDeviceState();
+    const cancelRetry = scheduleIdleWork(() => {
+      void refreshDeviceState();
+    }, { timeout: 900 });
+    return () => {
+      cancelRetry();
+    };
+  }, [prefsHydrated, locale, refreshDeviceState]);
+
+  useEffect(() => {
+    if (!prefsHydrated) return;
     saveNotificationPreferences(prefs);
     if (skipNextAutomaticPrefsSyncRef.current) {
       skipNextAutomaticPrefsSyncRef.current = false;
       return;
     }
+    if (!prefsHydratedRef.current) {
+      prefsHydratedRef.current = true;
+      return;
+    }
     void syncPushPrefsToServer(prefs, locale).then(() => refreshDeviceState());
-  }, [prefs, locale, refreshDeviceState]);
+  }, [prefs, prefsHydrated, locale, refreshDeviceState]);
 
   useEffect(() => {
     const onRegistrationUpdated = () => {

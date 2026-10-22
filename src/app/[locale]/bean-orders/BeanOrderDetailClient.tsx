@@ -31,6 +31,7 @@ import {
 } from '@/lib/bean-orders/shipment-persist';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
 import { formatBeanOrderStatusHistoryLine } from '@/lib/bean-orders/history-display';
+import { formatBeanOrderDetailAddress } from '@/lib/bean-orders/address';
 import { PaymentSlipViewer } from './_components/PaymentSlipViewer';
 import { BeanOrderShippingFields } from './_components/BeanOrderShippingFields';
 import {
@@ -166,7 +167,11 @@ export default function BeanOrderDetailClient({
 
   async function handleRevertPayment() {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
-    if (!confirm('เปลี่ยนสถานะเป็นรอชำระ?')) return;
+    if (
+      !confirm(
+        `ยกเลิกการยืนยันชำระเงินของออเดอร์ ${order.orderNo} หรือไม่?\nสถานะจะกลับเป็นรอชำระและสามารถยืนยันใหม่ได้`,
+      )
+    ) return;
     setBusy(true);
     const result = await revertBeanOrderPayment(order.id, locale);
     setBusy(false);
@@ -348,10 +353,11 @@ export default function BeanOrderDetailClient({
             {order.recipientPhone ? <span className="text-muted-foreground"> / {order.recipientPhone}</span> : null}
           </p>
           <p className="text-muted-foreground leading-snug">
-            {order.recipientAddress}
-            {order.recipientProvince || order.recipientPostalCode
-              ? ` ${[order.recipientProvince, order.recipientPostalCode].filter(Boolean).join(' ')}`
-              : ''}
+            {formatBeanOrderDetailAddress(
+              order.recipientAddress,
+              order.recipientProvince,
+              order.recipientPostalCode,
+            )}
           </p>
         </div>
         </div>

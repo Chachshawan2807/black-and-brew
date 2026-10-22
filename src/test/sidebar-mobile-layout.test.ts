@@ -75,9 +75,34 @@ describe('Mobile sidebar layout Modern Web Guidance alignment', () => {
     expect(menu).toMatch(/gap-0 px-0/);
     expect(menu).toMatch(/isOpen === false \? 'items-center px-0' : 'items-start px-2'/);
     expect(menu).toMatch(/isOpen !== false \? \(/);
+    expect(menu).toMatch(/h-10 w-10 min-w-10 flex-none mx-auto/);
+    expect(menu).toContain('overflow-hidden px-0 flex flex-col items-center');
 
     const collapse = readFile('components/sidebar/CollapseMenuButton.tsx');
     expect(collapse).toMatch(/size-10 mx-auto justify-center gap-0 px-0/);
+  });
+
+  test('sidebar theme uses one accessible switch for light and dark mode', () => {
+    const themeToggle = readFile('components/sidebar/SidebarThemeToggle.tsx');
+    expect(themeToggle).toContain('role="switch"');
+    expect(themeToggle).toContain('aria-checked={isDark}');
+    expect(themeToggle).toContain("setTheme(activeTheme === 'dark' ? 'light' : 'dark')");
+    expect(themeToggle).not.toContain('THEME_OPTIONS.map');
+    expect(themeToggle).toMatch(/isOpen === false \? "h-11 w-14 mx-auto"/);
+    expect(themeToggle).toMatch(/"mx-auto h-11 w-14 justify-center/);
+  });
+
+  test('collapsed sidebar links and footer actions keep accessible names', () => {
+    const menu = readFile('components/sidebar/Menu.tsx');
+    expect(menu).toMatch(/<NavPreloadLink href=\{href\} aria-label=\{label\}/);
+    expect(menu).toMatch(/aria-label=\{locale === 'th' \? 'ตั้งค่า' : 'Settings'\}/);
+    expect(menu).toMatch(/aria-label=\{locale === 'th' \? 'ออกจากระบบ' : 'Logout'\}/);
+  });
+
+  test('desktop sidebar collapse control keeps a 44px touch target', () => {
+    const toggle = readFile('components/sidebar/SidebarToggle.tsx');
+    expect(toggle).toMatch(/h-11 w-11 min-h-11 min-w-11/);
+    expect(toggle).toMatch(/left-full -ml-1\.5/);
   });
 
   test('main content region uses container query root for responsive layout', () => {

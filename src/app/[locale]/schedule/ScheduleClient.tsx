@@ -2123,7 +2123,7 @@ export default function ScheduleClient({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="border-b border-border bg-muted/20 px-3 py-2.5">
-              <p className="text-[10px] font-normal uppercase tracking-[0.12em] text-muted-foreground">
+              <p className="text-xs font-normal text-muted-foreground">
                 เลือกกะ
               </p>
               <h2 className="truncate text-[13px] font-normal text-foreground">

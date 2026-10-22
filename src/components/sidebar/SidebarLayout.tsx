@@ -20,6 +20,7 @@ export default function SidebarLayout({
   const isOpen = useSidebarToggle((state) => state.isOpen);
   const sidebarOpen = hydrated ? isOpen : true;
   const mobileDrawerInert = useMobileNavDrawerInert();
+  // Use the hamburger drawer below 768px; show the desktop sidebar from md and up.
   const isMaxMd = useMaxMd();
   const showMobileNav = isMaxMd !== false;
   const showDesktopSidebar = isMaxMd === false;

@@ -20,6 +20,7 @@ let globalInstalledAccepted = false;
 let installStoreListenersAttached = false;
 const installStoreListeners = new Set<() => void>();
 let cachedInstallStore = { hasDeferredPrompt: false, installedAccepted: false };
+const SSR_INSTALL_STORE = { hasDeferredPrompt: false, installedAccepted: false };
 
 function emitInstallStoreChange() {
   installStoreListeners.forEach((listener) => listener());
@@ -65,6 +66,10 @@ function getInstallStoreSnapshot() {
   return cachedInstallStore;
 }
 
+export function getInstallStoreServerSnapshot() {
+  return SSR_INSTALL_STORE;
+}
+
 function subscribePwaVisibility(onStoreChange: () => void) {
   const onAppInstalled = () => onStoreChange();
   window.addEventListener(PWA_APP_INSTALLED_EVENT, onAppInstalled);
@@ -87,7 +92,7 @@ export function usePwaInstall() {
   const installStore = useSyncExternalStore(
     subscribeInstallStore,
     getInstallStoreSnapshot,
-    () => ({ hasDeferredPrompt: false, installedAccepted: false }),
+    getInstallStoreServerSnapshot,
   );
   const pwaVisibility = useSyncExternalStore(
     subscribePwaVisibility,

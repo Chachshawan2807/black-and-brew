@@ -47,7 +47,6 @@ export function getMenuList(pathname: string, locale: string = 'th', opts?: { ho
             pathname === `${prefix}/home` || pathname.startsWith(`${prefix}/home/`),
           icon: Home,
           submenus: [],
-          badgeCount: homePendingCount > 0 ? homePendingCount : undefined,
         },
         {
           id: 'dashboard',

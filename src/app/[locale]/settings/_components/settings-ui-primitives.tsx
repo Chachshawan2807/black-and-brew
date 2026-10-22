@@ -13,6 +13,8 @@ import {
   BB_FOCUS_RING,
   BB_ICON_BADGE_BASE,
   BB_ICON_BADGE_FILL,
+  BB_ICON_BADGE_OUTLINE,
+  BB_ICON_BADGE_OUTLINE_PASTEL,
   BB_RADIUS_ICON,
   BB_RADIUS_SOFT,
 } from '@/lib/ui-outlined-tokens';
@@ -107,7 +109,13 @@ export function SettingsIconBadge({
 }: SettingsIconBadgeProps) {
   return (
     <div
-      className={cn(BB_ICON_BADGE_BASE, BADGE_SIZE[size], BADGE_TONE[tone], className)}
+      className={cn(
+        BB_ICON_BADGE_BASE,
+        BADGE_SIZE[size],
+        BADGE_TONE[tone],
+        tone === 'danger' ? BB_ICON_BADGE_OUTLINE_PASTEL : BB_ICON_BADGE_OUTLINE,
+        className,
+      )}
       aria-hidden
     >
       {children}

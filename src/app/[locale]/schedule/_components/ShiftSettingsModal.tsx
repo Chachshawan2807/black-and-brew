@@ -105,7 +105,7 @@ function ColorPickerPanel({
                   className="h-8 w-8 rounded-full border-2"
                   style={{ backgroundColor: preset.bg, borderColor: preset.border }}
                 />
-                <span className="text-[10px] leading-none text-muted-foreground">{preset.name}</span>
+                <span className="text-xs leading-4 text-muted-foreground">{preset.name}</span>
               </button>
             </HintTooltip>
           );

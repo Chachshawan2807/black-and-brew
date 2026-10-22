@@ -1,5 +1,6 @@
 'use client';
 
+import { useLayoutEffect, useRef } from 'react';
 import type { CSSProperties, MouseEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -47,6 +48,7 @@ export function FadeModalScaffold({
   panelVariant = 'center',
   'aria-label': ariaLabel,
 }: FadeModalScaffoldProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const reduced = usePrefersReducedMotion();
   const overlay = withReducedMotion(fadeOverlay, reduced);
   const panelPreset = panelVariant === 'sheet' ? modalSheetBottom : modalContent;
@@ -104,30 +106,74 @@ export function FadeModalScaffold({
     panelClassName,
   );
 
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    if (open && dialog && !dialog.open) {
+      dialog.showModal();
+    }
+  }, [open]);
+
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    return () => {
+      if (dialog?.open) dialog.close();
+    };
+  }, []);
+
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            key="fade-modal-backdrop"
-            className={cn(
-              'fixed inset-0',
-              overlayClassName ?? 'bg-black/20 backdrop-blur-sm',
-            )}
-            style={{ zIndex }}
-            initial={overlay.initial}
-            animate={overlay.animate}
-            exit={overlay.exit}
-            transition={overlay.transition}
-            onClick={onClose}
-            aria-hidden
-          />
-          <div className={layoutShellClassName} style={resolvedLayoutStyle}>
-            {centerScrollable ? (
-              <div
-                className={layoutInnerClassName}
-                onClick={onClose ? handleScrollableScrimClick : undefined}
-              >
+    <dialog
+      ref={dialogRef}
+      className="bb-modal-dialog fixed inset-0 m-0 h-full max-h-none w-full max-w-none overflow-visible border-0 bg-transparent p-0 text-foreground"
+      style={{ zIndex: zIndex + 1 }}
+      aria-label={ariaLabel}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose?.();
+      }}
+    >
+      <AnimatePresence
+        onExitComplete={() => {
+          if (!open && dialogRef.current?.open) {
+            dialogRef.current.close();
+          }
+        }}
+      >
+        {open && (
+          <>
+            <motion.div
+              key="fade-modal-backdrop"
+              className={cn(
+                'fixed inset-0',
+                overlayClassName ?? 'bg-black/20 backdrop-blur-sm',
+              )}
+              style={{ zIndex }}
+              initial={overlay.initial}
+              animate={overlay.animate}
+              exit={overlay.exit}
+              transition={overlay.transition}
+              onClick={onClose}
+              aria-hidden
+            />
+            <div className={layoutShellClassName} style={resolvedLayoutStyle}>
+              {centerScrollable ? (
+                <div
+                  className={layoutInnerClassName}
+                  onClick={onClose ? handleScrollableScrimClick : undefined}
+                >
+                  <motion.div
+                    key="fade-modal-panel"
+                    className={panelClass}
+                    style={resolvedPanelStyle}
+                    initial={panel.initial}
+                    animate={panel.animate}
+                    exit={panel.exit}
+                    transition={panel.transition}
+                    onClick={handlePanelClick}
+                  >
+                    {children}
+                  </motion.div>
+                </div>
+              ) : (
                 <motion.div
                   key="fade-modal-panel"
                   className={panelClass}
@@ -137,33 +183,14 @@ export function FadeModalScaffold({
                   exit={panel.exit}
                   transition={panel.transition}
                   onClick={handlePanelClick}
-                  role="dialog"
-                  aria-label={ariaLabel}
-                  aria-modal="true"
                 >
                   {children}
                 </motion.div>
-              </div>
-            ) : (
-              <motion.div
-                key="fade-modal-panel"
-                className={panelClass}
-                style={resolvedPanelStyle}
-                initial={panel.initial}
-                animate={panel.animate}
-                exit={panel.exit}
-                transition={panel.transition}
-                onClick={handlePanelClick}
-                role="dialog"
-                aria-label={ariaLabel}
-                aria-modal="true"
-              >
-                {children}
-              </motion.div>
-            )}
-          </div>
-        </>
-      )}
-    </AnimatePresence>
+              )}
+            </div>
+          </>
+        )}
+      </AnimatePresence>
+    </dialog>
   );
 }

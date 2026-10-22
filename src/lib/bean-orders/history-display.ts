@@ -5,7 +5,7 @@ export const BEAN_ORDER_VALUE_LABELS: Record<string, { th: string; en: string }>
   unpaid: { th: 'ยังไม่ชำระ', en: 'Unpaid' },
   paid: { th: 'ชำระแล้ว', en: 'Paid' },
   pending: { th: 'รอจัดส่ง', en: 'Pending' },
-  shipped: { th: 'ส่งแล้ว', en: 'Shipped' },
+  shipped: { th: 'จัดส่งแล้ว', en: 'Shipped' },
   delivered: { th: 'จัดส่งสำเร็จ', en: 'Delivered' },
   in_transit: { th: 'กำลังจัดส่ง', en: 'In transit' },
   updated: { th: 'อัปเดตแล้ว', en: 'Updated' },

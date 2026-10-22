@@ -106,6 +106,7 @@ export function isBeanOrderDeliveredNotification(item: InventoryNotification): b
   if (meta.module === 'bean_orders' && typeof meta.url === 'string' && meta.url.includes('/bean-orders/')) {
     return (
       /^จัดส่งสำเร็จ/u.test(item.title) ||
+      /^จัดส่งแล้ว/u.test(item.title) ||
       /^Delivered/u.test(item.title) ||
       /^ส่งแล้ว/u.test(item.title) ||
       /^Shipped/u.test(item.title)
@@ -113,6 +114,7 @@ export function isBeanOrderDeliveredNotification(item: InventoryNotification): b
   }
   return (
     /^จัดส่งสำเร็จ/u.test(item.title) ||
+    /^จัดส่งแล้ว/u.test(item.title) ||
     /^Delivered/u.test(item.title) ||
     /^ส่งแล้ว/u.test(item.title) ||
     /^Shipped/u.test(item.title)

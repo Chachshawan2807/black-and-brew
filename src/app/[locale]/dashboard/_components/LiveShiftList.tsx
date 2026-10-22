@@ -104,7 +104,7 @@ function SortableEmployeeCard({
       aria-label={`สถิติสะสม: ${data.profile.full_name} ทำงาน ${data.workDays} วัน, นักขัตฯ ${data.publicHolidays} วัน, ลา ${data.leaveDays} วัน`}
     >
       <motion.div
-        initial={listRowSpring.initial}
+        initial={false}
         animate={listRowSpring.animate}
         whileHover={isReadOnly ? undefined : CARD_LIFT_HOVER}
         transition={listRowSpring.transition}
@@ -466,7 +466,7 @@ export default function LiveShiftList({
           </DragOverlay>
         </DndContext>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 relative opacity-50">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 relative">
           {performanceData.map((data) => (
             <SortableEmployeeCard
               key={data.profile.id}

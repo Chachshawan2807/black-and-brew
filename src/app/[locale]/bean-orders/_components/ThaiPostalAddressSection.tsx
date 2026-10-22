@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { ThaiPostalAddressValue } from '@/lib/bean-orders/address';
+import { formatThaiPhoneNumber, normalizeThaiPhoneNumber } from '@/lib/bean-orders/thai-phone';
 import {
   lookupThaiPostalAreas,
   normalizeThaiPostalCode,
@@ -13,7 +14,6 @@ import {
   uniqueFieldValues,
 } from '@/lib/bean-orders/form-suggestions';
 import { AutocompleteTextField } from './AutocompleteTextField';
-import { BeanOrderSelect } from './BeanOrderSelect';
 import { AddressProfilePicker } from './AddressProfilePicker';
 import { BEAN_ORDER_CARD } from './bean-order-layout';
 
@@ -50,13 +50,24 @@ export function ThaiPostalAddressSection({
     () => lookupThaiPostalAreas(value.postalCode),
     [value.postalCode],
   );
-
+  const phoneSuggestions = useMemo(
+    () => uniqueFieldValues(
+      profiles.map((profile) => ({
+        ...profile,
+        phone: normalizeThaiPhoneNumber(profile.phone),
+      })),
+      'phone',
+      value.phone,
+    ).map(formatThaiPhoneNumber),
+    [profiles, value.phone],
+  );
   const postalHint = useMemo(() => {
     const normalized = normalizeThaiPostalCode(value.postalCode);
     if (normalized.length < 5) return null;
     if (areaOptions.length === 0) return 'ไม่พบรหัสไปรษณีย์นี้';
     return null;
   }, [areaOptions.length, value.postalCode]);
+  const isBangkokArea = ['กรุงเทพมหานคร', 'กรุงเทพฯ', 'Bangkok'].includes(value.province);
 
   function patch(partial: Partial<ThaiPostalAddressValue>) {
     onChange({ ...value, ...partial });
@@ -79,19 +90,6 @@ export function ThaiPostalAddressSection({
 
   function handlePostalCodeChange(raw: string) {
     const postalCode = normalizeThaiPostalCode(raw);
-    const options = lookupThaiPostalAreas(postalCode);
-
-    if (options.length === 1) {
-      const option = options[0]!;
-      patch({
-        postalCode: option.postalCode,
-        areaId: option.id,
-        subdistrict: option.subdistrict,
-        district: option.district,
-        province: option.province,
-      });
-      return;
-    }
 
     patch({
       postalCode,
@@ -105,6 +103,21 @@ export function ThaiPostalAddressSection({
   function handleFieldSelect(field: AddressField, selected: string) {
     if (field === 'postalCode') {
       handlePostalCodeChange(selected);
+      return;
+    }
+
+    if (field === 'phone') {
+      const phone = normalizeThaiPhoneNumber(selected);
+      patch({ phone });
+
+      const matches = profiles.filter(
+        (profile) => normalizeThaiPhoneNumber(profile.phone) === phone,
+      );
+      if (matches.length === 1) {
+        applyProfile(matches[0]!);
+      } else if (matches.length > 1) {
+        setProfilePicker(matches);
+      }
       return;
     }
 
@@ -131,7 +144,8 @@ export function ThaiPostalAddressSection({
     }
   }
 
-  const showAreaPicker = normalizeThaiPostalCode(value.postalCode).length === 5 && areaOptions.length > 0;
+  const showAreaPicker =
+    normalizeThaiPostalCode(value.postalCode).length > 0 && areaOptions.length > 0 && !value.areaId;
 
   const fields = (
     <>
@@ -151,50 +165,64 @@ export function ThaiPostalAddressSection({
       )}
 
       <AutocompleteTextField
-        value={value.phone}
-        onChange={(phone) => patch({ phone })}
+        value={formatThaiPhoneNumber(value.phone)}
+        onChange={(phone) => patch({ phone: normalizeThaiPhoneNumber(phone) })}
         onSelect={(phone) => handleFieldSelect('phone', phone)}
-        suggestions={uniqueFieldValues(profiles, 'phone', value.phone)}
+        suggestions={phoneSuggestions}
         inputClass={inputClass}
         placeholder="เบอร์โทร"
         inputMode="tel"
         autoComplete="tel"
       />
 
-      <AutocompleteTextField
-        value={value.postalCode}
-        onChange={handlePostalCodeChange}
-        onSelect={(postalCode) => handleFieldSelect('postalCode', postalCode)}
-        suggestions={uniqueFieldValues(profiles, 'postalCode', value.postalCode)}
-        inputClass={inputClass}
-        placeholder="รหัสไปรษณีย์ 5 หลัก"
-        inputMode="numeric"
-        autoComplete="postal-code"
-        maxLength={5}
-      />
+      <div className="relative z-20">
+        <AutocompleteTextField
+          value={value.postalCode}
+          onChange={handlePostalCodeChange}
+          suggestions={[]}
+          inputClass={inputClass}
+          placeholder="รหัสไปรษณีย์ 5 หลัก"
+          inputMode="numeric"
+          autoComplete="postal-code"
+          maxLength={5}
+        />
+        {showAreaPicker && (
+          <ul
+            className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-border bg-card shadow-sm"
+            role="listbox"
+            aria-label="ตัวเลือกพื้นที่ตามรหัสไปรษณีย์"
+          >
+            {areaOptions.slice(0, 12).map((option) => (
+              <li key={option.id}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  className="min-h-11 w-full px-4 text-left text-sm text-foreground hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none"
+                  onClick={() => selectArea(option)}
+                >
+                  {option.postalCode} · {option.subdistrict} / {option.district} / {option.province}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {(value.subdistrict || value.district || value.province) && (
+        <input
+          className={inputClass}
+          value={[
+            value.subdistrict && `${isBangkokArea ? 'แขวง' : 'ต.'} ${value.subdistrict}`,
+            value.district && `${isBangkokArea ? 'เขต' : 'อ.'} ${value.district}`,
+            value.province && (isBangkokArea ? 'กทม.' : `จ. ${value.province}`),
+          ].filter(Boolean).join(' ')}
+          aria-label="ตำบล อำเภอ และจังหวัด"
+          readOnly
+        />
+      )}
 
       {postalHint && <p className="text-sm text-red-600">{postalHint}</p>}
-
-      {showAreaPicker && (
-        <div className="space-y-2">
-          <label className="text-sm text-muted-foreground">เลือกพื้นที่ (ตำบล/แขวง)</label>
-          <BeanOrderSelect
-            value={value.areaId}
-            onChange={(e) => {
-              const option = areaOptions.find((item) => item.id === e.target.value);
-              if (option) selectArea(option);
-            }}
-            required={addressRequired}
-          >
-            <option value="">เลือกพื้นที่</option>
-            {areaOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </BeanOrderSelect>
-        </div>
-      )}
 
       <AutocompleteTextField
         value={value.addressLine}
@@ -202,10 +230,9 @@ export function ThaiPostalAddressSection({
         onSelect={(addressLine) => handleFieldSelect('addressLine', addressLine)}
         suggestions={uniqueFieldValues(profiles, 'addressLine', value.addressLine)}
         inputClass={inputClass}
-        placeholder="บ้านเลขที่ ซอย ถนน"
+        placeholder="เลขที่ หมู่ หมู่บ้าน ซอย ถนน"
         required={addressRequired}
         autoComplete="street-address"
-        multiline
       />
 
       {profilePicker && profilePicker.length > 0 && (

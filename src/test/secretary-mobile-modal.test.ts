@@ -117,6 +117,30 @@ describe('secretary mobile task overlays', () => {
     expect(modal).toContain("verticalAlign: 'center'");
   });
 
+  test('purchase orders modal locks background scrolling for every entry point', () => {
+    const modal = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/inventory/_components/PurchaseOrdersModal.tsx'),
+      'utf-8',
+    );
+    const bodyLockEffect = modal.match(
+      /useEffect\(\(\) => \{\s*if \(isExportMode\) return;[\s\S]*?\}, \[isExportMode\]\);/,
+    )?.[0];
+
+    expect(bodyLockEffect).toBeTruthy();
+    expect(bodyLockEffect).toContain("document.body.style.overflow = 'hidden'");
+    expect(bodyLockEffect).toContain('document.body.style.overflow = previousOverflow');
+  });
+
+  test('purchase orders table pins the header and identifying columns while scrolling', () => {
+    const modal = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/inventory/_components/PurchaseOrdersModal.tsx'),
+      'utf-8',
+    );
+    expect(modal).toContain('sticky top-0');
+    expect(modal).toContain('sticky left-0');
+    expect(modal).toContain('sticky left-12');
+  });
+
   test('purchase orders modal compacts filter chips and icon buttons on mobile', () => {
     const modal = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/inventory/_components/PurchaseOrdersModal.tsx'),

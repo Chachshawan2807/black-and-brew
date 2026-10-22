@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Banknote, Clipboard, Coffee, Package, Plus, Trash2, Truck } from '@/lib/icons';
+import { Banknote, Check, Clipboard, Coffee, Copy, Package, Plus, Trash2, Truck } from '@/lib/icons';
 import {
   createBeanCustomer,
   createBeanOrder,
@@ -32,6 +32,7 @@ import { AutocompleteTextField } from '@/app/[locale]/bean-orders/_components/Au
 import { BeanOrderSelect } from '@/app/[locale]/bean-orders/_components/BeanOrderSelect';
 import { BeanOrderPaymentFields } from '@/app/[locale]/bean-orders/_components/BeanOrderPaymentFields';
 import { BeanOrderShippingFields } from '@/app/[locale]/bean-orders/_components/BeanOrderShippingFields';
+import { useBeanOrderCopyFeedback } from '@/app/[locale]/bean-orders/_components/use-bean-order-copy-feedback';
 import {
   ThaiPostalAddressSection,
 } from '@/app/[locale]/bean-orders/_components/ThaiPostalAddressSection';
@@ -74,13 +75,15 @@ import {
   formatThaiPostalAddressLine,
   lookupThaiPostalAreas,
 } from '@/lib/bean-orders/thai-postal-lookup';
+import { isBeanOrderEditDataReady } from '@/lib/bean-orders/form-readiness';
 import type { PaymentStatus, WeightUnit } from '@/lib/bean-orders/types';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import {
   BEAN_ORDER_CARD,
   BEAN_ORDER_BTN_DANGER_GHOST,
+  BEAN_ORDER_BTN_DIALOG_CONFIRM,
+  BEAN_ORDER_ACTION_BTN_CONFIRM,
   BEAN_ORDER_BTN_PASTEL_FULL,
-  BEAN_ORDER_BTN_PRIMARY_FULL,
   BEAN_ORDER_BTN_SM_DANGER,
   BEAN_ORDER_BTN_SM_OUTLINE,
   BEAN_ORDER_FORM_FULFILLMENT_GRID,
@@ -218,7 +221,28 @@ function validatePostalAddress(
   return null;
 }
 
-export default function BeanOrderFormClient({
+export default function BeanOrderFormClient(props: Props) {
+  const mode = props.mode ?? 'create';
+  const editDataReady = isBeanOrderEditDataReady(
+    mode,
+    props.orderId,
+    Boolean(props.initialOrder),
+  );
+
+  if (!editDataReady) {
+    return (
+      <div className={`${BEAN_ORDER_FORM_PAGE} mx-auto`} aria-busy="true">
+        <p role="status" className="text-sm text-muted-foreground">
+          กำลังโหลดข้อมูลออเดอร์...
+        </p>
+      </div>
+    );
+  }
+
+  return <BeanOrderFormClientReady key={`${mode}:${props.orderId ?? 'new'}`} {...props} />;
+}
+
+function BeanOrderFormClientReady({
   inventoryItems,
   formSuggestions = EMPTY_SUGGESTIONS,
   locale,
@@ -227,8 +251,9 @@ export default function BeanOrderFormClient({
   initialOrder,
 }: Props) {
   const router = useRouter();
+  const saveConfirmDialogRef = useRef<HTMLDialogElement>(null);
   const isReadOnly = useReadOnly();
-  const isEdit = mode === 'edit' && Boolean(orderId && initialOrder);
+  const isEdit = mode === 'edit' && Boolean(orderId);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -272,6 +297,7 @@ export default function BeanOrderFormClient({
   const [pasteLoading, setPasteLoading] = useState(false);
   const [pasteError, setPasteError] = useState<string | null>(null);
   const [pasteData, setPasteData] = useState<ParsedBeanOrderCustomer | null>(null);
+  const customerCopy = useBeanOrderCopyFeedback();
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
   const beanOrderOverlayLayers = useMemo(
@@ -536,6 +562,29 @@ export default function BeanOrderFormClient({
     }
   }
 
+  async function handleCopyCustomer() {
+    const name = customerQuery.trim() || selectedCustomer?.name.trim() || recipient.name.trim();
+    const address = formatThaiPostalAddressLine({
+      addressLine: recipient.addressLine,
+      subdistrict: recipient.subdistrict,
+      district: recipient.district,
+      province: recipient.province,
+      postalCode: recipient.postalCode,
+    });
+    const text = [
+      `ลูกค้า: ${name}`,
+      `เบอร์: ${recipient.phone.trim()}`,
+      `ที่อยู่จัดส่ง: ${address}`,
+    ].join('\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      customerCopy.showCopied();
+    } catch {
+      customerCopy.showError();
+    }
+  }
+
   function applyPastedCustomer() {
     if (!pasteData) return;
     setCustomerQuery(pasteData.name);
@@ -679,10 +728,23 @@ export default function BeanOrderFormClient({
     return {};
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!isBeanOrderEditDataReady(mode, orderId, Boolean(initialOrder))) {
+      setError('กำลังโหลดข้อมูลออเดอร์ กรุณารอสักครู่');
+      return;
+    }
     if (isReadOnly) {
       setError(READ_ONLY_DENY_MSG);
+      return;
+    }
+    saveConfirmDialogRef.current?.showModal();
+  }
+
+  async function handleConfirmSave() {
+    saveConfirmDialogRef.current?.close();
+    if (!isBeanOrderEditDataReady(mode, orderId, Boolean(initialOrder))) {
+      setError('กำลังโหลดข้อมูลออเดอร์ กรุณารอสักครู่');
       return;
     }
     setSaving(true);
@@ -853,10 +915,30 @@ export default function BeanOrderFormClient({
               onFocus={preloadPasteCustomerDialog}
               disabled={isReadOnly || pasteLoading}
               className={BEAN_ORDER_BTN_SM_OUTLINE}
-              aria-label="วางข้อมูลลูกค้า"
+              aria-label="วาง"
             >
               <Clipboard className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              <span>วางข้อมูล</span>
+              <span>วาง</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleCopyCustomer()}
+              disabled={isReadOnly}
+              className={BEAN_ORDER_BTN_SM_OUTLINE}
+              aria-label="คัดลอกข้อมูลลูกค้า"
+            >
+              <span className="relative inline-grid h-3.5 w-3.5 shrink-0 place-items-center" aria-hidden>
+                <Copy
+                  className={`absolute h-3.5 w-3.5 transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none ${customerCopy.status === 'copied' ? 'scale-75 opacity-0' : 'scale-100 opacity-100'}`}
+                />
+                <Check
+                  className={`absolute h-3.5 w-3.5 text-emerald-600 transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none ${customerCopy.status === 'copied' ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}
+                />
+              </span>
+              <span>คัดลอก</span>
+              <span className="sr-only" aria-live="polite">
+                {customerCopy.status === 'copied' ? 'คัดลอกแล้ว' : customerCopy.status === 'error' ? 'คัดลอกไม่สำเร็จ' : ''}
+              </span>
             </button>
             <button
               type="button"
@@ -1106,7 +1188,7 @@ export default function BeanOrderFormClient({
           </section>
         </div>
 
-        <div className={BEAN_ORDER_FORM_FULFILLMENT_COLUMN}>
+        <div className={cn(BEAN_ORDER_FORM_FULFILLMENT_COLUMN, 'lg:max-w-[16rem]')}>
           <h2 className="text-sm font-normal text-muted-foreground flex items-center gap-2">
             <BeanOrderIconBadge tone="shipping" size="sm">
               <Truck className="h-3.5 w-3.5" aria-hidden />
@@ -1114,7 +1196,8 @@ export default function BeanOrderFormClient({
             ข้อมูลการจัดส่ง
           </h2>
           <section className={cn(BEAN_ORDER_CARD, BEAN_ORDER_FORM_FULFILLMENT_CARD)}>
-            <div className={BEAN_ORDER_FORM_FULFILLMENT_CARD_BODY}>
+            <div className={cn(BEAN_ORDER_FORM_FULFILLMENT_CARD_BODY, 'lg:justify-start')}>
+              <div className="w-full max-w-52">
               <BeanOrderShippingFields
                 carrierCode={carrierCode}
                 customCarrierLabel={customCarrierLabel}
@@ -1125,27 +1208,72 @@ export default function BeanOrderFormClient({
                 inputClass={inputClass}
                 disabled={isReadOnly || saving}
               />
+              </div>
             </div>
           </section>
         </div>
+
+        <div className="flex items-end pb-2 pr-16 sm:pr-20 lg:pb-0 lg:pr-0">
+          <button
+            type="submit"
+            disabled={saving || isReadOnly}
+            className={cn(
+              BEAN_ORDER_ACTION_BTN_CONFIRM,
+              'h-12 w-full rounded-xl sm:w-auto sm:min-w-44 sm:px-6',
+            )}
+          >
+            {saving ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <LoadingIcon size="sm" className="text-background" />
+                กำลังบันทึก...
+              </span>
+            ) : isEdit ? (
+              'บันทึกการแก้ไข'
+            ) : (
+              'บันทึกออเดอร์'
+            )}
+          </button>
+        </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={saving || isReadOnly}
-        className={BEAN_ORDER_BTN_PRIMARY_FULL}
+      <dialog
+        ref={saveConfirmDialogRef}
+        aria-labelledby="bean-order-save-confirm-title"
+        onClick={(event) => {
+          if (event.target === saveConfirmDialogRef.current) {
+            saveConfirmDialogRef.current?.close();
+          }
+        }}
+        className="m-auto w-[min(28rem,calc(100%-2rem))] rounded-2xl border border-border bg-card p-0 text-foreground shadow-xl backdrop:bg-black/40"
       >
-        {saving ? (
-          <span className="inline-flex items-center justify-center gap-2">
-            <LoadingIcon size="sm" className="text-background" />
-            กำลังบันทึก...
-          </span>
-        ) : isEdit ? (
-          'บันทึกการแก้ไข'
-        ) : (
-          'บันทึกออเดอร์'
-        )}
-      </button>
+        <div className="space-y-5 p-6">
+          <div className="space-y-1">
+            <h2 id="bean-order-save-confirm-title" className="text-lg font-medium">
+              {isEdit ? 'ยืนยันการบันทึกการแก้ไข' : 'ยืนยันการบันทึกออเดอร์'}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {isEdit ? 'ต้องการบันทึกการเปลี่ยนแปลงนี้หรือไม่' : 'ต้องการบันทึกออเดอร์นี้หรือไม่'}
+            </p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => saveConfirmDialogRef.current?.close()}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 text-sm text-foreground hover:bg-muted/35"
+            >
+              ยกเลิก
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleConfirmSave()}
+              disabled={saving}
+              className={cn(BEAN_ORDER_BTN_DIALOG_CONFIRM, 'min-h-11 px-4 disabled:opacity-50')}
+            >
+              ยืนยันบันทึก
+            </button>
+          </div>
+        </div>
+      </dialog>
 
       {pasteOpen ? (
         <PasteCustomerDialog

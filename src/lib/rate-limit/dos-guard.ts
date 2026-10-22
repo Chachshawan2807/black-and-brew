@@ -12,6 +12,7 @@ export type DosWindow = {
 export type DosGuardOptions = {
   maxBodyBytes?: number;
   burst?: DosWindow;
+  serverActionBurst?: DosWindow;
   page?: DosWindow;
   api?: DosWindow;
   mutation?: DosWindow;
@@ -19,12 +20,13 @@ export type DosGuardOptions = {
   maxKeys?: number;
 };
 
-type DosLimiterSet = Record<'burst' | DosBucket, SlidingWindowRateLimiter>;
+type DosLimiterSet = Record<'burst' | 'serverActionBurst' | DosBucket, SlidingWindowRateLimiter>;
 
 /** Baked-in ERP defaults. No extra env or dashboard setup required. */
 export const DEFAULT_DOS_POLICY = {
   maxBodyBytes: 8 * 1024 * 1024,
   burst: { maxRequests: 80, windowMs: 10_000 },
+  serverActionBurst: { maxRequests: 160, windowMs: 10_000 },
   page: { maxRequests: 300, windowMs: 60_000 },
   api: { maxRequests: 120, windowMs: 60_000 },
   mutation: { maxRequests: 180, windowMs: 60_000 },
@@ -134,6 +136,7 @@ export function createDosGuard(options: DosGuardOptions = {}) {
   const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_DOS_POLICY.maxBodyBytes;
   const maxKeys = options.maxKeys ?? DEFAULT_DOS_POLICY.maxKeys;
   const burst = options.burst ?? DEFAULT_DOS_POLICY.burst;
+  const serverActionBurst = options.serverActionBurst ?? DEFAULT_DOS_POLICY.serverActionBurst;
   const page = options.page ?? DEFAULT_DOS_POLICY.page;
   const api = options.api ?? DEFAULT_DOS_POLICY.api;
   const mutation = options.mutation ?? DEFAULT_DOS_POLICY.mutation;
@@ -141,6 +144,7 @@ export function createDosGuard(options: DosGuardOptions = {}) {
 
   const limiters: DosLimiterSet = {
     burst: createLimiter(burst, maxKeys),
+    serverActionBurst: createLimiter(serverActionBurst, maxKeys),
     page: createLimiter(page, maxKeys),
     api: createLimiter(api, maxKeys),
     mutation: createLimiter(mutation, maxKeys),
@@ -169,7 +173,13 @@ export function createDosGuard(options: DosGuardOptions = {}) {
       const bucket = classifyDosPath(pathname, request.method);
       const now = Date.now();
 
-      const burstResult = limiters.burst.check(ip);
+      // Server Actions are POSTed to the current page and require an RSC response.
+      // Give their normal request bursts a separate ceiling while keeping the same
+      // sustained mutation limit below.
+      const burstLimiter = request.headers.has('next-action')
+        ? limiters.serverActionBurst
+        : limiters.burst;
+      const burstResult = burstLimiter.check(ip);
       if (!burstResult.allowed) {
         return deny(429, burstResult.resetAt - now);
       }

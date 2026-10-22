@@ -60,4 +60,16 @@ describe('home page mobile modal baseline', () => {
     expect(dialog).toContain('py-2.5');
     expect(dialog).toContain('aria-invalid');
   });
+
+  test('espresso timer keeps both orientations usable on short mobile screens', () => {
+    const timer = readHome('app/[locale]/home/_components/EspressoShotTimer.tsx');
+    const timerGrid = timer.match(/<main className="([^"]+)"/);
+
+    expect(timerGrid).not.toBeNull();
+    expect(timerGrid?.[1]).toContain('overflow-y-auto');
+    expect(timerGrid?.[1]).toContain('overscroll-contain');
+    expect(timerGrid?.[1]).toContain('grid-rows-[repeat(2,minmax(14rem,1fr))]');
+    expect(timerGrid?.[1]).toContain('landscape:grid-cols-2');
+    expect(timerGrid?.[1]).toContain('landscape:grid-rows-1');
+  });
 });

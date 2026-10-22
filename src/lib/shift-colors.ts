@@ -62,6 +62,12 @@ export const INVENTORY_QUICK_ACTION_COLORS = {
   inactive: 'text-muted-foreground hover:text-foreground',
 } as const;
 
+export const ESPRESSO_SHOT_QUALITY_COLORS = {
+  target: `${PASTEL} bg-[#d4edda] border-2 border-black`,
+  fast: `${PASTEL} bg-[#fff3cd] border-2 border-black`,
+  slow: `${PASTEL} bg-[#f8d7da] border-2 border-black`,
+} as const;
+
 export const INVENTORY_QUICK_ACTION_HOVER = {
   order: 'hover:bg-[#bee5eb]/70',
   addItem: 'hover:bg-[#c3e6cb]/70',

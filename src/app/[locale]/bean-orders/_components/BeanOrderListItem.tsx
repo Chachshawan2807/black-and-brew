@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { AlertCircle, CheckCircle2, Copy } from '@/lib/icons';
+import { AlertCircle, Check, Copy } from '@/lib/icons';
 import { FloatingAlert } from '@/components/ui/floating-alert';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import { formatOrderDeliveryDestination } from '@/lib/bean-orders/address';
@@ -14,6 +14,7 @@ import { warmRouteNavigation } from '@/lib/warm-route-navigation';
 import { OrderListStatusGroup } from './OrderStatusBadge';
 import { BEAN_ORDER_LIST_CELL, BEAN_ORDER_LIST_ROW } from './bean-order-layout';
 import { BeanOrderIconButton, BeanOrderListRowMotion } from './bean-order-ui-primitives';
+import { useBeanOrderCopyFeedback } from './use-bean-order-copy-feedback';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -56,7 +57,7 @@ type CopyToast = {
   message: string;
   x: number;
   y: number;
-  type: 'success' | 'error';
+  type: 'error';
 };
 
 const DETAIL_LINK_PROPS = {
@@ -67,6 +68,7 @@ const DETAIL_LINK_PROPS = {
 export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder, index = 0 }: Props) {
   const router = useRouter();
   const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
+  const copyFeedback = useBeanOrderCopyFeedback();
   const customerLabel = formatCustomerLabel(order);
   const destinationLine = formatDestinationLine(order);
   const shippingChannel = formatShippingChannel(order);
@@ -80,13 +82,13 @@ export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder
     event.preventDefault();
     event.stopPropagation();
 
-    const anchor = { x: event.clientX, y: event.clientY };
-
     try {
       await navigator.clipboard.writeText(formatBeanOrderShareText(order));
-      setCopyToast({ message: 'คัดลอกแล้ว', ...anchor, type: 'success' });
+      setCopyToast(null);
+      copyFeedback.showCopied();
     } catch {
-      setCopyToast({ message: 'คัดลอกไม่สำเร็จ', ...anchor, type: 'error' });
+      copyFeedback.showError();
+      setCopyToast({ message: 'คัดลอกไม่สำเร็จ', x: event.clientX, y: event.clientY, type: 'error' });
     }
   }
 
@@ -94,19 +96,33 @@ export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder
     <>
       <div className="lg:hidden">
         <p className="min-w-0 truncate text-sm text-foreground/90" title={customerLabel}>
+          <span className="sr-only">ลูกค้า: </span>
           {customerLabel}
         </p>
 
         <div className="mt-1 min-w-0">
-          <p className="truncate text-sm text-foreground">{order.orderNo}</p>
+          <p className="truncate text-sm text-foreground">
+            <span className="sr-only">หมายเลขออเดอร์: </span>
+            {order.orderNo}
+          </p>
           <p className="truncate text-xs tabular-nums text-muted-foreground">{formatListDate(order.createdAt)}</p>
         </div>
 
-        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{destinationLine}</p>
-        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{shippingChannel}</p>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+          <span className="sr-only">ปลายทาง: </span>
+          {destinationLine}
+        </p>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+          <span className="sr-only">ช่องทางจัดส่ง: </span>
+          {shippingChannel}
+        </p>
 
         <div className="mt-2 flex items-center justify-between gap-3">
-          <p className="tabular-nums text-sm text-foreground">{formatBaht(order.totalBaht)}</p>
+          <p className="tabular-nums text-sm text-foreground">
+            <span className="sr-only">ยอดรวม: </span>
+            {formatBaht(order.totalBaht)}
+          </p>
+          <span className="sr-only">สถานะ: </span>
           <OrderListStatusGroup
             slipUploadedAt={order.slipUploadedAt}
             paymentStatus={order.paymentStatus}
@@ -120,11 +136,15 @@ export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder
         className={cn('hidden min-w-0 truncate text-sm text-foreground/90 lg:col-start-2 lg:block', BEAN_ORDER_LIST_CELL)}
         title={customerLabel}
       >
+        <span className="sr-only">ลูกค้า: </span>
         {customerLabel}
       </p>
 
       <div className={cn('hidden min-w-0 lg:col-start-3 lg:block', BEAN_ORDER_LIST_CELL)}>
-        <p className="truncate text-sm text-foreground">{order.orderNo}</p>
+        <p className="truncate text-sm text-foreground">
+          <span className="sr-only">หมายเลขออเดอร์: </span>
+          {order.orderNo}
+        </p>
         <p className="truncate text-xs tabular-nums text-muted-foreground">{formatListDate(order.createdAt)}</p>
       </div>
 
@@ -135,6 +155,7 @@ export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder
         )}
         title={destinationLine}
       >
+        <span className="sr-only">ปลายทาง: </span>
         {destinationLine}
       </p>
 
@@ -145,6 +166,7 @@ export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder
         )}
         title={shippingChannel}
       >
+        <span className="sr-only">ช่องทางจัดส่ง: </span>
         {shippingChannel}
       </p>
 
@@ -154,10 +176,12 @@ export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder
           BEAN_ORDER_LIST_CELL,
         )}
       >
+        <span className="sr-only">ยอดรวม: </span>
         {formatBaht(order.totalBaht)}
       </p>
 
       <div className={cn('hidden min-w-0 justify-end lg:col-start-7 lg:flex', BEAN_ORDER_LIST_CELL)}>
+        <span className="sr-only">สถานะ: </span>
         <OrderListStatusGroup
           slipUploadedAt={order.slipUploadedAt}
           paymentStatus={order.paymentStatus}
@@ -181,14 +205,24 @@ export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder
     >
       <BeanOrderIconButton
         onClick={(event) => void handleCopy(event)}
-        label="คัดลอกรายละเอียดออเดอร์"
+        label={copyFeedback.status === 'copied' ? 'คัดลอกแล้ว' : 'คัดลอกรายละเอียดออเดอร์'}
         className={cn(
           'mt-3 ml-1 h-11 w-11 shrink-0 text-muted-foreground lg:col-start-1 lg:mt-0 lg:ml-0 lg:h-9 lg:w-9',
           BEAN_ORDER_LIST_CELL,
           'lg:flex lg:items-center lg:justify-center lg:!px-0',
         )}
       >
-        <Copy className="h-4 w-4" aria-hidden />
+        <span className="relative inline-grid h-4 w-4 shrink-0 place-items-center" aria-hidden>
+          <Copy
+            className={`absolute h-4 w-4 transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none ${copyFeedback.status === 'copied' ? 'scale-75 opacity-0' : 'scale-100 opacity-100'}`}
+          />
+          <Check
+            className={`absolute h-4 w-4 text-emerald-600 transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none ${copyFeedback.status === 'copied' ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}
+          />
+        </span>
+        <span className="sr-only" aria-live="polite">
+          {copyFeedback.status === 'copied' ? 'คัดลอกแล้ว' : copyFeedback.status === 'error' ? 'คัดลอกไม่สำเร็จ' : ''}
+        </span>
       </BeanOrderIconButton>
 
       {embedded && onOpenOrder ? (
@@ -221,13 +255,7 @@ export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder
         <FloatingAlert
           message={copyToast.message}
           anchor={{ x: copyToast.x, y: copyToast.y }}
-          icon={
-            copyToast.type === 'success' ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
-            ) : (
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-600" aria-hidden />
-            )
-          }
+          icon={<AlertCircle className="h-4 w-4 shrink-0 text-red-600" aria-hidden />}
           onDismiss={() => setCopyToast(null)}
         />
       ) : null}

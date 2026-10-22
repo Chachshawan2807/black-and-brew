@@ -10,6 +10,6 @@ export function formatShipmentTrackingLabel(
 ): string | null {
   if (isTrackingDeliveredStatus(trackingStatus)) return 'จัดส่งสำเร็จ';
   if (options?.fulfillmentStatus !== 'shipped') return null;
-  if (options.trackingNumber) return 'ส่งแล้ว';
-  return 'ส่งแล้ว (ไม่มีเลขพัสดุ)';
+  if (options.trackingNumber) return 'จัดส่งแล้ว';
+  return 'จัดส่งแล้ว (ไม่มีเลขพัสดุ)';
 }
