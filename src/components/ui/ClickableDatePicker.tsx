@@ -14,6 +14,11 @@ import { th } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
+import {
+  resolveOverlayPortalContainer,
+  supportsPopoverTopLayer,
+} from '@/lib/overlay-portal-container';
+import { useModalOverlayPortalHostRef } from '@/contexts/ModalOverlayPortalContext';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 import {
   DATE_PICKER_DAY_BASE,
@@ -25,8 +30,6 @@ import {
   DATE_PICKER_WEEKDAY,
   DatePickerPopoverShell,
 } from '@/components/ui/date-picker-primitives';
-import { useOverlayPortalContainer } from '@/components/ui/modal-overlay-portal-context';
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ClickableDatePickerProps {
   containerClassName?: string;
@@ -69,12 +72,12 @@ export function ClickableDatePicker({
   // ─── Refs ─────────────────────────────────────────────────────────────────
   const triggerRef = useRef<HTMLButtonElement>(null);  // ปุ่มที่ user กด
   const popoverRef = useRef<HTMLDivElement>(null);     // calendar popover เอง
+  const modalHostRef = useModalOverlayPortalHostRef();
 
   // ─── State ────────────────────────────────────────────────────────────────
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState<PopoverCoords | null>(null);
   const [isMounted, setIsMounted] = useState(false); // ป้องกัน SSR hydration error
-  const overlayPortalContainer = useOverlayPortalContainer();
 
   const [viewDate, setViewDate] = useState(() => {
     if (value) {
@@ -337,6 +340,13 @@ export function ClickableDatePicker({
     </DatePickerPopoverShell>
   );
 
+  const overlayPortalTarget =
+    typeof document === 'undefined'
+      ? null
+      : supportsPopoverTopLayer()
+        ? document.body
+        : resolveOverlayPortalContainer(triggerRef.current, modalHostRef);
+
   return (
     // ไม่มี z-index บน container อีกต่อไป เพราะ popover หลุดออกไป document.body แล้ว
     <div className={`relative flex-1 ${containerClassName}`}>
@@ -362,7 +372,7 @@ export function ClickableDatePicker({
       </button>
 
       {/* ── Popover via Portal ── */}
-      {isMounted && overlayPortalContainer && createPortal(
+      {isMounted && overlayPortalTarget && createPortal(
         <AnimatePresence>
           {isOpen && (
             <>
@@ -381,7 +391,7 @@ export function ClickableDatePicker({
             </>
           )}
         </AnimatePresence>,
-        overlayPortalContainer,
+        overlayPortalTarget,
       )}
     </div>
   );
