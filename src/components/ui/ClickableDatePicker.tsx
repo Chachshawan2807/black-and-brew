@@ -14,6 +14,7 @@ import { th } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
+import { getOverlayPortalContainer } from '@/lib/overlay-portal-container';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 import {
   DATE_PICKER_DAY_BASE,
@@ -379,7 +380,7 @@ export function ClickableDatePicker({
             </>
           )}
         </AnimatePresence>,
-        document.body
+        getOverlayPortalContainer()
       )}
     </div>
   );

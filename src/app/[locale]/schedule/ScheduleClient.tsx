@@ -1855,7 +1855,10 @@ export default function ScheduleClient({
         initialDateStr={weekAnchor}
         onDateChange={handleDateChange}
         onShowRegularHolidayModal={() => setShowRegularHolidayModal(true)}
-        onShowManagementModal={() => setShowManagementModal(true)}
+        onShowManagementModal={() => {
+          setSelectedCell(null);
+          setShowManagementModal(true);
+        }}
         onExportScheduleImage={exportScheduleImage}
         onSyncGoogleSheet={syncGoogleSheet}
         isSyncingGoogleSheet={isSyncingGoogleSheet}

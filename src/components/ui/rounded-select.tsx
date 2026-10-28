@@ -13,6 +13,7 @@ import {
 import { SELECT_LISTBOX_Z_CLASS } from '@/lib/floating-action-layout';
 import { getAnchoredSuggestionsOverlayStyle } from '@/lib/quick-search-suggestions-layout';
 import { bindPointerSafeOptionSelect } from '@/lib/pointer-overlay-selection';
+import { getOverlayPortalContainer } from '@/lib/overlay-portal-container';
 import { cn } from '@/lib/utils';
 
 export {
@@ -239,7 +240,7 @@ export function RoundedSelect({
         />
       </button>
 
-      {isMounted && listbox ? createPortal(listbox, document.body) : null}
+      {isMounted && listbox ? createPortal(listbox, getOverlayPortalContainer()) : null}
     </div>
   );
 }
