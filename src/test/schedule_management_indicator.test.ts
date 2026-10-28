@@ -46,4 +46,12 @@ describe('schedule management blue dot indicator', () => {
       /onShowManagementModal=\{\(\) => \{[\s\S]*setSelectedCell\(null\)[\s\S]*setShowManagementModal\(true\)/,
     );
   });
+
+  test('management save uses inline check on primary button instead of success banner', () => {
+    expect(scheduleClientCode).toContain('ScheduleManagementSaveButton');
+    expect(scheduleClientCode).toMatch(/showSuccess=\{saveSuccess\}/);
+    expect(scheduleClientCode).not.toMatch(
+      /showManagementModal[\s\S]*ScheduleSuccessBanner[\s\S]*บันทึกข้อมูลเรียบร้อย/,
+    );
+  });
 });

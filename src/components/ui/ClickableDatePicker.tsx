@@ -14,7 +14,7 @@ import { th } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
-import { resolveOverlayPortalContainer } from '@/lib/overlay-portal-container';
+import { resolveOverlayPortalContainer, shouldElevatePickerWithPopoverTopLayer } from '@/lib/overlay-portal-container';
 import { useModalOverlayPortalHostRef } from '@/contexts/ModalOverlayPortalContext';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 import {
@@ -258,6 +258,15 @@ export function ClickableDatePicker({
   const selectedDate = value ? parseISO(value) : null;
   const dayLabels = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
 
+  const overlayPortalTarget =
+    typeof document === 'undefined'
+      ? null
+      : resolveOverlayPortalContainer(triggerRef.current, modalHostRef);
+
+  const usePopoverTopLayer =
+    overlayPortalTarget !== null
+      && shouldElevatePickerWithPopoverTopLayer(overlayPortalTarget);
+
   // ─── Popover calendar JSX ──────────────────────────────────────────────────
   // แยก JSX ออกมาเพื่อใช้ทั้งใน Portal (desktop) และ fixed center (mobile)
   const calendarContent = (
@@ -266,6 +275,7 @@ export function ClickableDatePicker({
       popoverRef={popoverRef}
       ariaLabel="เลือกวันที่"
       coords={coords}
+      usePopoverTopLayer={usePopoverTopLayer}
     >
       {/* ── Header: เดือน + ปี ── */}
       <div className="flex items-center justify-between mb-4">
@@ -336,11 +346,6 @@ export function ClickableDatePicker({
       </div>
     </DatePickerPopoverShell>
   );
-
-  const overlayPortalTarget =
-    typeof document === 'undefined'
-      ? null
-      : resolveOverlayPortalContainer(triggerRef.current, modalHostRef);
 
   return (
     // Popover portals into the open modal dialog when present (avoids inert document.body).

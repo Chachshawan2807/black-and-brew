@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
+import { Check } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { CloseIcon } from '@/components/ui/close-icon';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -47,6 +48,46 @@ export const SCHEDULE_TEXTAREA =
   'w-full min-h-[5rem] p-4 rounded-2xl border border-border bg-background outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/10 focus:border-foreground/30 bb-transition resize-none text-base md:text-[13px] leading-relaxed font-normal text-foreground placeholder:text-muted-foreground';
 
 export const SCHEDULE_BTN_PRIMARY = BB_BTN_OUTLINE_PRIMARY;
+
+type ScheduleManagementSaveButtonProps = {
+  showSuccess: boolean;
+  isUpdate: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  className?: string;
+};
+
+/** Brief green check on the primary action after save (no banner). */
+export function ScheduleManagementSaveButton({
+  showSuccess,
+  isUpdate,
+  disabled,
+  onClick,
+  className,
+}: ScheduleManagementSaveButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-live="polite"
+      className={cn(
+        SCHEDULE_BTN_PRIMARY,
+        'inline-flex flex-1 items-center justify-center gap-2',
+        className,
+      )}
+    >
+      {showSuccess ? (
+        <>
+          <Check className="h-5 w-5 shrink-0 text-emerald-500" strokeWidth={2.5} aria-hidden />
+          <span className="sr-only">{isUpdate ? 'อัปเดตสำเร็จ' : 'บันทึกสำเร็จ'}</span>
+        </>
+      ) : (
+        isUpdate ? 'อัปเดตข้อมูล' : 'บันทึกข้อมูล'
+      )}
+    </button>
+  );
+}
 
 export const SCHEDULE_BTN_SECONDARY = BB_BTN_OUTLINE;
 

@@ -22,7 +22,7 @@ import {
 } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { formatDateRangePickerLabel } from '@/lib/date-utils';
-import { resolveOverlayPortalContainer } from '@/lib/overlay-portal-container';
+import { resolveOverlayPortalContainer, shouldElevatePickerWithPopoverTopLayer } from '@/lib/overlay-portal-container';
 import { useModalOverlayPortalHostRef } from '@/contexts/ModalOverlayPortalContext';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 import { cn } from '@/lib/utils';
@@ -278,12 +278,17 @@ export function ClickableDateRangePicker({
       ? null
       : resolveOverlayPortalContainer(triggerRef.current, modalHostRef);
 
+  const usePopoverTopLayer =
+    overlayPortalTarget !== null
+      && shouldElevatePickerWithPopoverTopLayer(overlayPortalTarget);
+
   const calendarContent = (
     <DatePickerPopoverShell
       key="date-range-picker-popover"
       popoverRef={popoverRef}
       ariaLabel="เลือกช่วงวันที่"
       coords={coords}
+      usePopoverTopLayer={usePopoverTopLayer}
     >
       <div className="flex items-center justify-between mb-3">
         <button

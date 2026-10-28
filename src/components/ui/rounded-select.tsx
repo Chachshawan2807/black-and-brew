@@ -16,7 +16,7 @@ import { getAnchoredSuggestionsOverlayStyle } from '@/lib/quick-search-suggestio
 import { bindPointerSafeOptionSelect } from '@/lib/pointer-overlay-selection';
 import {
   resolveOverlayPortalContainer,
-  supportsPopoverTopLayer,
+  shouldElevatePickerWithPopoverTopLayer,
 } from '@/lib/overlay-portal-container';
 import { cn } from '@/lib/utils';
 export {
@@ -69,7 +69,6 @@ export function RoundedSelect({
   const listRef = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
   const modalHostRef = useModalOverlayPortalHostRef();
-  const usePopoverTopLayer = supportsPopoverTopLayer();
   const isMounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [listStyle, setListStyle] = useState<CSSProperties>({});
   const [uncontrolled, setUncontrolled] = useState(() => String(defaultValue ?? ''));
@@ -157,6 +156,12 @@ export function RoundedSelect({
     };
   }, [open]);
 
+  const portalContainer = resolveOverlayPortalContainer(
+    triggerRef.current,
+    modalHostRef,
+  );
+  const usePopoverTopLayer = shouldElevatePickerWithPopoverTopLayer(portalContainer);
+
   useLayoutEffect(() => {
     if (!open || !usePopoverTopLayer) return;
     const list = listRef.current;
@@ -189,10 +194,13 @@ export function RoundedSelect({
       {...(usePopoverTopLayer ? { popover: 'manual' as const } : {})}
       className={cn(
         BB_SELECT_LIST_BASE_CLASS,
-        'fixed min-w-[10rem] bb-smooth-scroll overscroll-y-contain',
+        'fixed min-w-[10rem] bb-smooth-scroll bb-scroll-y-themed touch-pan-y',
         SELECT_LISTBOX_Z_CLASS,
       )}
       style={listStyle}
+      onWheel={(event) => {
+        event.stopPropagation();
+      }}
     >
       {options.map((opt) => {
         const isSelected = opt.value === currentValue;
@@ -220,11 +228,6 @@ export function RoundedSelect({
       })}
     </ul>
   ) : null;
-
-  const portalContainer = resolveOverlayPortalContainer(
-    triggerRef.current,
-    modalHostRef,
-  );
 
   return (
     <div ref={rootRef} className={cn('relative', wrapperClassName)}>

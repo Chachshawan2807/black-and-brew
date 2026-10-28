@@ -46,3 +46,16 @@ export function supportsPopoverTopLayer(): boolean {
     && typeof HTMLElement.prototype.showPopover === 'function'
   );
 }
+
+export function isOpenModalDialogHost(element: HTMLElement): boolean {
+  return (
+    element instanceof HTMLDialogElement
+    && element.classList.contains('bb-modal-dialog')
+    && element.open
+  );
+}
+
+/** Popover top layer on body only; inside showModal() dialog it breaks wheel/touch scroll on pickers. */
+export function shouldElevatePickerWithPopoverTopLayer(portalContainer: HTMLElement): boolean {
+  return supportsPopoverTopLayer() && !isOpenModalDialogHost(portalContainer);
+}

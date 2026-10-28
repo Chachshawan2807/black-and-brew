@@ -49,7 +49,8 @@ describe('rounded select shared date-picker-like trigger', () => {
     expect(roundedSelect).toContain('createPortal');
     expect(roundedSelect).toContain('SELECT_LISTBOX_Z_CLASS');
     expect(roundedSelect).toContain('resolveOverlayPortalContainer');
-    expect(roundedSelect).toContain('supportsPopoverTopLayer');
+    expect(roundedSelect).toContain('shouldElevatePickerWithPopoverTopLayer');
+    expect(roundedSelect).toContain('bb-scroll-y-themed');
     expect(roundedSelect).toContain('useModalOverlayPortalHostRef');
     expect(roundedSelect).toContain('getAnchoredSuggestionsOverlayStyle');
     expect(roundedSelect).toContain('bindPointerSafeOptionSelect');

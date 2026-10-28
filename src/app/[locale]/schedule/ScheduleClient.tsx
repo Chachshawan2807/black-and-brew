@@ -78,6 +78,7 @@ import {
   ScheduleModalCloseButton,
   ScheduleModalHeader,
   ScheduleModalSectionHeader,
+  ScheduleManagementSaveButton,
   ScheduleSuccessBanner,
 } from './_components/schedule-ui-primitives';
 
@@ -2230,10 +2231,6 @@ export default function ScheduleClient({
               />
 
               <div className="p-5 space-y-5 md:flex-1 md:min-h-0 md:overflow-y-auto md:bb-smooth-scroll">
-                {saveSuccess && (
-                  <ScheduleSuccessBanner message="บันทึกข้อมูลเรียบร้อยแล้วค่ะ" />
-                )}
-
                 <div className="space-y-1.5">
                   <label className={SCHEDULE_FORM_LABEL}>พนักงาน</label>
                   <RoundedSelect
@@ -2298,16 +2295,13 @@ export default function ScheduleClient({
                 >
                   {editingHistoryId ? 'ยกเลิกการแก้ไข' : 'ปิดหน้าต่าง'}
                 </button>
-                <button
+                <ScheduleManagementSaveButton
+                  showSuccess={saveSuccess}
+                  isUpdate={Boolean(editingHistoryId)}
+                  disabled={loading}
                   onClick={handleSaveManagement}
-                  className={cn(
-                    SCHEDULE_BTN_PRIMARY,
-                    'flex-1',
-                    editingHistoryId && 'bg-blue-600 hover:opacity-100 hover:bg-blue-700',
-                  )}
-                >
-                  {editingHistoryId ? 'อัปเดตข้อมูล' : 'บันทึกข้อมูล'}
-                </button>
+                  className={cn(editingHistoryId && 'bg-blue-600 hover:opacity-100 hover:bg-blue-700')}
+                />
               </div>
             </div>
 

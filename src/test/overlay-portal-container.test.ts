@@ -1,7 +1,9 @@
 import { describe, expect, test, vi } from 'vitest';
 import {
   getOverlayPortalContainer,
+  isOpenModalDialogHost,
   resolveOverlayPortalContainer,
+  shouldElevatePickerWithPopoverTopLayer,
   supportsPopoverTopLayer,
 } from '@/lib/overlay-portal-container';
 
@@ -39,5 +41,17 @@ describe('overlay portal container', () => {
 
   test('supportsPopoverTopLayer reflects showPopover availability', () => {
     expect(typeof supportsPopoverTopLayer()).toBe('boolean');
+  });
+
+  test('shouldElevatePickerWithPopoverTopLayer is false inside open modal dialog', () => {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'bb-modal-dialog';
+    Object.defineProperty(dialog, 'open', { value: true, configurable: true });
+
+    expect(isOpenModalDialogHost(dialog)).toBe(true);
+    expect(shouldElevatePickerWithPopoverTopLayer(dialog)).toBe(false);
+    expect(shouldElevatePickerWithPopoverTopLayer(document.body)).toBe(
+      supportsPopoverTopLayer(),
+    );
   });
 });

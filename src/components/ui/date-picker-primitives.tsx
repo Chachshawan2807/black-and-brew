@@ -38,6 +38,8 @@ type DatePickerPopoverShellProps = {
   popoverRef?: Ref<HTMLDivElement>;
   ariaLabel: string;
   coords: { top: number; left: number; width: number } | null;
+  /** When false, skip popover top layer (required for scroll inside showModal dialogs). */
+  usePopoverTopLayer?: boolean;
 };
 
 export function DatePickerPopoverShell({
@@ -47,10 +49,11 @@ export function DatePickerPopoverShell({
   popoverRef,
   ariaLabel,
   coords,
+  usePopoverTopLayer: usePopoverTopLayerProp,
 }: DatePickerPopoverShellProps) {
   const reduced = usePrefersReducedMotion();
   const popoverMotion = withReducedMotion(calendarPopover, reduced);
-  const usePopoverTopLayer = supportsPopoverTopLayer();
+  const usePopoverTopLayer = usePopoverTopLayerProp ?? supportsPopoverTopLayer();
 
   useLayoutEffect(() => {
     if (!usePopoverTopLayer) return;
