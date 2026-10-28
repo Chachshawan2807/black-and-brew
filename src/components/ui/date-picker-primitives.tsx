@@ -1,9 +1,11 @@
 'use client';
 
 import type { CSSProperties, ReactNode, Ref } from 'react';
+import { useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
 import { calendarPopover, withReducedMotion } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+import { supportsPopoverTopLayer } from '@/lib/overlay-portal-container';
 import { cn } from '@/lib/utils';
 
 export const DATE_PICKER_TRIGGER_BASE =
@@ -48,10 +50,33 @@ export function DatePickerPopoverShell({
 }: DatePickerPopoverShellProps) {
   const reduced = usePrefersReducedMotion();
   const popoverMotion = withReducedMotion(calendarPopover, reduced);
+  const usePopoverTopLayer = supportsPopoverTopLayer();
+
+  useLayoutEffect(() => {
+    if (!usePopoverTopLayer) return;
+    const node =
+      popoverRef && typeof popoverRef === 'object' && 'current' in popoverRef
+        ? popoverRef.current
+        : null;
+    if (!node) return;
+    try {
+      if (!node.matches(':popover-open')) node.showPopover();
+    } catch {
+      // ignore duplicate showPopover
+    }
+    return () => {
+      try {
+        if (node.matches(':popover-open')) node.hidePopover();
+      } catch {
+        // ignore
+      }
+    };
+  }, [popoverRef, usePopoverTopLayer]);
 
   return (
     <motion.div
       ref={popoverRef}
+      {...(usePopoverTopLayer ? { popover: 'manual' as const } : {})}
       role="dialog"
       aria-label={ariaLabel}
       aria-modal="true"

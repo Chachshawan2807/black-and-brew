@@ -11,6 +11,7 @@ import {
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,
 } from '@/lib/keyboard-aware-panel-style';
+import { ModalOverlayPortalProvider } from '@/contexts/ModalOverlayPortalContext';
 
 type FadeModalScaffoldProps = {
   open: boolean;
@@ -131,6 +132,7 @@ export function FadeModalScaffold({
         onClose?.();
       }}
     >
+      <ModalOverlayPortalProvider dialogRef={dialogRef} open={open}>
       <AnimatePresence
         onExitComplete={() => {
           if (!open && dialogRef.current?.open) {
@@ -191,6 +193,7 @@ export function FadeModalScaffold({
           </>
         )}
       </AnimatePresence>
+      </ModalOverlayPortalProvider>
     </dialog>
   );
 }

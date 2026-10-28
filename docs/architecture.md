@@ -18,7 +18,7 @@ Hybrid PPR architecture: Static Shell (Navigation, Branding) + Dynamic Islands (
 - DnD: @dnd-kit/core + sortable
 - AI: Vercel AI SDK v6 + `@ai-sdk/google` (Gemini)
 - Testing: Vitest + Testing Library
-- Deploy: Vercel (App Router runtime selected per route/API as implemented)
+- Deploy: Vercel (App Router runtime selected per route/API as implemented). Hosting policy and removing Netlify: `docs/deploy/vercel-only-hosting.md`
 - Motion: framer-motion + `src/lib/motion-presets.ts` (v6.9)
 
 ---

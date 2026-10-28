@@ -48,7 +48,9 @@ describe('rounded select shared date-picker-like trigger', () => {
     const roundedSelect = readFile('components/ui/rounded-select.tsx');
     expect(roundedSelect).toContain('createPortal');
     expect(roundedSelect).toContain('SELECT_LISTBOX_Z_CLASS');
-    expect(roundedSelect).toContain('getOverlayPortalContainer');
+    expect(roundedSelect).toContain('resolveOverlayPortalContainer');
+    expect(roundedSelect).toContain('supportsPopoverTopLayer');
+    expect(roundedSelect).toContain('useModalOverlayPortalHostRef');
     expect(roundedSelect).toContain('getAnchoredSuggestionsOverlayStyle');
     expect(roundedSelect).toContain('bindPointerSafeOptionSelect');
     expect(roundedSelect).not.toMatch(/role="listbox"[\s\S]*?BB_SELECT_LIST_CLASS/);
