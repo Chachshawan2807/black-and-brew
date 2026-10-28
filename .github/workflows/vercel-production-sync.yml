@@ -1,0 +1,31 @@
+name: Verify Vercel production sync
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-production-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Vercel production matches this commit
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: prj_o9g154ROglqxrcfrPpW3CScEN1e2
+          VERCEL_ORG_ID: team_xlAtjJPHUWGQ9gvL9oETy8cn
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::warning::VERCEL_TOKEN secret is missing. Add it in GitHub repo Settings → Secrets → Actions to enforce production sync checks."
+            exit 0
+          fi
+          node scripts/verify-vercel-production-sync.mjs --wait-minutes 20 --poll-seconds 45

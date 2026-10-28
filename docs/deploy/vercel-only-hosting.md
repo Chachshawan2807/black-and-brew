@@ -24,4 +24,48 @@ BLACKANDBREW ERP deploy บน **Vercel** เท่านั้น (`vercel.json
 
 ## ตรวจว่า fix ขึ้น Production แล้ว
 
-ใน Vercel deployment ล่าสุดของ Production ควรเห็น commit message ที่มี `fix(schedule): make mgmt modal pickers clickable` หรือ commit ใหม่กว่านั้น
+ใน Vercel deployment ล่าสุดของ Production ควรเห็น commit message ที่ตรงกับ GitHub `main` ล่าสุด (เปรียบ SHA 7 ตัวแรก)
+
+## ป้องกัน GitHub นำหน้า Vercel (production drift)
+
+อาการ: push/merge ไป `main` แล้ว GitHub มี commit ใหม่ แต่ Vercel Production ยังเป็น commit เก่า (ไม่มี deployment ใหม่)
+
+### ตรวจด้วย Vercel MCP / Dashboard (มนุษย์หรือ agent)
+
+1. GitHub `main` HEAD (เช่น `gh api repos/.../commits/main --jq .sha`)
+2. Vercel `list_deployments` ของ project `black-and-brew`, `target=production`, ดู `meta.githubCommitSha`
+3. ต้อง **ตรงกัน** และ state **READY**
+
+การเชื่อม Git ที่ถูกต้อง (ตรวจเมื่อ 2026-10-28):
+
+| รายการ | ค่า |
+| ------ | --- |
+| Vercel project | `black-and-brew` (`prj_o9g154ROglqxrcfrPpW3CScEN1e2`) |
+| Git link | GitHub `Chachshawan2807/black-and-brew`, branch `main` |
+| Team | `chachshawan2807s-projects` |
+
+### สคริปต์ใน repo
+
+```powershell
+# ต้องมี VERCEL_TOKEN (Account Settings → Tokens)
+$env:VERCEL_TOKEN = "<token>"
+npm run deploy:verify-production
+```
+
+รอให้ Vercel deploy จบหลัง push:
+
+```powershell
+npm run deploy:verify-production -- --wait-minutes 20
+```
+
+### GitHub Actions (แนะนำ)
+
+Workflow `.github/workflows/vercel-production-sync.yml` รันหลัง push `main` แล้ว poll Vercel จน production SHA = `github.sha` หรือ fail
+
+ตั้ง secret ครั้งเดียว:
+
+1. Vercel → Account Settings → **Tokens** → สร้าง token (scope อ่าน deployments)
+2. GitHub repo → **Settings → Secrets and variables → Actions** → `VERCEL_TOKEN`
+
+ถ้ายังไม่ตั้ง secret workflow จะขึ้น warning อย่างเดียว ไม่ fail build
+

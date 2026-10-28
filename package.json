@@ -33,6 +33,7 @@
     "agent-skills:init": "git submodule update --init --recursive .agent-skills/vendor/AgentSkillOS",
     "security:firewall:apply": "node scripts/apply-vercel-firewall.mjs",
     "security:firewall:dry-run": "node scripts/apply-vercel-firewall.mjs --dry-run",
+    "deploy:verify-production": "node scripts/verify-vercel-production-sync.mjs",
     "cron:list": "node scripts/cron-job-org.mjs list",
     "cron:status": "node scripts/cron-job-org.mjs status",
     "cron:sync": "node scripts/cron-job-org.mjs sync",
