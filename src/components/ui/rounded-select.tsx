@@ -221,9 +221,10 @@ export function RoundedSelect({
     </ul>
   ) : null;
 
-  const portalContainer = usePopoverTopLayer
-    ? document.body
-    : resolveOverlayPortalContainer(triggerRef.current, modalHostRef);
+  const portalContainer = resolveOverlayPortalContainer(
+    triggerRef.current,
+    modalHostRef,
+  );
 
   return (
     <div ref={rootRef} className={cn('relative', wrapperClassName)}>

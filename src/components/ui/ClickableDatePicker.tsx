@@ -14,10 +14,7 @@ import { th } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
-import {
-  resolveOverlayPortalContainer,
-  supportsPopoverTopLayer,
-} from '@/lib/overlay-portal-container';
+import { resolveOverlayPortalContainer } from '@/lib/overlay-portal-container';
 import { useModalOverlayPortalHostRef } from '@/contexts/ModalOverlayPortalContext';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 import {
@@ -343,12 +340,10 @@ export function ClickableDatePicker({
   const overlayPortalTarget =
     typeof document === 'undefined'
       ? null
-      : supportsPopoverTopLayer()
-        ? document.body
-        : resolveOverlayPortalContainer(triggerRef.current, modalHostRef);
+      : resolveOverlayPortalContainer(triggerRef.current, modalHostRef);
 
   return (
-    // ไม่มี z-index บน container อีกต่อไป เพราะ popover หลุดออกไป document.body แล้ว
+    // Popover portals into the open modal dialog when present (avoids inert document.body).
     <div className={`relative flex-1 ${containerClassName}`}>
 
       {/* ── Trigger button ── */}

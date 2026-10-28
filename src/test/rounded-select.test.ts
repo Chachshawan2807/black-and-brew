@@ -54,6 +54,18 @@ describe('rounded select shared date-picker-like trigger', () => {
     expect(roundedSelect).toContain('getAnchoredSuggestionsOverlayStyle');
     expect(roundedSelect).toContain('bindPointerSafeOptionSelect');
     expect(roundedSelect).not.toMatch(/role="listbox"[\s\S]*?BB_SELECT_LIST_CLASS/);
+    expect(roundedSelect).not.toMatch(
+      /supportsPopoverTopLayer\(\)\s*\?\s*document\.body/,
+    );
+  });
+
+  test('date pickers portal into modal host instead of inert document.body', () => {
+    const datePicker = readFile('components/ui/ClickableDatePicker.tsx');
+    const rangePicker = readFile('components/ui/ClickableDateRangePicker.tsx');
+    for (const source of [datePicker, rangePicker]) {
+      expect(source).toContain('resolveOverlayPortalContainer');
+      expect(source).not.toMatch(/supportsPopoverTopLayer\(\)\s*\?\s*document\.body/);
+    }
   });
 
   test('RoundedSelect listbox allows touch scrolling on mobile', () => {

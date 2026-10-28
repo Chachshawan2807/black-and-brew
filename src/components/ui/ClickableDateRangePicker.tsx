@@ -22,10 +22,7 @@ import {
 } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { formatDateRangePickerLabel } from '@/lib/date-utils';
-import {
-  resolveOverlayPortalContainer,
-  supportsPopoverTopLayer,
-} from '@/lib/overlay-portal-container';
+import { resolveOverlayPortalContainer } from '@/lib/overlay-portal-container';
 import { useModalOverlayPortalHostRef } from '@/contexts/ModalOverlayPortalContext';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 import { cn } from '@/lib/utils';
@@ -279,9 +276,7 @@ export function ClickableDateRangePicker({
   const overlayPortalTarget =
     typeof document === 'undefined'
       ? null
-      : supportsPopoverTopLayer()
-        ? document.body
-        : resolveOverlayPortalContainer(triggerRef.current, modalHostRef);
+      : resolveOverlayPortalContainer(triggerRef.current, modalHostRef);
 
   const calendarContent = (
     <DatePickerPopoverShell
