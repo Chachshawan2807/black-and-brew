@@ -14,6 +14,7 @@ import { SELECT_LISTBOX_Z_CLASS } from '@/lib/floating-action-layout';
 import { getAnchoredSuggestionsOverlayStyle } from '@/lib/quick-search-suggestions-layout';
 import { bindPointerSafeOptionSelect } from '@/lib/pointer-overlay-selection';
 import { cn } from '@/lib/utils';
+import { useOverlayPortalContainer } from '@/components/ui/modal-overlay-portal-context';
 
 export {
   BB_SELECT_TRIGGER_CLASS,
@@ -64,6 +65,7 @@ export function RoundedSelect({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
+  const overlayPortalContainer = useOverlayPortalContainer();
   const isMounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [listStyle, setListStyle] = useState<CSSProperties>({});
   const [uncontrolled, setUncontrolled] = useState(() => String(defaultValue ?? ''));
@@ -239,7 +241,9 @@ export function RoundedSelect({
         />
       </button>
 
-      {isMounted && listbox ? createPortal(listbox, document.body) : null}
+      {isMounted && listbox && overlayPortalContainer
+        ? createPortal(listbox, overlayPortalContainer)
+        : null}
     </div>
   );
 }

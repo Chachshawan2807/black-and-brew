@@ -25,6 +25,7 @@ import {
   DATE_PICKER_WEEKDAY,
   DatePickerPopoverShell,
 } from '@/components/ui/date-picker-primitives';
+import { useOverlayPortalContainer } from '@/components/ui/modal-overlay-portal-context';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ClickableDatePickerProps {
@@ -73,6 +74,7 @@ export function ClickableDatePicker({
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState<PopoverCoords | null>(null);
   const [isMounted, setIsMounted] = useState(false); // ป้องกัน SSR hydration error
+  const overlayPortalContainer = useOverlayPortalContainer();
 
   const [viewDate, setViewDate] = useState(() => {
     if (value) {
@@ -360,7 +362,7 @@ export function ClickableDatePicker({
       </button>
 
       {/* ── Popover via Portal ── */}
-      {isMounted && createPortal(
+      {isMounted && overlayPortalContainer && createPortal(
         <AnimatePresence>
           {isOpen && (
             <>
@@ -379,7 +381,7 @@ export function ClickableDatePicker({
             </>
           )}
         </AnimatePresence>,
-        document.body
+        overlayPortalContainer,
       )}
     </div>
   );

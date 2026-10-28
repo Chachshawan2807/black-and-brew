@@ -1007,6 +1007,56 @@
   }
 
   /*
+   * iOS installed PWA cold launch (home icon + shortcuts): logo + app name like Android splash.
+   * Injected synchronously from PWA_IOS_LAUNCH_SPLASH_SCRIPT before hydration.
+   */
+  .bb-pwa-launch-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483646;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding:
+      env(safe-area-inset-top, 0px)
+      env(safe-area-inset-right, 0px)
+      env(safe-area-inset-bottom, 0px)
+      env(safe-area-inset-left, 0px);
+    transition: opacity 280ms ease;
+  }
+
+  .bb-pwa-launch-splash img {
+    width: 7.5rem;
+    height: 7.5rem;
+    object-fit: contain;
+  }
+
+  .bb-pwa-launch-splash__title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #000;
+  }
+
+  .bb-pwa-launch-splash--dark .bb-pwa-launch-splash__title {
+    color: #f7f5e8;
+  }
+
+  .bb-pwa-launch-splash--dismissed {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bb-pwa-launch-splash {
+      transition: none;
+    }
+  }
+
+  /*
    * Installed PWA shell native feel without affecting browser-tab users.
    * Class is set synchronously via inline bootstrap + PwaShellSync.
    */

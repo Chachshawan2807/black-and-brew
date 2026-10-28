@@ -3,6 +3,13 @@ import { resolve } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import manifest from '@/app/manifest';
 import {
+  PWA_IOS_LAUNCH_SPLASH_SCRIPT,
+  PWA_LAUNCH_SPLASH_CLASS,
+  PWA_LAUNCH_SPLASH_ROOT_ID,
+  shouldShowIosPwaLaunchSplash,
+} from '@/lib/pwa-launch-splash';
+import { PWA_DISPLAY_NAME } from '@/lib/pwa-config';
+import {
   PWA_ANDROID_CLASS,
   PWA_IOS_CLASS,
   PWA_SHELL_BOOTSTRAP_SCRIPT,
@@ -91,8 +98,40 @@ describe('PWA native shell', () => {
   test('layout injects PWA shell bootstrap without blocking hydration', () => {
     const layout = readFileSync(resolve(ROOT, 'src/app/[locale]/layout.tsx'), 'utf-8');
     expect(layout).toContain('PWA_SHELL_BOOTSTRAP_SCRIPT');
+    expect(layout).toContain('PWA_IOS_LAUNCH_SPLASH_SCRIPT');
     expect(layout).toContain('viewportFit: "cover"');
     expect(layout).toMatch(/themeColor:\s*\[/);
+  });
+
+  test('shouldShowIosPwaLaunchSplash is true only for installed iOS PWAs', () => {
+    const iphone =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15';
+    expect(shouldShowIosPwaLaunchSplash({ userAgent: iphone, isStandalone: true })).toBe(true);
+    expect(shouldShowIosPwaLaunchSplash({ userAgent: iphone, isStandalone: false })).toBe(
+      false,
+    );
+    expect(
+      shouldShowIosPwaLaunchSplash({
+        userAgent: 'Mozilla/5.0 (Linux; Android 14)',
+        isStandalone: true,
+      }),
+    ).toBe(false);
+  });
+
+  test('iOS launch splash script paints logo, app name, and dismisses after load', () => {
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain(PWA_LAUNCH_SPLASH_ROOT_ID);
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain(PWA_LAUNCH_SPLASH_CLASS);
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain('/images/notification-icon-512.png');
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain(JSON.stringify(PWA_DISPLAY_NAME));
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain('navigator.standalone');
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain("addEventListener('load'");
+  });
+
+  test('globals.css styles iOS PWA launch splash overlay', () => {
+    const css = readFileSync(resolve(ROOT, 'src/app/[locale]/globals.css'), 'utf-8');
+    expect(css).toContain('.bb-pwa-launch-splash');
+    expect(css).toContain('.bb-pwa-launch-splash__title');
+    expect(css).toContain('prefers-reduced-motion');
   });
 
   test('globals.css applies native shell rules only in standalone PWA', () => {

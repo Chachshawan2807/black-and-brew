@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, MouseEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ import {
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,
 } from '@/lib/keyboard-aware-panel-style';
+import { ModalOverlayPortalProvider } from '@/components/ui/modal-overlay-portal-context';
 
 type FadeModalScaffoldProps = {
   open: boolean;
@@ -49,6 +50,13 @@ export function FadeModalScaffold({
   'aria-label': ariaLabel,
 }: FadeModalScaffoldProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [overlayPortalContainer, setOverlayPortalContainer] = useState<HTMLElement | null>(
+    null,
+  );
+  const setDialogRef = useCallback((node: HTMLDialogElement | null) => {
+    dialogRef.current = node;
+    setOverlayPortalContainer(node);
+  }, []);
   const reduced = usePrefersReducedMotion();
   const overlay = withReducedMotion(fadeOverlay, reduced);
   const panelPreset = panelVariant === 'sheet' ? modalSheetBottom : modalContent;
@@ -122,7 +130,7 @@ export function FadeModalScaffold({
 
   return (
     <dialog
-      ref={dialogRef}
+      ref={setDialogRef}
       className="bb-modal-dialog fixed inset-0 m-0 h-full max-h-none w-full max-w-none overflow-visible border-0 bg-transparent p-0 text-foreground"
       style={{ zIndex: zIndex + 1 }}
       aria-label={ariaLabel}
@@ -131,6 +139,7 @@ export function FadeModalScaffold({
         onClose?.();
       }}
     >
+      <ModalOverlayPortalProvider container={overlayPortalContainer}>
       <AnimatePresence
         onExitComplete={() => {
           if (!open && dialogRef.current?.open) {
@@ -191,6 +200,7 @@ export function FadeModalScaffold({
           </>
         )}
       </AnimatePresence>
+      </ModalOverlayPortalProvider>
     </dialog>
   );
 }

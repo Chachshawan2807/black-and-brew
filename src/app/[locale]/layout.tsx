@@ -10,6 +10,7 @@ import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { RouteLoadingSkeleton } from '@/components/ui/route-loading-skeleton';
 import { PWA_APPLE_TOUCH_ICON, PWA_FAVICON } from '@/lib/pwa-assets';
 import { PWA_DISPLAY_NAME } from '@/lib/pwa-config';
+import { PWA_IOS_LAUNCH_SPLASH_SCRIPT } from '@/lib/pwa-launch-splash';
 import { PWA_SHELL_BOOTSTRAP_SCRIPT, PWA_THEME_COLORS } from '@/lib/pwa-standalone';
 import { appFontClassName } from '@/lib/fonts';
 import "./globals.css";
@@ -69,6 +70,9 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground bb-transition">
         <script
           dangerouslySetInnerHTML={{ __html: PWA_SHELL_BOOTSTRAP_SCRIPT }}
+        />
+        <script
+          dangerouslySetInnerHTML={{ __html: PWA_IOS_LAUNCH_SPLASH_SCRIPT }}
         />
         <ThemeProvider>
           <Suspense fallback={<RouteLoadingSkeleton label="กำลังโหลด..." />}>

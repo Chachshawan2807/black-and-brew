@@ -24,6 +24,7 @@ import { th } from 'date-fns/locale';
 import { formatDateRangePickerLabel } from '@/lib/date-utils';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 import { cn } from '@/lib/utils';
+import { useOverlayPortalContainer } from '@/components/ui/modal-overlay-portal-context';
 import {
   DATE_PICKER_DAY_BASE,
   DATE_PICKER_ICON_WRAP,
@@ -89,6 +90,7 @@ export function ClickableDateRangePicker({
 
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState<PopoverCoords | null>(null);
+  const overlayPortalContainer = useOverlayPortalContainer();
   const isMounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const [viewDate, setViewDate] = useState(() => parseDate(startValue) ?? new Date());
@@ -380,7 +382,7 @@ export function ClickableDateRangePicker({
         <span className="truncate">{displayValue}</span>
       </button>
 
-      {isMounted && createPortal(
+      {isMounted && overlayPortalContainer && createPortal(
         <AnimatePresence>
           {isOpen && (
             <>
@@ -399,7 +401,7 @@ export function ClickableDateRangePicker({
             </>
           )}
         </AnimatePresence>,
-        document.body
+        overlayPortalContainer,
       )}
     </div>
   );

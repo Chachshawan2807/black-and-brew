@@ -31,6 +31,7 @@ describe('secretary mobile task overlays', () => {
     );
     expect(scaffold).toContain('centerScrollable');
     expect(scaffold).toContain('keyboardAware');
+    expect(scaffold).toContain('ModalOverlayPortalProvider');
     expect(scaffold).toContain('overflow-y-auto overscroll-contain bb-smooth-scroll');
     expect(scaffold).toContain('flex min-h-full');
     expect(scaffold).toContain("verticalAlign: 'center'");
