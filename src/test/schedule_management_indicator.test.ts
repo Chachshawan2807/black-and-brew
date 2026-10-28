@@ -40,4 +40,10 @@ describe('schedule management blue dot indicator', () => {
     );
     expect(scheduleClientCode).toContain('getMgmtHistoryScrollRoot');
   });
+
+  test('opening management modal clears shift cell picker overlay', () => {
+    expect(scheduleClientCode).toMatch(
+      /onShowManagementModal=\{\(\) => \{[\s\S]*setSelectedCell\(null\)[\s\S]*setShowManagementModal\(true\)/,
+    );
+  });
 });

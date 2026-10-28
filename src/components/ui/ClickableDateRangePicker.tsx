@@ -22,6 +22,7 @@ import {
 } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { formatDateRangePickerLabel } from '@/lib/date-utils';
+import { getOverlayPortalContainer } from '@/lib/overlay-portal-container';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import {
@@ -399,7 +400,7 @@ export function ClickableDateRangePicker({
             </>
           )}
         </AnimatePresence>,
-        document.body
+        getOverlayPortalContainer()
       )}
     </div>
   );
