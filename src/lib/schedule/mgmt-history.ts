@@ -3,7 +3,10 @@ import type { ShiftTypeDisplay } from '@/lib/shift-type-config';
 import type { Shift } from '@/types';
 
 export const MGMT_HISTORY_PAGE_SIZE = 80;
+/** Extra pages fetched in the background after the first visible page (empty-filter recovery). */
 export const MGMT_HISTORY_MAX_CHAINED_PAGES = 8;
+/** First paint: one page only; more pages load via scroll or background chain. */
+export const MGMT_HISTORY_FIRST_PAINT_PAGES = 1;
 
 /** PostgREST OR filter management rows, remark legacy rows, and leave-type legacy rows. */
 export const MGMT_HISTORY_QUERY_OR =
@@ -130,6 +133,17 @@ export function applyManagementSaveToRawShifts(
   return [...kept, ...params.inserted];
 }
 
+export function removeManagementHistoryGroupFromRawShifts(
+  raw: ManagementHistoryShiftRow[],
+  item: Pick<ManagementHistoryItem, 'employee_id' | 'startDate' | 'endDate'>,
+): ManagementHistoryShiftRow[] {
+  return raw.filter(
+    (shift) =>
+      shift.employee_id !== item.employee_id
+      || !isDateInInclusiveRange(shift.start_time, item.startDate, item.endDate),
+  );
+}
+
 export function groupManagementHistoryShifts(
   shifts: ManagementHistoryShiftRow[],
   shiftTypes: ShiftTypeDisplay[],
@@ -139,21 +153,21 @@ export function groupManagementHistoryShifts(
     (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
   );
 
-  sorted.forEach((shift) => {
-    const prev = grouped.find(
-      (entry) =>
-        entry.employee_id === shift.employee_id &&
-        entry.metadata?.location === shift.metadata?.location &&
-        entry.metadata?.remark === shift.metadata?.remark &&
-        format(addDays(new Date(entry.endDate), 1), 'yyyy-MM-dd') ===
-          format(new Date(shift.start_time), 'yyyy-MM-dd'),
-    );
+  for (const shift of sorted) {
+    const prev = grouped[grouped.length - 1];
+    const shiftDay = format(new Date(shift.start_time), 'yyyy-MM-dd');
+    const canMerge =
+      prev
+      && prev.employee_id === shift.employee_id
+      && prev.metadata?.location === shift.metadata?.location
+      && prev.metadata?.remark === shift.metadata?.remark
+      && format(addDays(new Date(prev.endDate), 1), 'yyyy-MM-dd') === shiftDay;
 
     const typeMatch = shiftTypes.find((t) => t.value === shift.metadata?.location);
 
-    if (prev) {
+    if (canMerge) {
       prev.endDate = shift.start_time;
-      return;
+      continue;
     }
 
     grouped.push({
@@ -168,7 +182,7 @@ export function groupManagementHistoryShifts(
       colorStyle: typeMatch?.style,
       metadata: { ...shift.metadata },
     });
-  });
+  }
 
   return grouped.reverse();
 }

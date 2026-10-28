@@ -133,7 +133,9 @@ import {
   buildManagementDateRange,
   groupManagementHistoryShifts,
   mergeManagementHistoryShiftPages,
+  MGMT_HISTORY_FIRST_PAINT_PAGES,
   MGMT_HISTORY_MAX_CHAINED_PAGES,
+  removeManagementHistoryGroupFromRawShifts,
   shouldContinueMgmtHistoryPagination,
   type ManagementHistoryItem,
   type ManagementHistoryShiftRow,
@@ -639,11 +641,11 @@ export default function ScheduleClient({
     remark: ''
   });
 
-  const [mgmtHistory, setMgmtHistory] = useState<ManagementHistoryItem[]>([]);
   const [mgmtRawShifts, setMgmtRawShifts] = useState<ManagementHistoryShiftRow[]>([]);
   const [, setMgmtHistoryCursor] = useState<string | null>(null);
   const [mgmtHistoryHasMore, setMgmtHistoryHasMore] = useState(true);
   const [mgmtHistoryLoading, setMgmtHistoryLoading] = useState(false);
+  const [mgmtHistoryLoadingMore, setMgmtHistoryLoadingMore] = useState(false);
   const mgmtModalScrollRef = useRef<HTMLDivElement>(null);
   const mgmtHistoryScrollRef = useRef<HTMLDivElement>(null);
   const mgmtHistoryLoadMoreRef = useRef<HTMLTableRowElement>(null);
@@ -651,8 +653,14 @@ export default function ScheduleClient({
   const mgmtHistoryHasMoreRef = useRef(true);
   const mgmtHistoryCursorRef = useRef<string | null>(null);
   const mgmtRawShiftsRef = useRef<ManagementHistoryShiftRow[]>([]);
+  const mgmtHistoryLoadingRef = useRef(false);
   const [historyFilter, setHistoryFilter] = useState({ start: '', end: '' });
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const mgmtHistory = useMemo(() => {
+    if (mgmtRawShifts.length === 0) return [];
+    return groupManagementHistoryShifts(mgmtRawShifts, shiftTypes);
+  }, [mgmtRawShifts, shiftTypes]);
 
   const scheduleOverlayLayers = useMemo(
     () => [
@@ -1089,10 +1097,16 @@ export default function ScheduleClient({
   });
 
   const fetchMgmtHistory = useCallback(async ({ reset = false }: { reset?: boolean } = {}) => {
-    const generation = ++mgmtFetchGenerationRef.current;
+    if (!reset && mgmtHistoryLoadingRef.current) return;
 
-    if (reset || mgmtRawShiftsRef.current.length === 0) {
-      setMgmtHistoryLoading(true);
+    const generation = ++mgmtFetchGenerationRef.current;
+    const hadRows = mgmtRawShiftsRef.current.length > 0;
+
+    if (reset) {
+      if (!hadRows) setMgmtHistoryLoading(true);
+    } else {
+      mgmtHistoryLoadingRef.current = true;
+      setMgmtHistoryLoadingMore(true);
     }
 
     try {
@@ -1101,6 +1115,7 @@ export default function ScheduleClient({
       let hasMore = true;
       let pagesLoaded = 0;
       const maxPages = reset ? MGMT_HISTORY_MAX_CHAINED_PAGES : 1;
+      const firstPaintPages = reset ? MGMT_HISTORY_FIRST_PAINT_PAGES : maxPages;
 
       while (hasMore && pagesLoaded < maxPages) {
         if (generation !== mgmtFetchGenerationRef.current) return;
@@ -1121,9 +1136,10 @@ export default function ScheduleClient({
         const batch = result.batch as ManagementHistoryShiftRow[];
         const rawBatchSize = result.rawBatchSize ?? batch.length;
 
-        accumulated = reset && pagesLoaded === 0
-          ? batch
-          : mergeManagementHistoryShiftPages(accumulated, batch);
+        accumulated =
+          reset && pagesLoaded === 0
+            ? batch
+            : mergeManagementHistoryShiftPages(accumulated, batch);
 
         hasMore = result.hasMore;
         cursor = result.cursor;
@@ -1137,15 +1153,26 @@ export default function ScheduleClient({
         setMgmtHistoryHasMore(hasMore);
         setMgmtRawShifts(accumulated);
 
+        if (reset && pagesLoaded === firstPaintPages) {
+          setMgmtHistoryLoading(false);
+          if (hasMore && shouldContinueMgmtHistoryPagination(rawBatchSize, batch.length, pagesLoaded)) {
+            setMgmtHistoryLoadingMore(true);
+          }
+        }
+
         if (!reset) break;
 
-        if (shouldContinueMgmtHistoryPagination(rawBatchSize, batch.length, pagesLoaded)) {
-          continue;
+        if (!shouldContinueMgmtHistoryPagination(rawBatchSize, batch.length, pagesLoaded)) {
+          break;
         }
       }
     } finally {
+      if (!reset) {
+        mgmtHistoryLoadingRef.current = false;
+      }
       if (generation === mgmtFetchGenerationRef.current) {
         setMgmtHistoryLoading(false);
+        setMgmtHistoryLoadingMore(false);
       }
     }
   }, [historyFilter]);
@@ -1159,11 +1186,11 @@ export default function ScheduleClient({
 
   const prefetchMgmtHistoryIfShort = useCallback(() => {
     const el = getMgmtHistoryScrollRoot();
-    if (!el || !mgmtHistoryHasMoreRef.current || mgmtHistoryLoading) return;
+    if (!el || !mgmtHistoryHasMoreRef.current || mgmtHistoryLoadingRef.current) return;
     if (el.scrollHeight <= el.clientHeight + 12) {
       void fetchMgmtHistory();
     }
-  }, [fetchMgmtHistory, getMgmtHistoryScrollRoot, mgmtHistoryLoading]);
+  }, [fetchMgmtHistory, getMgmtHistoryScrollRoot]);
 
   useEffect(() => {
     void fetchMgmtHistory({ reset: true });
@@ -1171,19 +1198,21 @@ export default function ScheduleClient({
 
   useEffect(() => {
     if (!showManagementModal) return;
-    void fetchMgmtHistory({ reset: true });
+    if (mgmtRawShiftsRef.current.length === 0 && !mgmtHistoryLoadingRef.current) {
+      void fetchMgmtHistory({ reset: true });
+    }
   }, [showManagementModal, fetchMgmtHistory]);
-
-  useEffect(() => {
-    if (!showManagementModal || mgmtRawShifts.length === 0) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- regroup accumulated history rows
-    setMgmtHistory(groupManagementHistoryShifts(mgmtRawShifts, shiftTypes));
-  }, [mgmtRawShifts, shiftTypes, showManagementModal]);
 
   useEffect(() => {
     if (!showManagementModal || mgmtHistoryLoading) return;
     prefetchMgmtHistoryIfShort();
-  }, [mgmtHistory.length, mgmtHistoryLoading, mgmtHistoryHasMore, prefetchMgmtHistoryIfShort, showManagementModal]);
+  }, [
+    mgmtHistory.length,
+    mgmtHistoryLoading,
+    mgmtHistoryHasMore,
+    prefetchMgmtHistoryIfShort,
+    showManagementModal,
+  ]);
 
   useEffect(() => {
     if (!showManagementModal) return;
@@ -1195,7 +1224,7 @@ export default function ScheduleClient({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && mgmtHistoryHasMoreRef.current && !mgmtHistoryLoading) {
+        if (entries[0]?.isIntersecting && mgmtHistoryHasMoreRef.current && !mgmtHistoryLoadingRef.current) {
           void fetchMgmtHistory();
         }
       },
@@ -1209,7 +1238,7 @@ export default function ScheduleClient({
     getMgmtHistoryScrollRoot,
     mgmtHistoryHasMore,
     mgmtHistory.length,
-    mgmtHistoryLoading,
+    mgmtHistoryLoadingMore,
     showManagementModal,
   ]);
 
@@ -1286,8 +1315,10 @@ export default function ScheduleClient({
     }
 
     setConfirmDeleteId(historyItem.id);
-    const previousHistory = [...mgmtHistory];
-    setMgmtHistory(prev => prev.filter(h => h.id !== historyItem.id));
+    const previousRaw = [...mgmtRawShiftsRef.current];
+    const nextRaw = removeManagementHistoryGroupFromRawShifts(previousRaw, historyItem);
+    mgmtRawShiftsRef.current = nextRaw;
+    setMgmtRawShifts(nextRaw);
 
     try {
       const { success, error } = await deleteManagementHistoryRange(
@@ -1308,7 +1339,8 @@ export default function ScheduleClient({
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ';
       console.error('Failed to delete history:', err);
-      setMgmtHistory(previousHistory);
+      mgmtRawShiftsRef.current = previousRaw;
+      setMgmtRawShifts(previousRaw);
       alert('ไม่สามารถลบประวัติได้: ' + message);
     } finally {
       setConfirmDeleteId(null);
@@ -2421,10 +2453,10 @@ export default function ScheduleClient({
                             </td>
                           </tr>
                         ))}
-                        {(mgmtHistoryHasMore || mgmtHistoryLoading) && (
+                        {(mgmtHistoryHasMore || mgmtHistoryLoadingMore) && (
                           <tr ref={mgmtHistoryLoadMoreRef}>
                             <td colSpan={5} className="p-3 text-center text-muted-foreground text-[12px] bg-transparent">
-                              {mgmtHistoryLoading ? (
+                              {mgmtHistoryLoadingMore ? (
                                 <span className="inline-flex items-center gap-2">
                                   <LoadingIcon size="md" />
                                   กำลังโหลดประวัติเพิ่มเติม...
@@ -2441,7 +2473,7 @@ export default function ScheduleClient({
                             </td>
                           </tr>
                         )}
-                        {!mgmtHistoryHasMore && !mgmtHistoryLoading && mgmtHistory.length > 0 && (
+                        {!mgmtHistoryHasMore && !mgmtHistoryLoadingMore && mgmtHistory.length > 0 && (
                           <tr>
                             <td colSpan={5} className="p-3 text-center text-muted-foreground text-[12px] bg-transparent">
                               แสดงครบแล้ว

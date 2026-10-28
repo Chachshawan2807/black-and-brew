@@ -4,6 +4,7 @@ import {
   groupManagementHistoryShifts,
   isManagementHistoryShift,
   mergeManagementHistoryShiftPages,
+  removeManagementHistoryGroupFromRawShifts,
   shouldContinueMgmtHistoryPagination,
 } from '@/lib/schedule/mgmt-history';
 
@@ -90,6 +91,45 @@ describe('mergeManagementHistoryShiftPages', () => {
     ];
 
     expect(mergeManagementHistoryShiftPages(existing, incoming)).toHaveLength(2);
+  });
+});
+
+describe('removeManagementHistoryGroupFromRawShifts', () => {
+  test('drops raw shift rows in the deleted inclusive date range for one employee', () => {
+    const raw = [
+      {
+        id: '1',
+        employee_id: 'a',
+        start_time: '2026-05-27T00:00:00',
+        end_time: '2026-05-27T00:00:00',
+        status: 'on_leave',
+        metadata: { is_management: true, location: 'ลา' },
+      },
+      {
+        id: '2',
+        employee_id: 'a',
+        start_time: '2026-05-28T00:00:00',
+        end_time: '2026-05-28T00:00:00',
+        status: 'on_leave',
+        metadata: { is_management: true, location: 'ลา' },
+      },
+      {
+        id: '3',
+        employee_id: 'b',
+        start_time: '2026-05-28T00:00:00',
+        end_time: '2026-05-28T00:00:00',
+        status: 'on_leave',
+        metadata: { is_management: true, location: 'ลา' },
+      },
+    ];
+
+    const next = removeManagementHistoryGroupFromRawShifts(raw, {
+      employee_id: 'a',
+      startDate: '2026-05-27T00:00:00',
+      endDate: '2026-05-28T00:00:00',
+    });
+
+    expect(next.map((row) => row.id)).toEqual(['3']);
   });
 });
 

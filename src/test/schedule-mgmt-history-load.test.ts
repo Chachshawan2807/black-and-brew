@@ -37,8 +37,26 @@ describe('schedule management history loading', () => {
     );
 
     expect(fetchBody).toContain('setMgmtRawShifts(accumulated);');
+    expect(fetchBody).toContain('MGMT_HISTORY_FIRST_PAINT_PAGES');
     expect(fetchBody).toContain('shouldContinueMgmtHistoryPagination');
     expect(fetchBody).toContain('mgmtFetchGenerationRef');
+    expect(fetchBody).toContain('setMgmtHistoryLoading(false);');
+  });
+
+  test('reuses prefetched history when management modal opens', () => {
+    expect(scheduleClientCode).toMatch(
+      /showManagementModal[\s\S]*mgmtRawShiftsRef\.current\.length === 0[\s\S]*fetchMgmtHistory\(\{ reset: true \}\)/,
+    );
+    expect(scheduleClientCode).not.toMatch(
+      /showManagementModal[\s\S]*void fetchMgmtHistory\(\{ reset: true \}\);\s*\}, \[showManagementModal, fetchMgmtHistory\]\);/,
+    );
+  });
+
+  test('derives grouped history rows with useMemo instead of effect setState', () => {
+    expect(scheduleClientCode).toContain('const mgmtHistory = useMemo(');
+    expect(scheduleClientCode).not.toMatch(
+      /setMgmtHistory\(groupManagementHistoryShifts/,
+    );
   });
 
   test('week shift refresh waits for an authenticated client session', () => {
