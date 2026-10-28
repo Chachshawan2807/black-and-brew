@@ -14,7 +14,11 @@ import { th } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
-import { getOverlayPortalContainer } from '@/lib/overlay-portal-container';
+import {
+  resolveOverlayPortalContainer,
+  supportsPopoverTopLayer,
+} from '@/lib/overlay-portal-container';
+import { useModalOverlayPortalHostRef } from '@/contexts/ModalOverlayPortalContext';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 import {
   DATE_PICKER_DAY_BASE,
@@ -69,6 +73,7 @@ export function ClickableDatePicker({
   // ─── Refs ─────────────────────────────────────────────────────────────────
   const triggerRef = useRef<HTMLButtonElement>(null);  // ปุ่มที่ user กด
   const popoverRef = useRef<HTMLDivElement>(null);     // calendar popover เอง
+  const modalHostRef = useModalOverlayPortalHostRef();
 
   // ─── State ────────────────────────────────────────────────────────────────
   const [isOpen, setIsOpen] = useState(false);
@@ -336,6 +341,13 @@ export function ClickableDatePicker({
     </DatePickerPopoverShell>
   );
 
+  const overlayPortalTarget =
+    typeof document === 'undefined'
+      ? null
+      : supportsPopoverTopLayer()
+        ? document.body
+        : resolveOverlayPortalContainer(triggerRef.current, modalHostRef);
+
   return (
     // ไม่มี z-index บน container อีกต่อไป เพราะ popover หลุดออกไป document.body แล้ว
     <div className={`relative flex-1 ${containerClassName}`}>
@@ -361,7 +373,7 @@ export function ClickableDatePicker({
       </button>
 
       {/* ── Popover via Portal ── */}
-      {isMounted && createPortal(
+      {isMounted && overlayPortalTarget && createPortal(
         <AnimatePresence>
           {isOpen && (
             <>
@@ -380,7 +392,7 @@ export function ClickableDatePicker({
             </>
           )}
         </AnimatePresence>,
-        getOverlayPortalContainer()
+        overlayPortalTarget,
       )}
     </div>
   );

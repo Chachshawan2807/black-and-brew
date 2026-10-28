@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from '@/lib/icons';
+import { useModalOverlayPortalHostRef } from '@/contexts/ModalOverlayPortalContext';
 import {
   BB_SELECT_LIST_BASE_CLASS,
   BB_SELECT_OPTION_CLASS,
@@ -13,7 +14,10 @@ import {
 import { SELECT_LISTBOX_Z_CLASS } from '@/lib/floating-action-layout';
 import { getAnchoredSuggestionsOverlayStyle } from '@/lib/quick-search-suggestions-layout';
 import { bindPointerSafeOptionSelect } from '@/lib/pointer-overlay-selection';
-import { getOverlayPortalContainer } from '@/lib/overlay-portal-container';
+import {
+  resolveOverlayPortalContainer,
+  supportsPopoverTopLayer,
+} from '@/lib/overlay-portal-container';
 import { cn } from '@/lib/utils';
 
 export {
@@ -65,6 +69,8 @@ export function RoundedSelect({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
+  const modalHostRef = useModalOverlayPortalHostRef();
+  const usePopoverTopLayer = supportsPopoverTopLayer();
   const isMounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [listStyle, setListStyle] = useState<CSSProperties>({});
   const [uncontrolled, setUncontrolled] = useState(() => String(defaultValue ?? ''));
@@ -152,6 +158,24 @@ export function RoundedSelect({
     };
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open || !usePopoverTopLayer) return;
+    const list = listRef.current;
+    if (!list) return;
+    try {
+      if (!list.matches(':popover-open')) list.showPopover();
+    } catch {
+      // ignore duplicate showPopover
+    }
+    return () => {
+      try {
+        if (list.matches(':popover-open')) list.hidePopover();
+      } catch {
+        // ignore
+      }
+    };
+  }, [open, listStyle, usePopoverTopLayer]);
+
   const selectValue = (next: string) => {
     if (!isControlled) setUncontrolled(next);
     emitChange(onChange, resolvedName, next);
@@ -163,6 +187,7 @@ export function RoundedSelect({
       ref={listRef}
       id={listId}
       role="listbox"
+      {...(usePopoverTopLayer ? { popover: 'manual' as const } : {})}
       className={cn(
         BB_SELECT_LIST_BASE_CLASS,
         'fixed min-w-[10rem] bb-smooth-scroll overscroll-y-contain',
@@ -196,6 +221,10 @@ export function RoundedSelect({
       })}
     </ul>
   ) : null;
+
+  const portalContainer = usePopoverTopLayer
+    ? document.body
+    : resolveOverlayPortalContainer(triggerRef.current, modalHostRef);
 
   return (
     <div ref={rootRef} className={cn('relative', wrapperClassName)}>
@@ -240,7 +269,7 @@ export function RoundedSelect({
         />
       </button>
 
-      {isMounted && listbox ? createPortal(listbox, getOverlayPortalContainer()) : null}
+      {isMounted && listbox ? createPortal(listbox, portalContainer) : null}
     </div>
   );
 }

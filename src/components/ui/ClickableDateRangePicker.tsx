@@ -22,7 +22,11 @@ import {
 } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { formatDateRangePickerLabel } from '@/lib/date-utils';
-import { getOverlayPortalContainer } from '@/lib/overlay-portal-container';
+import {
+  resolveOverlayPortalContainer,
+  supportsPopoverTopLayer,
+} from '@/lib/overlay-portal-container';
+import { useModalOverlayPortalHostRef } from '@/contexts/ModalOverlayPortalContext';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import {
@@ -87,6 +91,7 @@ export function ClickableDateRangePicker({
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const modalHostRef = useModalOverlayPortalHostRef();
 
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState<PopoverCoords | null>(null);
@@ -271,6 +276,13 @@ export function ClickableDateRangePicker({
   const rangeStart = draftStart;
   const rangeEnd = draftEnd;
 
+  const overlayPortalTarget =
+    typeof document === 'undefined'
+      ? null
+      : supportsPopoverTopLayer()
+        ? document.body
+        : resolveOverlayPortalContainer(triggerRef.current, modalHostRef);
+
   const calendarContent = (
     <DatePickerPopoverShell
       key="date-range-picker-popover"
@@ -381,7 +393,7 @@ export function ClickableDateRangePicker({
         <span className="truncate">{displayValue}</span>
       </button>
 
-      {isMounted && createPortal(
+      {isMounted && overlayPortalTarget && createPortal(
         <AnimatePresence>
           {isOpen && (
             <>
@@ -400,7 +412,7 @@ export function ClickableDateRangePicker({
             </>
           )}
         </AnimatePresence>,
-        getOverlayPortalContainer()
+        overlayPortalTarget,
       )}
     </div>
   );

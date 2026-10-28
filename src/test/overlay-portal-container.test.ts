@@ -1,24 +1,43 @@
 import { describe, expect, test, vi } from 'vitest';
-import { getOverlayPortalContainer } from '@/lib/overlay-portal-container';
+import {
+  getOverlayPortalContainer,
+  resolveOverlayPortalContainer,
+  supportsPopoverTopLayer,
+} from '@/lib/overlay-portal-container';
 
-describe('getOverlayPortalContainer', () => {
-  test('returns document.body when no modal dialog is open', () => {
+describe('overlay portal container', () => {
+  test('getOverlayPortalContainer returns document.body when no modal is open', () => {
     expect(getOverlayPortalContainer()).toBe(document.body);
   });
 
-  test('returns the last matching open modal dialog from the DOM query', () => {
-    const modals = [
-      document.createElement('dialog'),
-      document.createElement('dialog'),
-    ];
-    modals.forEach((node) => node.classList.add('bb-modal-dialog'));
+  test('resolveOverlayPortalContainer prefers open dialog from host ref', () => {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'bb-modal-dialog';
+    Object.defineProperty(dialog, 'open', { value: true, configurable: true });
+
+    const hostRef = { current: dialog };
+    expect(resolveOverlayPortalContainer(null, hostRef)).toBe(dialog);
+  });
+
+  test('resolveOverlayPortalContainer walks open dialogs without :modal selector', () => {
+    const closed = document.createElement('dialog');
+    closed.className = 'bb-modal-dialog';
+    Object.defineProperty(closed, 'open', { value: false, configurable: true });
+
+    const open = document.createElement('dialog');
+    open.className = 'bb-modal-dialog';
+    Object.defineProperty(open, 'open', { value: true, configurable: true });
 
     const querySpy = vi
       .spyOn(document, 'querySelectorAll')
-      .mockReturnValue(modals as unknown as NodeListOf<Element>);
+      .mockReturnValue([closed, open] as unknown as NodeListOf<Element>);
 
-    expect(getOverlayPortalContainer()).toBe(modals[1]);
+    expect(resolveOverlayPortalContainer(null, null)).toBe(open);
 
     querySpy.mockRestore();
+  });
+
+  test('supportsPopoverTopLayer reflects showPopover availability', () => {
+    expect(typeof supportsPopoverTopLayer()).toBe('boolean');
   });
 });
