@@ -57,4 +57,35 @@ describe('formatScheduleShiftEditHistoryDisplay', () => {
     expect(display.headline).toContain('ปิ่น');
     expect(display.detail).toContain('8:00 → 7:00');
   });
+
+  test('does not show status line when shift detail is present', () => {
+    const display = formatScheduleShiftEditHistoryDisplay(
+      makeShiftRow({
+        action: 'CREATE',
+        field_changes: [
+          { field: 'status', old_value: null, new_value: 'scheduled' },
+          {
+            field: 'metadata.location',
+            old_value: { location: 'วันหยุด', status: 'on_leave' },
+            new_value: { location: '8:00', status: 'scheduled' },
+          },
+        ],
+        old_value: null,
+        new_value: {
+          employee_id: 'emp-2',
+          start_time: '2026-11-08T00:00:00',
+          end_time: '2026-11-08T23:59:59',
+          status: 'scheduled',
+          metadata: { location: '8:00', remark: '' },
+        },
+        entity_label: 'มุก',
+        metadata: { staffName: 'มุก', workDate: '2026-11-08', employeeId: 'emp-2' },
+      }),
+      'th',
+    );
+
+    expect(display.detailLines).toBeDefined();
+    expect(display.detail).toContain('กะ:');
+    expect(display.detail).not.toContain('สถานะ');
+  });
 });

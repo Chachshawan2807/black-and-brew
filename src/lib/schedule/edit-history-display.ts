@@ -33,6 +33,7 @@ const SHIFT_HISTORY_HIDDEN_FIELDS = new Set([
   'start_time',
   'created_at',
   'updated_at',
+  'status',
 ]);
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
