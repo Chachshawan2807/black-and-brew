@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, cache } from 'react';
 import { cookies } from 'next/headers';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { startOfWeek, addDays, format, startOfMonth, endOfMonth } from 'date-fns';
@@ -13,6 +13,14 @@ import {
   DASHBOARD_WEEKLY_START_COOKIE,
   resolveDashboardDateRange,
 } from '@/lib/dashboard-date-range';
+
+const fetchDashboardShifts = cache(async (startDate: string, endDate: string) =>
+  getSupabaseAdmin()
+    .from('shifts')
+    .select('id, employee_id, start_time, end_time, status, metadata')
+    .gte('start_time', `${startDate}T00:00:00`)
+    .lte('start_time', `${endDate}T23:59:59`),
+);
 
 async function resolveDashboardDates(searchParams: Promise<{ start?: string; end?: string }>) {
   const [{ start: startParam, end: endParam }, cookieStore] = await Promise.all([
@@ -74,17 +82,10 @@ async function DashboardWeeklySection({
       .select('id, date, name')
       .gte('date', startDate)
       .lte('date', endDate),
-    shiftQueryPlan.mode === 'combined'
-      ? supabaseAdmin
-          .from('shifts')
-          .select('id, employee_id, start_time, end_time, status, metadata')
-          .gte('start_time', shiftQueryPlan.startDate + 'T00:00:00')
-          .lte('start_time', shiftQueryPlan.endDate + 'T23:59:59')
-      : supabaseAdmin
-          .from('shifts')
-          .select('id, employee_id, start_time, end_time, status, metadata')
-          .gte('start_time', shiftQueryPlan.weeklyStart + 'T00:00:00')
-          .lte('start_time', shiftQueryPlan.weeklyEnd + 'T23:59:59'),
+    fetchDashboardShifts(
+      shiftQueryPlan.mode === 'combined' ? shiftQueryPlan.startDate : shiftQueryPlan.weeklyStart,
+      shiftQueryPlan.mode === 'combined' ? shiftQueryPlan.endDate : shiftQueryPlan.weeklyEnd,
+    ),
   ]);
 
   const shifts =
@@ -128,17 +129,10 @@ async function DashboardMonthlySection({
       .from('profiles')
       .select('id, full_name, dashboard_order, schedule_order')
       .order('schedule_order', { ascending: true }),
-    shiftQueryPlan.mode === 'combined'
-      ? supabaseAdmin
-          .from('shifts')
-          .select('id, employee_id, start_time, end_time, status, metadata')
-          .gte('start_time', shiftQueryPlan.startDate + 'T00:00:00')
-          .lte('start_time', shiftQueryPlan.endDate + 'T23:59:59')
-      : supabaseAdmin
-          .from('shifts')
-          .select('id, employee_id, start_time, end_time, status, metadata')
-          .gte('start_time', shiftQueryPlan.rosterStart + 'T00:00:00')
-          .lte('start_time', shiftQueryPlan.rosterEnd + 'T23:59:59'),
+    fetchDashboardShifts(
+      shiftQueryPlan.mode === 'combined' ? shiftQueryPlan.startDate : shiftQueryPlan.rosterStart,
+      shiftQueryPlan.mode === 'combined' ? shiftQueryPlan.endDate : shiftQueryPlan.rosterEnd,
+    ),
     supabaseAdmin
       .from('holidays')
       .select('id, date, name')

@@ -16,10 +16,8 @@ export default async function BeanOrderDetailPage({
 }) {
   await connection();
   const { locale, id } = await params;
-  const authed = await checkAuth();
+  const [authed, result] = await Promise.all([checkAuth(), fetchBeanOrderDetail(id)]);
   if (!authed) redirect(`/${locale}`);
-
-  const result = await fetchBeanOrderDetail(id);
   // Only a genuinely missing order is a 404. Transient DB/auth/network failures
   // must surface a retryable error boundary instead of a blank not-found page.
   if (result.notFound) notFound();

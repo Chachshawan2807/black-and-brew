@@ -10,10 +10,12 @@ export default async function BeanOrdersPage({
   params: Promise<{ locale: string }>;
 }) {
   await connection();
-  const [{ locale }, authed] = await Promise.all([params, checkAuth()]);
+  const [{ locale }, authed, result] = await Promise.all([
+    params,
+    checkAuth(),
+    fetchBeanOrders(),
+  ]);
   if (!authed) redirect(`/${locale}`);
-
-  const result = await fetchBeanOrders();
 
   return (
     <BeanOrdersClient

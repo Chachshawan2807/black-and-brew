@@ -14,13 +14,13 @@ export default async function NewBeanOrderPage({
   params: Promise<{ locale: string }>;
 }) {
   await connection();
-  const [{ locale }, authed] = await Promise.all([params, checkAuth()]);
-  if (!authed) redirect(`/${locale}`);
-
-  const [itemsResult, suggestionsResult] = await Promise.all([
+  const [{ locale }, authed, itemsResult, suggestionsResult] = await Promise.all([
+    params,
+    checkAuth(),
     fetchInventoryItemsForBeanOrders(),
     fetchBeanOrderFormSuggestions(),
   ]);
+  if (!authed) redirect(`/${locale}`);
 
   return (
     <BeanOrderFormClient

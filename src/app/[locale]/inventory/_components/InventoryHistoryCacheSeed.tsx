@@ -18,6 +18,7 @@ type Props = {
   initialTransactionHistory: TransactionHistoryRow[];
   initialHistoryHasMore: boolean;
   initialFilterPages?: InventoryHistorySeedPage[];
+  seedAll?: boolean;
 };
 
 function seedPage(input: HistoryCacheKeyInput, rows: TransactionHistoryRow[], hasMore: boolean) {
@@ -29,17 +30,20 @@ export function InventoryHistoryCacheSeed({
   initialTransactionHistory,
   initialHistoryHasMore,
   initialFilterPages = [],
+  seedAll = true,
 }: Props) {
   const seededRef = useRef(false);
 
   useLayoutEffect(() => {
     if (seededRef.current) return;
-    seedPage({ type: 'ALL', searchQuery: '' }, initialTransactionHistory, initialHistoryHasMore);
+    if (seedAll) {
+      seedPage({ type: 'ALL', searchQuery: '' }, initialTransactionHistory, initialHistoryHasMore);
+    }
     for (const page of initialFilterPages) {
       seedPage({ type: page.type, searchQuery: '' }, page.rows, page.hasMore);
     }
     seededRef.current = true;
-  }, [initialTransactionHistory, initialHistoryHasMore, initialFilterPages]);
+  }, [initialTransactionHistory, initialHistoryHasMore, initialFilterPages, seedAll]);
 
   return null;
 }

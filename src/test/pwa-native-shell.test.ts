@@ -5,8 +5,10 @@ import manifest from '@/app/manifest';
 import {
   PWA_IOS_LAUNCH_SPLASH_SCRIPT,
   PWA_LAUNCH_SPLASH_CLASS,
+  PWA_LAUNCH_SPLASH_MIN_VISIBLE_MS,
   PWA_LAUNCH_SPLASH_ROOT_ID,
   shouldShowIosPwaLaunchSplash,
+  shouldShowPwaLaunchSplash,
 } from '@/lib/pwa-launch-splash';
 import { PWA_DISPLAY_NAME } from '@/lib/pwa-config';
 import {
@@ -118,19 +120,33 @@ describe('PWA native shell', () => {
     ).toBe(false);
   });
 
-  test('iOS launch splash script paints logo, app name, and dismisses after load', () => {
+  test('shouldShowPwaLaunchSplash includes installed Android and iOS PWAs', () => {
+    const iphone =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15';
+    const android = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36';
+    expect(shouldShowPwaLaunchSplash({ userAgent: iphone, isStandalone: true })).toBe(true);
+    expect(shouldShowPwaLaunchSplash({ userAgent: android, isStandalone: true })).toBe(true);
+    expect(shouldShowPwaLaunchSplash({ userAgent: android, isStandalone: false })).toBe(
+      false,
+    );
+  });
+
+  test('launch splash script paints logo, app name, and holds for minimum visible ms', () => {
     expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain(PWA_LAUNCH_SPLASH_ROOT_ID);
     expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain(PWA_LAUNCH_SPLASH_CLASS);
     expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain('/images/notification-icon-512.png');
     expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain(JSON.stringify(PWA_DISPLAY_NAME));
     expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain('navigator.standalone');
-    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain("addEventListener('load'");
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain('/Android/i.test(ua)');
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain(String(PWA_LAUNCH_SPLASH_MIN_VISIBLE_MS));
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain('scheduleDismiss');
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).not.toContain('requestAnimationFrame(dismiss)');
   });
 
-  test('globals.css styles iOS PWA launch splash overlay', () => {
+  test('globals.css styles PWA launch splash overlay with project font stack', () => {
     const css = readFileSync(resolve(ROOT, 'src/app/[locale]/globals.css'), 'utf-8');
     expect(css).toContain('.bb-pwa-launch-splash');
-    expect(css).toContain('.bb-pwa-launch-splash__title');
+    expect(css).toMatch(/\.bb-pwa-launch-splash__title[\s\S]*?font-family:\s*var\(--font-sans\)/);
     expect(css).toContain('prefers-reduced-motion');
   });
 

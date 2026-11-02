@@ -611,7 +611,9 @@ export async function fetchBeanOrderDetail(
     const [orderResult, linesResult, paymentResult, shipmentResult] = await Promise.all([
       supabase
         .from('bean_orders')
-        .select('*, bean_customers(name)')
+        .select(
+          'id, order_no, customer_id, sender_name, sender_phone, sender_address, recipient_name, recipient_phone, recipient_address, recipient_province, recipient_postal_code, subtotal_baht, discount_baht, shipping_baht, total_baht, payment_status, fulfillment_status, cancelled_at, notes, status_history, created_at, bean_customers(name)',
+        )
         .eq('id', orderId)
         .maybeSingle(),
       supabase

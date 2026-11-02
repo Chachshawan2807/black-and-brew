@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
@@ -26,6 +27,28 @@ const InventoryClient = createLazyFeatureClient(
   () => import('./InventoryClient'),
 );
 
+async function InventoryFilterHistorySeed({
+  filtersPromise,
+}: {
+  filtersPromise: Promise<Awaited<ReturnType<typeof fetchTransactionHistoryPage>>[]>;
+}) {
+  const historyFilterResults = await filtersPromise;
+  const initialFilterPages: InventoryHistorySeedPage[] = HISTORY_FILTER_TYPES.flatMap((type, index) => {
+    const res = historyFilterResults[index];
+    if (!res?.success || !res.data) return [];
+    return [{ type, rows: res.data as TransactionHistoryRow[], hasMore: res.hasMore }];
+  });
+
+  return (
+    <InventoryHistoryCacheSeed
+      initialTransactionHistory={[]}
+      initialHistoryHasMore={false}
+      initialFilterPages={initialFilterPages}
+      seedAll={false}
+    />
+  );
+}
+
 export default async function InventoryPage({
   params,
 }: {
@@ -37,9 +60,17 @@ export default async function InventoryPage({
   }
 
   const supabaseAdmin = getSupabaseAdmin();
+  const filtersPromise = Promise.all(
+    HISTORY_FILTER_TYPES.map((type) =>
+      fetchTransactionHistoryPage(supabaseAdmin, {
+        offset: 0,
+        limit: HISTORY_PAGE_SIZE,
+        type,
+      }),
+    ),
+  );
 
-  const [configRes, inventoryRes, historyAllRes, withdrawOrderRes, ...historyFilterResults] =
-    await Promise.all([
+  const [configRes, inventoryRes, historyAllRes, withdrawOrderRes] = await Promise.all([
     supabaseAdmin.from('inventory_config').select('settings').eq('id', 'column_labels').single(),
     supabaseAdmin
       .from('inventory_items')
@@ -51,13 +82,6 @@ export default async function InventoryPage({
       type: 'ALL',
     }),
     supabaseAdmin.from('inventory_config').select('settings').eq('id', 'withdraw_required_order').single(),
-    ...HISTORY_FILTER_TYPES.map((type) =>
-      fetchTransactionHistoryPage(supabaseAdmin, {
-        offset: 0,
-        limit: HISTORY_PAGE_SIZE,
-        type,
-      }),
-    ),
   ]);
 
   if (inventoryRes.error) {
@@ -84,12 +108,6 @@ export default async function InventoryPage({
     );
   }
 
-  const initialFilterPages: InventoryHistorySeedPage[] = HISTORY_FILTER_TYPES.flatMap((type, index) => {
-    const res = historyFilterResults[index];
-    if (!res?.success || !res.data) return [];
-    return [{ type, rows: res.data as TransactionHistoryRow[], hasMore: res.hasMore }];
-  });
-
   const initialWithdrawRequiredOrder = parseWithdrawRequiredOrder(withdrawOrderRes.data?.settings);
 
   return (
@@ -97,8 +115,10 @@ export default async function InventoryPage({
       <InventoryHistoryCacheSeed
         initialTransactionHistory={initialTransactionHistory}
         initialHistoryHasMore={initialHistoryHasMore}
-        initialFilterPages={initialFilterPages}
       />
+      <Suspense fallback={null}>
+        <InventoryFilterHistorySeed filtersPromise={filtersPromise} />
+      </Suspense>
       <InventoryClient
         initialItems={inventoryRes.data || []}
         initialColumnSettings={initialColumnSettings}

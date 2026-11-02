@@ -25,21 +25,20 @@ export default async function EditBeanOrderPage({
 }) {
   await connection();
   const { locale, id } = await params;
-  const authed = await checkAuth();
+  const [authed, orderResult, itemsResult, suggestionsResult] = await Promise.all([
+    checkAuth(),
+    fetchBeanOrderDetail(id),
+    fetchInventoryItemsForBeanOrders(),
+    fetchBeanOrderFormSuggestions(),
+  ]);
   if (!authed) redirect(`/${locale}`);
 
-  const orderResult = await fetchBeanOrderDetail(id);
   // Genuine miss -> 404; transient failure -> retryable error boundary (not blank).
   if (orderResult.notFound) notFound();
   if (!orderResult.success || !orderResult.data) {
     throw new Error(orderResult.error ?? 'โหลดรายละเอียดออเดอร์ไม่สำเร็จ');
   }
   if (!canEditOrderLines(orderResult.data.cancelledAt)) notFound();
-
-  const [itemsResult, suggestionsResult] = await Promise.all([
-    fetchInventoryItemsForBeanOrders(),
-    fetchBeanOrderFormSuggestions(),
-  ]);
 
   return (
     <BeanOrderFormClient

@@ -1007,7 +1007,7 @@
   }
 
   /*
-   * iOS installed PWA cold launch (home icon + shortcuts): logo + app name like Android splash.
+   * Installed iOS/Android PWA cold launch: logo + app name before the shell appears.
    * Injected synchronously from PWA_IOS_LAUNCH_SPLASH_SCRIPT before hydration.
    */
   .bb-pwa-launch-splash {
@@ -1035,6 +1035,7 @@
 
   .bb-pwa-launch-splash__title {
     margin: 0;
+    font-family: var(--font-sans);
     font-size: 1.125rem;
     font-weight: 600;
     letter-spacing: 0.02em;

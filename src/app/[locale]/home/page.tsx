@@ -90,11 +90,11 @@ async function HomeBoard({ locale }: { locale: string }) {
   const workDateIso = todayIsoBkk();
   const authedPromise = checkAuth();
   const boardPromise = loadSecretaryBoard({ locale, dateIso: workDateIso });
+  const memberPanelPromise = loadHomeMemberPanel({ dateIso: workDateIso });
   const duringServerAction = (await headers()).has('next-action');
   const detailPromise = duringServerAction
     ? Promise.resolve(null)
     : scheduleHomeBoardDetail(workDateIso, locale);
-  const memberPanelPromise = loadHomeMemberPanel({ dateIso: workDateIso });
   const authed = await authedPromise;
   if (!authed) {
     return <HomeClientEntry locale={locale} />;

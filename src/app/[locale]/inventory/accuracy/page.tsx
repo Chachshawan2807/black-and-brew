@@ -21,12 +21,14 @@ export default async function InventoryAccuracyPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const [{ locale }, authed] = await Promise.all([params, checkAuth()]);
+  const [{ locale }, authed, reportResult] = await Promise.all([
+    params,
+    checkAuth(),
+    fetchInventoryAccuracyReport(),
+  ]);
   if (!authed) {
     redirect(`/${locale}`);
   }
-
-  const reportResult = await fetchInventoryAccuracyReport();
   const report = reportResult.success ? reportResult.data : null;
 
   return (
