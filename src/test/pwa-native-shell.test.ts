@@ -42,6 +42,7 @@ describe('PWA native shell', () => {
   test('bootstrap script sets standalone class and theme-color before paint', () => {
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain(PWA_STANDALONE_CLASS);
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain(PWA_IOS_CLASS);
+    expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toMatch(/if\(ios\)document\.documentElement\.classList\.add\('bb-pwa-ios'\)/);
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain(PWA_ANDROID_CLASS);
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('theme-color');
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('bb-theme');

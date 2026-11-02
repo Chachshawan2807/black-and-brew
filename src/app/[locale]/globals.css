@@ -1739,13 +1739,18 @@
 }
 
 /*
- * Android mobile scale schedule to match iOS visual size (iOS unchanged).
- * Chrome on Android inflates text/layout vs Safari; uniform zoom keeps parity.
+ * Mobile schedule table zoom (iOS Safari baseline; Android Chrome scaled to parity).
  * PNG export resets zoom via .bb-schedule-export-capturing.
  */
 @media (max-width: 767px) {
+  html.bb-pwa-ios #blackandbrew-schedule-table.bb-schedule-export-surface {
+    zoom: 0.88;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   html.bb-pwa-android #blackandbrew-schedule-table.bb-schedule-export-surface {
-    zoom: 0.72;
+    zoom: 0.68;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }

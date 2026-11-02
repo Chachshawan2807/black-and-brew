@@ -157,12 +157,14 @@ describe('iOS scroll & export fixes', () => {
     expect(code).toMatch(/bb-smooth-scroll bb-scroll-xy/);
   });
 
-  test('globals.css scales schedule table on Android mobile to match iOS', () => {
+  test('globals.css scales schedule table on iOS and Android mobile', () => {
     const css = readFile('app/[locale]/globals.css');
     expect(css).toContain('bb-pwa-android');
-    expect(css).toMatch(/html\.bb-pwa-android[\s\S]*#blackandbrew-schedule-table[\s\S]*zoom:\s*0\.72/);
+    expect(css).toContain('bb-pwa-ios');
+    expect(css).toMatch(/html\.bb-pwa-ios[\s\S]*#blackandbrew-schedule-table[\s\S]*zoom:\s*0\.88/);
+    expect(css).toMatch(/html\.bb-pwa-android[\s\S]*#blackandbrew-schedule-table[\s\S]*zoom:\s*0\.68/);
     expect(css).toMatch(/bb-schedule-export-capturing#blackandbrew-schedule-table[\s\S]*zoom:\s*1/);
-    expect(css).toMatch(/Android mobile scale schedule to match iOS visual size/);
+    expect(css).toMatch(/Mobile schedule table zoom/);
   });
 
   test('ScheduleToolbar exposes compact Android toolbar hook class', () => {

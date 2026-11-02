@@ -6,7 +6,7 @@ import { createPortal, flushSync } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { LAYOUT_DRAG_SPRING } from '@/lib/motion-presets';
-import { Plus, Trash2, UserCog, Calendar, CalendarDays, Pencil, GripVertical } from '@/lib/icons';
+import { Plus, Trash2, UserCog, Calendar, CalendarDays, Pencil, GripVertical, Copy } from '@/lib/icons';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { format } from 'date-fns';
 
@@ -528,6 +528,7 @@ export default function ScheduleClient({
   const [holidaySyncNotice, setHolidaySyncNotice] = useState(false);
   const [copyWeekNotice, setCopyWeekNotice] = useState('');
   const [isCopyingPreviousWeek, setIsCopyingPreviousWeek] = useState(false);
+  const [showCopyPreviousWeekConfirm, setShowCopyPreviousWeekConfirm] = useState(false);
   const holidaySyncNoticeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [loading, setLoading] = useState(false);
@@ -700,6 +701,12 @@ export default function ScheduleClient({
         active: showRegularHolidayModal,
         dismiss: () => setShowRegularHolidayModal(false),
       },
+      {
+        active: showCopyPreviousWeekConfirm,
+        dismiss: () => {
+          if (!isCopyingPreviousWeek) setShowCopyPreviousWeekConfirm(false);
+        },
+      },
     ],
     [
       selectedCell,
@@ -709,6 +716,8 @@ export default function ScheduleClient({
       editingHistoryId,
       showAddEmployeeModal,
       showRegularHolidayModal,
+      showCopyPreviousWeekConfirm,
+      isCopyingPreviousWeek,
     ],
   );
 
@@ -1716,6 +1725,30 @@ export default function ScheduleClient({
     void loadScheduleWeekGrid(weekStart, weekEnd);
   };
 
+  const copyPreviousWeekRangeLabel = useMemo(() => {
+    const targetStartDate = weekDays[0];
+    const targetEndDate = weekDays[6];
+    if (!targetStartDate || !targetEndDate) return null;
+
+    const sourceStart = new Date(`${targetStartDate}T00:00:00.000Z`);
+    sourceStart.setUTCDate(sourceStart.getUTCDate() - 7);
+    const sourceStartDate = sourceStart.toISOString().slice(0, 10);
+    const sourceEnd = new Date(sourceStart);
+    sourceEnd.setUTCDate(sourceEnd.getUTCDate() + 6);
+    const sourceEndDate = sourceEnd.toISOString().slice(0, 10);
+
+    return {
+      sourceLabel: formatScheduleWeekRangeLabel(sourceStartDate, sourceEndDate),
+      targetLabel: formatScheduleWeekRangeLabel(targetStartDate, targetEndDate),
+    };
+  }, [weekDays]);
+
+  const openCopyPreviousWeekConfirm = () => {
+    if (blockIfReadOnly() || isCopyingPreviousWeek) return;
+    if (!weekDays[0]) return;
+    setShowCopyPreviousWeekConfirm(true);
+  };
+
   const handleCopyPreviousWeek = async () => {
     if (blockIfReadOnly() || isCopyingPreviousWeek) return;
     const targetStartDate = weekDays[0];
@@ -1750,6 +1783,7 @@ export default function ScheduleClient({
           : `ไม่มีช่องว่างให้เติม${skipped ? ` ข้าม: ${skipped}` : ''}`,
       );
       setTimeout(() => setCopyWeekNotice(''), 4000);
+      setShowCopyPreviousWeekConfirm(false);
     } catch (error) {
       console.error('Failed to copy previous schedule week:', error);
       setCopyWeekNotice(error instanceof Error ? error.message : 'คัดลอกตารางไม่สำเร็จ');
@@ -1902,7 +1936,7 @@ export default function ScheduleClient({
         }
         onShowAddEmployeeModal={() => setShowAddEmployeeModal(true)}
         onShowShiftSettings={() => setShowShiftSettingsModal(true)}
-        onCopyPreviousWeek={handleCopyPreviousWeek}
+        onCopyPreviousWeek={openCopyPreviousWeekConfirm}
         isCopyingPreviousWeek={isCopyingPreviousWeek}
       />
 
@@ -2492,6 +2526,66 @@ export default function ScheduleClient({
               </div>
             </div>
             </div>
+      </FadeModalScaffold>
+      </ModalPortal>
+
+      <ModalPortal>
+      <FadeModalScaffold
+        open={showCopyPreviousWeekConfirm}
+        onClose={() => {
+          if (!isCopyingPreviousWeek) setShowCopyPreviousWeekConfirm(false);
+        }}
+        zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
+        overlayClassName={SCHEDULE_MODAL_OVERLAY}
+        panelClassName={cn(
+          SCHEDULE_MODAL_PANEL,
+          'w-full max-w-sm rounded-2xl border border-border shadow-2xl',
+        )}
+        centerScrollable
+        keyboardAware
+        layoutClassName="items-center justify-center min-w-0 w-full max-w-[100dvw] px-[max(1rem,env(safe-area-inset-left))] py-4 pr-[max(1rem,env(safe-area-inset-right))]"
+        aria-label="ยืนยันคัดลอกสัปดาห์ก่อน"
+      >
+        <ScheduleModalHeader
+          icon={<Copy className="h-5 w-5" strokeWidth={1.5} />}
+          title="คัดลอกสัปดาห์ก่อน"
+          subtitle={
+            copyPreviousWeekRangeLabel
+              ? `คัดลอกกะจาก ${copyPreviousWeekRangeLabel.sourceLabel} มาเติมช่องว่างในสัปดาห์ ${copyPreviousWeekRangeLabel.targetLabel} เท่านั้น`
+              : 'คัดลอกกะจากสัปดาห์ก่อนหน้ามาเติมช่องว่างในสัปดาห์ที่กำลังดู'
+          }
+          tone="accent"
+          onClose={() => {
+            if (!isCopyingPreviousWeek) setShowCopyPreviousWeekConfirm(false);
+          }}
+          closeDisabled={isCopyingPreviousWeek}
+        />
+        <p className="px-5 pb-1 text-[13px] leading-relaxed text-muted-foreground">
+          ช่องที่มีกะอยู่แล้ว กะยกเลิก หรือคำขอลาจะไม่ถูกทับ ต้องการดำเนินการต่อหรือไม่
+        </p>
+        <div className={cn(SCHEDULE_MODAL_FOOTER, 'border-t-0 pt-2')}>
+          <button
+            type="button"
+            onClick={() => setShowCopyPreviousWeekConfirm(false)}
+            disabled={isCopyingPreviousWeek}
+            className={cn(SCHEDULE_BTN_GHOST, 'flex-1')}
+          >
+            ยกเลิก
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleCopyPreviousWeek()}
+            disabled={isCopyingPreviousWeek}
+            className={cn(SCHEDULE_BTN_PRIMARY, 'inline-flex flex-1 items-center justify-center gap-2')}
+          >
+            {isCopyingPreviousWeek ? (
+              <LoadingIcon size="md" />
+            ) : (
+              <Copy className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+            )}
+            ยืนยันคัดลอก
+          </button>
+        </div>
       </FadeModalScaffold>
       </ModalPortal>
 
