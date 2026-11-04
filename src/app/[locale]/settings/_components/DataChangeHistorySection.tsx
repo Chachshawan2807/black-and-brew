@@ -14,6 +14,8 @@ import {
   formatDataChangeLogDisplay,
 } from "@/lib/inventory-notification-formatter";
 import { formatDataChangeHistoryMeta } from "@/lib/data-change-history-display";
+import { sanitizeDataChangeLogErrorMessage } from "@/lib/data-change-log";
+import { resolveActionError } from "@/lib/user-facing-error";
 import { ExpandMoreButton } from "@/components/ui/expand-more-button";
 import {
   SETTINGS_BTN_GHOST,
@@ -70,9 +72,12 @@ function buildChangeLines(row: DataChangeLogRow, locale: string): string[] {
   const isTh = locale === "th";
   const { headline, detail, detailLines } = formatDataChangeLogDisplay(row, locale);
 
+  const failedFallback = isTh ? "บันทึกไม่สำเร็จ" : "Save failed";
   const contentLines =
     row.status === "failed"
-      ? [row.error_message ?? (isTh ? "บันทึกไม่สำเร็จ" : "Save failed")]
+      ? [
+          sanitizeDataChangeLogErrorMessage(row.error_message) ?? failedFallback,
+        ]
       : detailLines && detailLines.length > 0
         ? detailLines
         : detail
@@ -138,7 +143,12 @@ export default function DataChangeHistorySection({
         if (gen !== loadGenRef.current) return;
 
         if (!result.success) {
-          setError(result.error);
+          setError(
+            resolveActionError(
+              result.error,
+              isTh ? "โหลดประวัติการเปลี่ยนแปลงไม่สำเร็จ" : "Could not load edit history",
+            ),
+          );
           setRows([]);
         } else {
           setError(null);
@@ -147,7 +157,7 @@ export default function DataChangeHistorySection({
         setLoading(false);
       });
     },
-    [moduleFilter],
+    [moduleFilter, isTh],
   );
 
   useEffect(() => {

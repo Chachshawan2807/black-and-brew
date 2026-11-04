@@ -1,8 +1,11 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { UNAUTHORIZED_MSG } from '@/lib/policies/messages';
 import {
   computeFieldChanges,
+  dataChangeLogErrorFromUnknown,
   formatNotificationActorLabel,
   resolveActorLabel,
+  sanitizeDataChangeLogErrorMessage,
 } from '@/lib/data-change-log';
 
 const mockGet = vi.fn();
@@ -200,6 +203,24 @@ describe('recordDataChange', () => {
     expect(mockSingle).toHaveBeenCalled();
   });
 
+  test('sanitizes errorMessage before persisting failed rows', async () => {
+    await recordDataChange({
+      action: 'UPDATE',
+      module: 'inventory',
+      entityType: 'inventory_item',
+      entityId: 'item-1',
+      status: 'failed',
+      errorMessage: 'duplicate key value violates unique constraint "inventory_items_pkey"',
+    });
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'failed',
+        error_message: 'ข้อมูลซ้ำกับที่มีอยู่แล้ว กรุณาตรวจสอบแล้วลองใหม่',
+      }),
+    );
+  });
+
   test('auto-computes field_changes from oldValue and newValue when omitted', async () => {
     await recordDataChange({
       action: 'UPDATE',
@@ -275,7 +296,7 @@ describe('fetchDataChangeLogs', () => {
   test('requires authentication', async () => {
     mockGet.mockReturnValue(undefined);
     const result = await fetchDataChangeLogs();
-    expect(result).toEqual({ success: false, error: 'Unauthorized' });
+    expect(result).toEqual({ success: false, error: UNAUTHORIZED_MSG });
   });
 
   test('returns rows when authenticated', async () => {
@@ -350,5 +371,23 @@ describe('fetchDataChangeLogs', () => {
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0]?.id).toBe('staff-slip');
     }
+  });
+});
+
+describe('sanitizeDataChangeLogErrorMessage', () => {
+  test('maps technical Postgres text to Thai fallback for settings history', () => {
+    expect(
+      sanitizeDataChangeLogErrorMessage('column "foo" of relation "inventory_items" does not exist'),
+    ).toBe('บันทึกไม่สำเร็จ');
+    expect(sanitizeDataChangeLogErrorMessage('บันทึกไม่สำเร็จ')).toBe('บันทึกไม่สำเร็จ');
+    expect(sanitizeDataChangeLogErrorMessage(null)).toBeNull();
+  });
+});
+
+describe('dataChangeLogErrorFromUnknown', () => {
+  test('maps Supabase failures before recordDataChange insert', () => {
+    expect(dataChangeLogErrorFromUnknown({ code: '23505', message: 'duplicate key' })).toBe(
+      'ข้อมูลซ้ำกับที่มีอยู่แล้ว กรุณาตรวจสอบแล้วลองใหม่',
+    );
   });
 });

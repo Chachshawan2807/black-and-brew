@@ -3,6 +3,7 @@
 import type { NotificationPreferences } from '@/lib/notification-types';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import { getClientSessionId } from '@/lib/client-session';
+import { UNAUTHORIZED_MSG } from '@/lib/policies/messages';
 import {
   getNotificationPermissionState,
   isBenignPushRegistrationError,
@@ -655,7 +656,7 @@ async function registerSubscriptionWithServer(
   }
 
   const normalizedError =
-    result.error === 'Unauthorized: Session missing or invalid'
+    result.error === UNAUTHORIZED_MSG
       ? 'pin_session_required'
       : result.error.includes('duplicate key') || result.error.includes('violates')
         ? 'supabase_upsert_failed'

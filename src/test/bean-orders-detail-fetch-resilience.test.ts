@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { UNAUTHORIZED_MSG } from '@/lib/policies/messages';
 
 const mockFrom = vi.fn();
 const mockRequireReadAccess = vi.fn();
@@ -108,7 +109,7 @@ describe('fetchBeanOrderDetail resilience (blank detail regression)', () => {
   }, 30000);
 
   test('auth/read-access failure does NOT report notFound', async () => {
-    mockRequireReadAccess.mockResolvedValue('Unauthorized: Session missing or invalid');
+    mockRequireReadAccess.mockResolvedValue(UNAUTHORIZED_MSG);
     routeTables({ bean_orders: { data: ORDER_ROW, error: null } });
     const { fetchBeanOrderDetail } = await import('@/app/actions/bean-order-actions');
     const result = await fetchBeanOrderDetail('order-1');

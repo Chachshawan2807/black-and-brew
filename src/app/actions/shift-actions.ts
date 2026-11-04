@@ -5,6 +5,7 @@ import { after } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
+import { dataChangeLogErrorFromUnknown } from '@/lib/data-change-log';
 import { refreshDailyReportNotificationsForDate } from '@/lib/daily-report-notification';
 import { requireMutationAccess, requireReadAccess } from '@/lib/policies/server-gate';
 import type { Json } from '@/lib/database.types';
@@ -20,6 +21,7 @@ import { addBangkokCalendarDays, bangkokCalendarIsoToDate } from '@/lib/date-uti
 import { buildMissingWeekShiftCopies } from '@/lib/schedule/copy-week-shifts';
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
 import { requireServiceRoleKey } from '@/lib/security/server-auth';
+import { actionFail, actionFailWith, logSupabaseError, toUserFacingError } from '@/lib/user-facing-error';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAdmin = createClient(supabaseUrl, requireServiceRoleKey());
@@ -80,7 +82,7 @@ async function ensureShiftMutationAuthorized(): Promise<string | null> {
 
 export async function deleteShift(id: string) {
   const parsedId = shiftIdSchema.safeParse(id);
-  if (!parsedId.success) return { success: false, error: 'Invalid shift ID' };
+  if (!parsedId.success) return { success: false, error: 'ไม่พบกะงาน กรุณาลองใหม่' };
   try {
     const authError = await ensureShiftMutationAuthorized();
     if (authError) return { success: false, error: authError };
@@ -106,10 +108,10 @@ export async function deleteShift(id: string) {
         entityLabel: auditLabels.entityLabel,
         oldValue: shiftBefore ?? null,
         status: 'failed',
-        errorMessage: error.message,
+        errorMessage: dataChangeLogErrorFromUnknown(error),
         metadata: auditLabels.metadata,
       });
-      return { success: false, error: error.message };
+      return actionFail('shift-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     await recordDataChange({
@@ -129,7 +131,7 @@ export async function deleteShift(id: string) {
     revalidateAppPaths();
     return { success: true };
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    const errorMsg = toUserFacingError(err, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     return { success: false, error: errorMsg };
   }
 }
@@ -160,10 +162,10 @@ export async function batchUpdateProfileNames(updates: { id: string; full_name: 
         module: 'schedule',
         entityType: 'profile',
         status: 'failed',
-        errorMessage: firstError.error?.message || 'Unknown error',
+        errorMessage: dataChangeLogErrorFromUnknown(firstError.error ?? firstError),
         metadata: { operation: 'batch_update_profile_names', count: updates.length },
       });
-      return { success: false, error: firstError.error?.message || 'Unknown error' };
+      return actionFail('shift-actions', firstError.error ?? firstError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     const nameChanges = updates
@@ -188,12 +190,12 @@ export async function batchUpdateProfileNames(updates: { id: string; full_name: 
     revalidatePath('/[locale]/schedule', 'page');
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    return actionFail('shift-actions', err, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
 export async function updateStaffOrder(orderedIds: string[]) {
-  if (!orderedIds || orderedIds.length === 0) return { success: false, error: 'Empty order list' };
+  if (!orderedIds || orderedIds.length === 0) return { success: false, error: 'ไม่มีรายการลำดับ' };
   try {
     const authError = await ensureShiftMutationAuthorized();
     if (authError) return { success: false, error: authError };
@@ -209,10 +211,10 @@ export async function updateStaffOrder(orderedIds: string[]) {
         module: 'schedule',
         entityType: 'profile',
         status: 'failed',
-        errorMessage: firstError.error?.message || 'Unknown error',
+        errorMessage: dataChangeLogErrorFromUnknown(firstError.error ?? firstError),
         metadata: { operation: 'update_staff_order', orderedIds },
       });
-      return { success: false, error: firstError.error?.message || 'Unknown error' };
+      return actionFail('shift-actions', firstError.error ?? firstError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     await recordDataChange({
@@ -225,12 +227,12 @@ export async function updateStaffOrder(orderedIds: string[]) {
     revalidatePath('/[locale]/schedule', 'page');
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    return actionFail('shift-actions', err, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
 export async function updateDashboardOrder(orderedIds: string[]) {
-  if (!orderedIds || orderedIds.length === 0) return { success: false, error: 'Empty order list' };
+  if (!orderedIds || orderedIds.length === 0) return { success: false, error: 'ไม่มีรายการลำดับ' };
   try {
     const authError = await ensureShiftMutationAuthorized();
     if (authError) return { success: false, error: authError };
@@ -250,7 +252,7 @@ export async function updateDashboardOrder(orderedIds: string[]) {
     revalidatePath('/[locale]/dashboard', 'page');
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    return actionFail('shift-actions', err, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
@@ -286,7 +288,7 @@ export async function saveShift(payload: ShiftPayload) {
 
   const parsed = shiftSchema.safeParse(payload);
   if (!parsed.success) {
-    return { success: false, error: 'Invalid payload structure' };
+    return { success: false, error: 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่' };
   }
 
   const datePart = parsed.data.start_time.split('T')[0];
@@ -322,11 +324,11 @@ export async function saveShift(payload: ShiftPayload) {
           oldValue: (shiftBefore ?? null) as Json | null,
           newValue: parsed.data as Json,
           status: 'failed',
-          errorMessage: deleteError.message,
+          errorMessage: dataChangeLogErrorFromUnknown(deleteError),
           metadata: auditLabels.metadata,
         });
       });
-      return { success: false, error: deleteError.message };
+      return actionFail('shift-actions', deleteError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     const { data, error } = await supabaseAdmin
@@ -353,11 +355,11 @@ export async function saveShift(payload: ShiftPayload) {
           oldValue: (shiftBefore ?? null) as Json | null,
           newValue: parsed.data as Json,
           status: 'failed',
-          errorMessage: error.message,
+          errorMessage: dataChangeLogErrorFromUnknown(error),
           metadata: auditLabels.metadata,
         });
       });
-      return { success: false, error: error.message };
+      return actionFail('shift-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     after(async () => {
@@ -379,12 +381,14 @@ export async function saveShift(payload: ShiftPayload) {
     scheduleProactiveInsightEvaluation('shift_update');
     return { success: true, data };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    return actionFail('shift-actions', err, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
 export async function deleteManagementHistoryRange(employeeId: string, startDate: string, endDate: string) {
-  if (!employeeId || !startDate || !endDate) return { success: false, error: 'Missing parameters' };
+  if (!employeeId || !startDate || !endDate) {
+    return { success: false, error: 'ข้อมูลไม่ครบ กรุณากรอกให้ครบ' };
+  }
   try {
     const authError = await ensureShiftMutationAuthorized();
     if (authError) return { success: false, error: authError };
@@ -404,7 +408,7 @@ export async function deleteManagementHistoryRange(employeeId: string, startDate
         module: 'schedule',
         entityType: 'shift',
         status: 'failed',
-        errorMessage: error.message,
+        errorMessage: dataChangeLogErrorFromUnknown(error),
         metadata: { employeeId, startDate, endDate, operation: 'delete_management_history' },
       });
       throw error;
@@ -424,7 +428,7 @@ export async function deleteManagementHistoryRange(employeeId: string, startDate
 
     return { success: true };
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    const errorMsg = toUserFacingError(err, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     return { success: false, error: errorMsg };
   }
 }
@@ -454,7 +458,7 @@ export async function saveManagementHistoryRange(payload: ManagementRangePayload
 
   const parsed = managementRangeSchema.safeParse(payload);
   if (!parsed.success) {
-    return { success: false as const, error: 'Invalid payload structure' };
+    return { success: false as const, error: 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่' };
   }
 
   const { employeeId, startDate, endDate, shiftType, remark, previousRange } = parsed.data;
@@ -521,7 +525,7 @@ export async function saveManagementHistoryRange(payload: ManagementRangePayload
           module: 'schedule',
           entityType: 'shift',
           status: 'failed',
-          errorMessage: insertError.message,
+          errorMessage: dataChangeLogErrorFromUnknown(insertError),
           metadata: {
             operation: 'save_management_history_range',
             ...auditLabels.metadata,
@@ -531,7 +535,7 @@ export async function saveManagementHistoryRange(payload: ManagementRangePayload
           },
         });
       });
-      return { success: false as const, error: insertError.message };
+      return actionFail('shift-actions', insertError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     after(async () => {
@@ -560,7 +564,7 @@ export async function saveManagementHistoryRange(payload: ManagementRangePayload
 
     return { success: true as const, data: data ?? [] };
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    const errorMsg = toUserFacingError(err, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     return { success: false as const, error: errorMsg };
   }
 }
@@ -603,9 +607,12 @@ export async function fetchRosterData(startDate: string, endDate: string) {
       holidays: holidaysRes.data || []
     };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Internal Server Error';
-    console.error('[fetchRosterData] Error:', message);
-    return { success: false, profiles: [], shifts: [], holidays: [], error: message };
+    return {
+      ...actionFail('shift-actions', error, 'โหลดข้อมูลตารางไม่สำเร็จ'),
+      profiles: [],
+      shifts: [],
+      holidays: [],
+    };
   }
 }
 
@@ -672,8 +679,7 @@ export async function copyWeeklyShifts(sourceStartDate: string, targetStartDate:
     return { success: true as const, data: data ?? [], previousShifts: targetResult.data ?? [], ...result };
   } catch (err: unknown) {
     console.error('[copyWeeklyShifts] CRITICAL FAILURE:', err);
-    const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดรุนแรงในการคัดลอกข้อมูล';
-    return { success: false as const, error: message };
+    return actionFail('shift-actions', err, 'เกิดข้อผิดพลาดในการคัดลอกข้อมูล กรุณาลองใหม่');
   }
 }
 
@@ -698,7 +704,7 @@ export async function renameShiftLocations(renames: { oldValue: string; newValue
 
       if (fetchError) {
         console.error('Supabase Error:', fetchError.message, fetchError.details);
-        return { success: false, error: fetchError.message };
+        return actionFail('shift-actions', fetchError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
       }
 
       for (const row of rows || []) {
@@ -710,7 +716,7 @@ export async function renameShiftLocations(renames: { oldValue: string; newValue
 
         if (updateError) {
           console.error('Supabase Error:', updateError.message, updateError.details);
-          return { success: false, error: updateError.message };
+          return actionFail('shift-actions', updateError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
         }
         totalUpdated += 1;
       }
@@ -719,7 +725,7 @@ export async function renameShiftLocations(renames: { oldValue: string; newValue
     revalidateAppPaths();
     return { success: true, updated: totalUpdated };
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    const errorMsg = toUserFacingError(err, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     return { success: false, error: errorMsg };
   }
 }
@@ -752,7 +758,7 @@ export async function fetchManagementHistoryPage(params: {
     const { data, error } = await query;
     if (error) {
       console.error('[fetchManagementHistoryPage] Supabase Error:', error.message, error.details);
-      return { success: false as const, error: error.message, batch: [], hasMore: false, cursor: null };
+      return actionFailWith('shift-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่', { batch: [], hasMore: false, cursor: null });
     }
 
     const rawBatchSize = data?.length ?? 0;
@@ -765,7 +771,7 @@ export async function fetchManagementHistoryPage(params: {
       cursor: getMgmtHistoryPaginationCursor(data ?? []),
     };
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    const errorMsg = toUserFacingError(err, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     return { success: false as const, error: errorMsg, batch: [], hasMore: false, cursor: null };
   }
 }

@@ -6,15 +6,13 @@ import {
   evaluateAuthz,
   subjectFromServerAuth,
 } from '@/lib/policies/authz';
-import { READ_ONLY_DENY_MSG } from '@/lib/policies/messages';
-
-const UNAUTHORIZED = 'Unauthorized: Session missing or invalid';
+import { READ_ONLY_DENY_MSG, UNAUTHORIZED_MSG } from '@/lib/policies/messages';
 
 describe('evaluateAuthz', () => {
   test('denies unauthenticated read', () => {
     expect(evaluateAuthz({ verified: false, readOnly: false }, 'read')).toEqual({
       allow: false,
-      reason: UNAUTHORIZED,
+      reason: UNAUTHORIZED_MSG,
     });
   });
 

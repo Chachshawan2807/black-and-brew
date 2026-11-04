@@ -39,6 +39,7 @@ import {
   usesFaceBiometricIcon,
   type BiometricKind,
 } from '@/lib/passkey/biometric-copy';
+import { localizePasskeyError } from '@/lib/passkey/passkey-error-copy';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { InventoryRealtimeProvider } from '@/contexts/InventoryRealtimeContext';
 const PIN_LENGTH = 6;
@@ -279,7 +280,7 @@ export default function PinGateway({
           autoTrigger: trigger === 'auto',
         });
         if (!res.success) {
-          setPasskeyError(res.error);
+          setPasskeyError(localizePasskeyError(res.error, locale));
           recordBiometricFailure();
           return;
         }
@@ -370,7 +371,7 @@ export default function PinGateway({
       const device = collectClientDeviceInfo();
       const res = await registerDevicePasskey(device);
       if (!res.success) {
-        setPasskeyError(res.error);
+        setPasskeyError(localizePasskeyError(res.error, locale));
         return;
       }
       if (device.sessionFingerprint) {

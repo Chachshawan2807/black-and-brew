@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
 import { registerPushSubscription } from '@/app/actions/push-actions';
+import { toPublicErrorMessage } from '@/lib/security/public-error';
 
 export const maxDuration = 30;
 
@@ -21,6 +22,9 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('[api/push/register]', error);
-    return NextResponse.json({ success: false, error: 'server_exception' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: toPublicErrorMessage(error), code: 'server_exception' },
+      { status: 500 },
+    );
   }
 }

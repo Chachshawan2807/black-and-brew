@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyBearerSecret } from '@/lib/security/bearer-auth';
+import { PUBLIC_CONFIG_ERROR, PUBLIC_UNAUTHORIZED_ERROR } from '@/lib/security/public-error';
 
 type BearerAuthOptions = {
   /** Log prefix for unauthorized attempts, e.g. "[CRON]" */
@@ -22,7 +23,7 @@ export function denyUnlessBearerSecret(
   if (!secret?.trim()) {
     console.error(`${logPrefix} Missing ${secretName} in environment`);
     return NextResponse.json(
-      { success: false, error: 'Server configuration error' },
+      { success: false, error: PUBLIC_CONFIG_ERROR, code: 'server_config_error' },
       { status: 500 },
     );
   }
@@ -30,7 +31,10 @@ export function denyUnlessBearerSecret(
   const authHeader = request.headers.get('authorization');
   if (!verifyBearerSecret(authHeader, secret.trim())) {
     console.error(`${logPrefix} Unauthorized access attempt`);
-    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { success: false, error: PUBLIC_UNAUTHORIZED_ERROR, code: 'unauthorized' },
+      { status: 401 },
+    );
   }
 
   return null;

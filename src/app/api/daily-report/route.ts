@@ -18,6 +18,7 @@ import {
 import { dispatchDailyReportWebPush } from '@/lib/daily-report-web-push';
 import { evaluateAndDispatchInsights } from '@/lib/proactive-insights/evaluate-and-dispatch';
 import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
+import { toPublicErrorMessage } from '@/lib/security/public-error';
 
 export const maxDuration = 45;
 
@@ -37,8 +38,9 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: 'invalid_schedule',
-          message: 'Use ?schedule=today (05:00 ICT) or ?schedule=tomorrow (18:00 ICT)',
+          code: 'invalid_schedule',
+          error:
+            'ค่า schedule ไม่ถูกต้อง ใช้ today (รอบ 05:00 ไทย) หรือ tomorrow (รอบ 18:00 ไทย)',
         },
         { status: 400 },
       );
@@ -71,7 +73,11 @@ export async function GET(request: Request) {
     if (pushResult.error === 'vapid_not_configured') {
       console.error('[CRON] Web Push not configured set VAPID keys on Vercel');
       return NextResponse.json(
-        { success: false, error: 'Web Push VAPID keys not configured' },
+        {
+          success: false,
+          code: 'vapid_not_configured',
+          error: 'ยังไม่ได้ตั้งค่า Web Push กรุณาติดต่อผู้ดูแลระบบ',
+        },
         { status: 503 },
       );
     }
@@ -109,7 +115,8 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: 'web_push_delivery_failed',
+          code: 'web_push_delivery_failed',
+          error: 'ส่งแจ้งเตือน Web Push ไม่สำเร็จ กรุณาตรวจสอบการสมัครรับแจ้งเตือนแล้วลองใหม่',
           sent: pushResult.sent,
           failed: pushResult.failed,
           removed: pushResult.removed ?? 0,
@@ -170,8 +177,10 @@ export async function GET(request: Request) {
         : null,
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Internal Server Error';
-    console.error('[CRON] Unexpected Error:', message);
-    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+    console.error('[CRON] Unexpected Error:', error);
+    return NextResponse.json(
+      { success: false, error: toPublicErrorMessage(error) },
+      { status: 500 },
+    );
   }
 }

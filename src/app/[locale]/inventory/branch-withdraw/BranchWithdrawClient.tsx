@@ -17,6 +17,7 @@ import {
   saveBranchWithdrawal,
   type BranchWithdrawHistoryRow,
 } from '@/app/actions/branch-withdraw-actions';
+import { resolveActionError, toUserFacingError } from '@/lib/user-facing-error';
 import {
   buildBranchWithdrawDraftLines,
   clearBranchWithdrawDraft,
@@ -576,7 +577,7 @@ export default function BranchWithdrawClient({
         clientSessionId: getClientSessionId(),
       });
       if (!result.success) {
-        setSaveError(result.error || 'รับเข้าไม่สำเร็จ');
+        setSaveError(resolveActionError(result.error, 'รับเข้าไม่สำเร็จ'));
         return;
       }
 
@@ -607,8 +608,7 @@ export default function BranchWithdrawClient({
 
       void refresh({ soft: true });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการรับเข้าคลัง';
-      setSaveError(message);
+      setSaveError(toUserFacingError(error, 'เกิดข้อผิดพลาดในการรับเข้าคลัง กรุณาลองใหม่'));
     } finally {
       setIsReceiving(false);
     }

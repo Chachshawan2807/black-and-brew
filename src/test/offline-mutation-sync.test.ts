@@ -101,7 +101,7 @@ describe('offline-mutation-sync', () => {
   test('marks validation failures as non-retryable', async () => {
     vi.mocked(updateInventoryStock).mockResolvedValueOnce({
       success: false,
-      error: 'Invalid stock update payload',
+      error: 'ข้อมูลอัปเดตสต็อกไม่ถูกต้อง กรุณาลองใหม่',
     });
 
     const result = await replayOfflineMutation({
@@ -115,7 +115,7 @@ describe('offline-mutation-sync', () => {
 
     expect(result).toEqual({
       success: false,
-      error: 'Invalid stock update payload',
+      error: 'ข้อมูลอัปเดตสต็อกไม่ถูกต้อง กรุณาลองใหม่',
       retryable: false,
     });
   });

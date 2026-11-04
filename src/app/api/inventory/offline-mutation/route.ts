@@ -69,7 +69,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = mutationSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ success: false, error: 'Invalid mutation payload' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'ข้อมูลซิงค์ออฟไลน์ไม่ถูกต้อง กรุณาลองใหม่' },
+        { status: 400 },
+      );
     }
 
     const cookieStore = await cookies();
@@ -92,7 +95,7 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('[offline-mutation] replay failed:', message);
     return NextResponse.json(
-      { success: false, error: 'Replay failed', retryable: true },
+      { success: false, error: 'ซิงค์ออฟไลน์ไม่สำเร็จ กรุณาลองใหม่', retryable: true },
       { status: 503 },
     );
   }

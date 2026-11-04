@@ -18,6 +18,8 @@ import {
   removeSupabaseChannelByName,
   scheduleSupabaseChannelTeardown,
 } from '@/lib/supabase-realtime-channel';
+import { broadcastSidebarMenuOrderSaveFailed } from '@/lib/sidebar-menu-order-save-notice';
+import { resolveActionError } from '@/lib/user-facing-error';
 
 type AppPreferencesRow = {
   branch_id: string;
@@ -75,6 +77,10 @@ export function SidebarMenuOrderSync() {
         const saveResult = await saveSidebarMenuOrder(resolved.orderIds);
         if (!cancelled && saveResult.success) {
           lastAppliedUpdatedAtRef.current = saveResult.updatedAt;
+        } else if (!cancelled && !saveResult.success) {
+          broadcastSidebarMenuOrderSaveFailed(
+            saveResult.error ?? 'บันทึกลำดับเมนูไม่สำเร็จ กรุณาลองใหม่',
+          );
         }
       }
     };
@@ -102,7 +108,13 @@ export function SidebarMenuOrderSync() {
       void (async () => {
         if (!orderIds?.length) return;
         const result = await saveSidebarMenuOrder(orderIds);
-        if (cancelled || !result.success) return;
+        if (cancelled) return;
+        if (!result.success) {
+          broadcastSidebarMenuOrderSaveFailed(
+            resolveActionError(result.error, 'บันทึกลำดับเมนูไม่สำเร็จ กรุณาลองใหม่'),
+          );
+          return;
+        }
         lastSavedSignatureRef.current = signature;
         lastAppliedUpdatedAtRef.current = result.updatedAt;
       })();

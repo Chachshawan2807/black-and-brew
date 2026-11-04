@@ -51,7 +51,7 @@ async function assertMasterPin(
   const systemPin = process.env.APP_PIN;
   if (!systemPin) {
     console.error('[AUTH_ACTION] APP_PIN environment variable is not defined.');
-    return { ok: false, error: 'System configuration error' };
+    return { ok: false, error: 'การตั้งค่าระบบมีปัญหา ติดต่อผู้ดูแล' };
   }
   if (!timingSafeEqualText(pin, systemPin)) {
     const failure = await recordPinFailure(clientIp);
@@ -113,7 +113,7 @@ export async function verifyPin(
   const systemPin = process.env.APP_PIN;
   if (!systemPin) {
     console.error('[AUTH_ACTION] APP_PIN environment variable is not defined.');
-    return { success: false, error: 'System configuration error' };
+    return { success: false, error: 'การตั้งค่าระบบมีปัญหา ติดต่อผู้ดูแล' };
   }
 
   const readOnlyPin = resolveReadOnlyPin();

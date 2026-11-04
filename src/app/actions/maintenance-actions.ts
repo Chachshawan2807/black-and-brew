@@ -3,9 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
-import { computeFieldChanges } from '@/lib/data-change-log';
+import { computeFieldChanges, dataChangeLogErrorFromUnknown } from '@/lib/data-change-log';
 import { gateMutation } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { actionFail, actionFailWith, logSupabaseError, toUserFacingError } from '@/lib/user-facing-error';
 
 const supabaseAdmin = getSupabaseAdmin();
 
@@ -38,12 +39,12 @@ export async function saveServiceRecord(
 
   const parsedPayload = serviceRecordSchema.safeParse(payload);
   if (!parsedPayload.success) {
-    return { success: false, error: 'Invalid service record payload' };
+    return { success: false, error: 'ข้อมูลการซ่อมบำรุงไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่' };
   }
 
   const parsedId = recordIdSchema.safeParse(recordId);
   if (!parsedId.success) {
-    return { success: false, error: 'Invalid record ID' };
+    return { success: false, error: 'ไม่พบรายการ กรุณาลองใหม่' };
   }
 
   try {
@@ -69,9 +70,9 @@ export async function saveServiceRecord(
           entityId: parsedId.data,
           entityLabel: validated.equipment,
           status: 'failed',
-          errorMessage: error.message,
+          errorMessage: dataChangeLogErrorFromUnknown(error),
         });
-        return { success: false, error: error.message };
+        return actionFail('maintenance-actions', error, 'บันทึกข้อมูลไม่สำเร็จ');
       }
 
       await recordDataChange({
@@ -100,9 +101,9 @@ export async function saveServiceRecord(
           entityLabel: validated.equipment,
           newValue: validated,
           status: 'failed',
-          errorMessage: error.message,
+          errorMessage: dataChangeLogErrorFromUnknown(error),
         });
-        return { success: false, error: error.message };
+        return actionFail('maintenance-actions', error, 'บันทึกข้อมูลไม่สำเร็จ');
       }
 
       await recordDataChange({
@@ -119,9 +120,7 @@ export async function saveServiceRecord(
     revalidatePath('/[locale]/maintenance', 'page');
     return { success: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
-    console.error('[saveServiceRecord] Unexpected Error:', message);
-    return { success: false, error: message };
+    return actionFail('maintenance-actions', error, 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
   }
 }
 
@@ -135,7 +134,7 @@ export async function deleteServiceRecord(
 
   const parsedId = z.string().uuid().safeParse(recordId);
   if (!parsedId.success) {
-    return { success: false, error: 'Missing or invalid record ID' };
+    return { success: false, error: 'ไม่พบรหัสรายการหรือรูปแบบไม่ถูกต้อง' };
   }
 
   try {
@@ -160,9 +159,9 @@ export async function deleteServiceRecord(
         entityLabel: beforeRecord?.equipment ?? null,
         oldValue: beforeRecord ?? null,
         status: 'failed',
-        errorMessage: error.message,
+        errorMessage: dataChangeLogErrorFromUnknown(error),
       });
-      return { success: false, error: error.message };
+      return actionFail('maintenance-actions', error, 'บันทึกข้อมูลไม่สำเร็จ');
     }
 
     await recordDataChange({
@@ -177,8 +176,6 @@ export async function deleteServiceRecord(
     revalidatePath('/[locale]/maintenance', 'page');
     return { success: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการลบข้อมูล';
-    console.error('[deleteServiceRecord] Unexpected Error:', message);
-    return { success: false, error: message };
+    return actionFail('maintenance-actions', error, 'เกิดข้อผิดพลาดในการลบข้อมูล');
   }
 }

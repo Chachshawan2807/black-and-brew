@@ -12,6 +12,7 @@ import {
   type DataChangeLogInput,
   type FieldChange,
   resolveActorLabel,
+  sanitizeDataChangeLogErrorMessage,
   type ActorAccessLevel,
 } from '@/lib/data-change-log';
 import { requireReadAccess } from '@/lib/policies/server-gate';
@@ -199,7 +200,7 @@ export async function recordDataChange(
       ip_address: ip,
       user_agent: userAgent,
       status: safe.status ?? 'success',
-      error_message: safe.errorMessage ?? null,
+      error_message: sanitizeDataChangeLogErrorMessage(safe.errorMessage),
       metadata: safe.metadata ?? {},
     })
       .select()
@@ -291,7 +292,7 @@ export async function fetchDataChangeLogs(
       rows,
     };
   } catch {
-    return { success: false, error: 'Failed to load data change history' };
+    return { success: false, error: 'โหลดประวัติการเปลี่ยนแปลงไม่สำเร็จ กรุณาลองใหม่' };
   }
 }
 
@@ -325,6 +326,6 @@ export async function fetchNotificationCatchUpLogs(
 
     return { success: true, rows: (data ?? []) as DataChangeLogRow[] };
   } catch {
-    return { success: false, error: 'Failed to load notification catch-up history' };
+    return { success: false, error: 'โหลดประวัติแจ้งเตือนไม่สำเร็จ กรุณาลองใหม่' };
   }
 }

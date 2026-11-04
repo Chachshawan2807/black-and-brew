@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { UNAUTHORIZED_MSG } from '@/lib/policies/messages';
 
 const { mockGet, mockDelete, isSessionFingerprintRevoked } = vi.hoisted(() => ({
   mockGet: vi.fn(),
@@ -53,7 +54,7 @@ describe('ensureServerSession revocation', () => {
 
     expect(result).toEqual({
       ok: false,
-      error: 'Unauthorized: Session missing or invalid',
+      error: UNAUTHORIZED_MSG,
     });
     expect(isSessionFingerprintRevoked).toHaveBeenCalledWith('revoked-fp');
     expect(mockDelete).toHaveBeenCalledWith('bb_auth_pin_verified');
@@ -93,6 +94,6 @@ describe('mutation server actions honor revocation', () => {
   test('recordTransaction rejects revoked PIN session', async () => {
     const result = await recordTransaction('item-1', 'IN', 1, 'test');
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Unauthorized');
+    expect(result.error).toBe(UNAUTHORIZED_MSG);
   });
 });

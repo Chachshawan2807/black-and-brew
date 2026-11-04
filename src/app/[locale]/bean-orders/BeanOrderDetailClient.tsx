@@ -33,6 +33,7 @@ import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-disp
 import { formatBeanOrderStatusHistoryLine } from '@/lib/bean-orders/history-display';
 import { formatBeanOrderDetailAddress } from '@/lib/bean-orders/address';
 import { PaymentSlipViewer } from './_components/PaymentSlipViewer';
+import { resolveActionError } from '@/lib/user-facing-error';
 import { BeanOrderShippingFields } from './_components/BeanOrderShippingFields';
 import {
   canConfirmPayment,
@@ -45,6 +46,7 @@ import {
   shouldShowDeliveredButton,
 } from '@/lib/bean-orders/order-status';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
+import { TextConfirmDialog } from '@/components/ui/text-confirm-dialog';
 import { navigateWithViewTransition } from '@/lib/view-transition';
 import {
   stashBeanOrderDeliveredPatch,
@@ -86,6 +88,9 @@ export default function BeanOrderDetailClient({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingSlipPreview, setPendingSlipPreview] = useState<string | null>(null);
+  const [confirmRevertPayment, setConfirmRevertPayment] = useState(false);
+  const [confirmDelivered, setConfirmDelivered] = useState(false);
+  const [confirmDeleteOrder, setConfirmDeleteOrder] = useState(false);
 
   const initialCarrier = initialCarrierSelection(order.shipment?.carrierCode);
   const [carrierCode, setCarrierCode] = useState(initialCarrier.carrierCode);
@@ -145,7 +150,7 @@ export default function BeanOrderDetailClient({
     setBusy(false);
 
     if (!result.success) {
-      setError(result.error ?? 'อัปโหลดไม่สำเร็จ');
+      setError(resolveActionError(result.error, 'อัปโหลดไม่สำเร็จ'));
       return;
     }
 
@@ -161,21 +166,27 @@ export default function BeanOrderDetailClient({
     setBusy(true);
     const result = await confirmBeanOrderPayment(order.id, locale);
     setBusy(false);
-    if (!result.success) { setError(result.error ?? 'ยืนยันไม่สำเร็จ'); return; }
+    if (!result.success) {
+      setError(resolveActionError(result.error, 'ยืนยันไม่สำเร็จ'));
+      return;
+    }
     goToBeanOrderList('ยืนยันชำระเงินแล้ว');
   }
 
-  async function handleRevertPayment() {
+  function requestRevertPayment() {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
-    if (
-      !confirm(
-        `ยกเลิกการยืนยันชำระเงินของออเดอร์ ${order.orderNo} หรือไม่?\nสถานะจะกลับเป็นรอชำระและสามารถยืนยันใหม่ได้`,
-      )
-    ) return;
+    setConfirmRevertPayment(true);
+  }
+
+  async function handleRevertPayment() {
+    setConfirmRevertPayment(false);
     setBusy(true);
     const result = await revertBeanOrderPayment(order.id, locale);
     setBusy(false);
-    if (!result.success) { setError(result.error ?? 'เปลี่ยนสถานะไม่สำเร็จ'); return; }
+    if (!result.success) {
+      setError(resolveActionError(result.error, 'เปลี่ยนสถานะไม่สำเร็จ'));
+      return;
+    }
     setOrder((prev) => ({
       ...prev,
       paymentStatus: 'unpaid',
@@ -221,7 +232,10 @@ export default function BeanOrderDetailClient({
           locale,
         );
     setBusy(false);
-    if (!result.success) { setError(result.error ?? 'บันทึกจัดส่งไม่สำเร็จ'); return; }
+    if (!result.success) {
+      setError(resolveActionError(result.error, 'บันทึกจัดส่งไม่สำเร็จ'));
+      return;
+    }
     setOrder((prev) => ({
       ...prev,
       fulfillmentStatus: markShipped ? 'shipped' : prev.fulfillmentStatus,
@@ -267,9 +281,13 @@ export default function BeanOrderDetailClient({
     await persistShipmentFromForm(carrierCode, customCarrierLabel);
   }
 
-  async function handleConfirmDelivered() {
+  function requestConfirmDelivered() {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
-    if (!confirm('ยืนยันว่าจัดส่งสำเร็จแล้ว?')) return;
+    setConfirmDelivered(true);
+  }
+
+  async function handleConfirmDelivered() {
+    setConfirmDelivered(false);
 
     const resolvedCarrierCode = resolveCarrierCodeForSave(carrierCode, customCarrierLabel);
     if (!resolvedCarrierCode) {
@@ -288,7 +306,7 @@ export default function BeanOrderDetailClient({
     });
     if (!result.success) {
       setBusy(false);
-      setError(result.error ?? 'ยืนยันจัดส่งไม่สำเร็จ');
+      setError(resolveActionError(result.error, 'ยืนยันจัดส่งไม่สำเร็จ'));
       return;
     }
     stashBeanOrderDeliveredPatch(order.id);
@@ -296,13 +314,20 @@ export default function BeanOrderDetailClient({
     goToBeanOrderList('จัดส่งสำเร็จ');
   }
 
-  async function handleDelete() {
+  function requestDeleteOrder() {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
-    if (!confirm('ลบออเดอร์นี้?')) return;
+    setConfirmDeleteOrder(true);
+  }
+
+  async function handleDelete() {
+    setConfirmDeleteOrder(false);
     setBusy(true);
     const result = await deleteBeanOrder(order.id, locale);
     setBusy(false);
-    if (!result.success) { setError(result.error ?? 'ลบไม่สำเร็จ'); return; }
+    if (!result.success) {
+      setError(resolveActionError(result.error, 'ลบไม่สำเร็จ'));
+      return;
+    }
     if (embedded && onBack) {
       onBack();
       return;
@@ -495,7 +520,7 @@ export default function BeanOrderDetailClient({
                         <button
                           type="button"
                           disabled={busy}
-                          onClick={() => void handleRevertPayment()}
+                          onClick={() => requestRevertPayment()}
                           className={cn(
                             BEAN_ORDER_ACTION_BTN_OUTLINE,
                             'h-auto min-h-11 w-full px-3 py-2 text-center text-xs leading-snug sm:text-sm',
@@ -552,7 +577,7 @@ export default function BeanOrderDetailClient({
                         <button
                           type="button"
                           disabled={busy}
-                          onClick={() => void handleConfirmDelivered()}
+                          onClick={() => requestConfirmDelivered()}
                           className={BEAN_ORDER_ACTION_BTN_INFO}
                         >
                           จัดส่งสำเร็จ
@@ -590,7 +615,7 @@ export default function BeanOrderDetailClient({
             type="button"
             disabled={busy}
             aria-busy={busy}
-            onClick={() => void handleDelete()}
+            onClick={() => requestDeleteOrder()}
             className={BEAN_ORDER_ACTION_BTN_DANGER}
           >
             {busy ? 'กำลังลบ…' : 'ลบออเดอร์'}
@@ -617,6 +642,36 @@ export default function BeanOrderDetailClient({
           )}
         </ul>
       </BeanOrderSectionReveal>
+
+      <TextConfirmDialog
+        open={confirmRevertPayment}
+        title="ยกเลิกยืนยันชำระเงิน"
+        description={`ยกเลิกการยืนยันชำระเงินของออเดอร์ ${order.orderNo} หรือไม่?\nสถานะจะกลับเป็นรอชำระและสามารถยืนยันใหม่ได้`}
+        confirmLabel="ยกเลิกยืนยัน"
+        destructive
+        busy={busy}
+        onClose={() => !busy && setConfirmRevertPayment(false)}
+        onConfirm={() => void handleRevertPayment()}
+      />
+      <TextConfirmDialog
+        open={confirmDelivered}
+        title="ยืนยันจัดส่งสำเร็จ"
+        description="ยืนยันว่าจัดส่งสำเร็จแล้ว?"
+        confirmLabel="ยืนยัน"
+        busy={busy}
+        onClose={() => !busy && setConfirmDelivered(false)}
+        onConfirm={() => void handleConfirmDelivered()}
+      />
+      <TextConfirmDialog
+        open={confirmDeleteOrder}
+        title="ลบออเดอร์"
+        description="ลบออเดอร์นี้? การกระทำนี้ไม่สามารถย้อนกลับได้"
+        confirmLabel="ลบออเดอร์"
+        destructive
+        busy={busy}
+        onClose={() => !busy && setConfirmDeleteOrder(false)}
+        onConfirm={() => void handleDelete()}
+      />
     </BeanOrderPageShell>
   );
 }

@@ -28,6 +28,7 @@ import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { cn } from '@/lib/utils';
 import { BB_FIELD_INPUT_MUTED } from '@/lib/ui-outlined-tokens';
 import { InventoryModalPortal } from './InventoryModalPortal';
+import { toUserFacingError } from '@/lib/user-facing-error';
 
 export type NewInventoryItemInput = {
   name: string;
@@ -50,6 +51,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
   const [newItemData, setNewItemData] = useState<Record<string, string | number>>({});
   const [insertPosition, setInsertPosition] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const { overlay, panel } = useInventoryMotion();
 
@@ -82,6 +84,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
     };
 
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       await ensureSupabaseSession();
 
@@ -130,9 +133,8 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
       onSuccess(data);
       onClose();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ';
-      console.error('Failed to add item:', message);
-      alert('ไม่สามารถเพิ่มรายการได้: ' + message);
+      console.error('Failed to add item:', err);
+      setSubmitError(toUserFacingError(err, 'ไม่สามารถเพิ่มรายการได้ กรุณาลองใหม่'));
     } finally {
       setIsSubmitting(false);
     }
@@ -174,6 +176,11 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
           className="px-6 py-4 bg-card"
         />
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto bb-smooth-scroll flex-1 min-h-0">
+          {submitError ? (
+            <p role="alert" className="mb-4 text-sm text-destructive">
+              {submitError}
+            </p>
+          ) : null}
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             <div className="col-span-2 flex flex-col gap-1.5">
               <label className={INVENTORY_FORM_LABEL}>ชื่อรายการ</label>

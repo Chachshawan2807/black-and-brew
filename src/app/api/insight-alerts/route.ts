@@ -10,6 +10,7 @@ import {
   parseInsightAlertWindow,
 } from '@/lib/proactive-insights/insight-schedule';
 import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
+import { toPublicErrorMessage } from '@/lib/security/public-error';
 
 export const maxDuration = 45;
 
@@ -78,8 +79,10 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Internal Server Error';
-    console.error('[CRON] insight-alerts Unexpected Error:', message);
-    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+    console.error('[CRON] insight-alerts Unexpected Error:', error);
+    return NextResponse.json(
+      { success: false, error: toPublicErrorMessage(error) },
+      { status: 500 },
+    );
   }
 }

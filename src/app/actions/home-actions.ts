@@ -41,6 +41,17 @@ import {
 } from '@/lib/secretary/roll-forward-manual-tasks';
 import { fetchHomeMemberPanelFromServer } from '@/lib/schedule/load-home-member-panel-server';
 import type { HomeMemberPanelSnapshot } from '@/lib/schedule/home-member-panel';
+import {
+  actionFail,
+  actionFailWith,
+  logSupabaseError,
+  resolveActionError,
+  toUserFacingError,
+} from '@/lib/user-facing-error';
+
+const HOME_ERR_LOAD_TASKS = 'โหลดรายการงานไม่สำเร็จ กรุณาลองใหม่';
+const HOME_ERR_INVALID_TASK = 'ข้อมูลงานไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่';
+const HOME_ERR_SYNC_DERIVED = 'ซิงค์งานจากระบบไม่สำเร็จ กรุณาลองใหม่';
 
 const TASK_SELECT =
   'id, task_type, title, description, priority, status, module, due_at, scheduled_date, assignee_profile_id, source_kind, source_ref, source_ref_hash, action_href, metadata, completed_at, completed_by, snoozed_until, active_session_started_at, created_at, updated_at';
@@ -98,7 +109,7 @@ async function querySecretaryTasks(dateIso: string): Promise<{
         return { success: true, tasks: [] };
       }
       console.error('Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     return {
@@ -108,9 +119,7 @@ async function querySecretaryTasks(dateIso: string): Promise<{
         .map(mapRow),
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[fetchSecretaryTasks]', message);
-    return { success: false, error: message };
+    return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
@@ -140,7 +149,7 @@ async function fetchSecretaryBoardViewOnly(opts: {
   if (plan.kind === 'light') {
     const tasksResult = await querySecretaryTasks(dateIso);
     if (!tasksResult.success || !tasksResult.tasks) {
-      throw new Error(tasksResult.error ?? 'Failed to load tasks');
+      throw new Error(resolveActionError(tasksResult.error, HOME_ERR_LOAD_TASKS));
     }
     return { tasks: tasksResult.tasks };
   }
@@ -153,7 +162,7 @@ async function fetchSecretaryBoardViewOnly(opts: {
       const patch = await fetchSecretarySnapshotSlices({ dateIso, locale }, dataScopes);
       const tasksResult = await querySecretaryTasks(dateIso);
       if (!tasksResult.success || !tasksResult.tasks) {
-        throw new Error(tasksResult.error ?? 'Failed to load tasks');
+        throw new Error(resolveActionError(tasksResult.error, HOME_ERR_LOAD_TASKS));
       }
       const snapshot = baseSnapshot
         ? mergeSecretarySnapshot(baseSnapshot, patch)
@@ -171,7 +180,7 @@ async function fetchSecretaryBoardViewOnly(opts: {
     querySecretaryTasks(dateIso),
   ]);
   if (!tasksResult.success || !tasksResult.tasks) {
-    throw new Error(tasksResult.error ?? 'Failed to load tasks');
+    throw new Error(resolveActionError(tasksResult.error, HOME_ERR_LOAD_TASKS));
   }
   return { tasks: tasksResult.tasks, snapshot };
 }
@@ -251,9 +260,7 @@ export async function syncDerivedSecretaryTasks(opts?: {
     const derivedResult = await applyDerivedTaskDrafts(drafts, snapshot.dateIso);
     return derivedResult;
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[syncDerivedSecretaryTasks]', message);
-    return { success: false, error: message };
+    return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
@@ -288,7 +295,7 @@ export async function createManualSecretaryTask(
   if (!gate.success) return gate;
 
   const parsed = manualTaskSchema.safeParse(input);
-  if (!parsed.success) return { success: false, error: 'Invalid task payload' };
+  if (!parsed.success) return { success: false, error: HOME_ERR_INVALID_TASK };
 
   try {
     const { data, error } = await getSupabaseAdmin()
@@ -311,13 +318,12 @@ export async function createManualSecretaryTask(
 
     if (error) {
       console.error('Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     return { success: true, task: mapRow(data as Record<string, unknown>) };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: message };
+    return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
@@ -334,7 +340,7 @@ export async function updateManualSecretaryTask(
   if (!gate.success) return gate;
 
   const parsed = updateManualTaskSchema.safeParse(input);
-  if (!parsed.success) return { success: false, error: 'Invalid task payload' };
+  if (!parsed.success) return { success: false, error: HOME_ERR_INVALID_TASK };
 
   try {
     const { data, error } = await getSupabaseAdmin()
@@ -351,13 +357,12 @@ export async function updateManualSecretaryTask(
 
     if (error) {
       console.error('Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     return { success: true, task: mapRow(data as Record<string, unknown>) };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: message };
+    return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
@@ -390,15 +395,14 @@ export async function deferSecretaryTasksToNextDay(
 
     if (error) {
       console.error('Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     revalidatePath('/th/home');
     revalidatePath('/en/home');
     return { success: true, deferred: taskIds.length };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: message };
+    return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
@@ -426,7 +430,7 @@ export async function completeSecretaryTasks(
 
       if (fetchError) {
         console.error('Supabase Error:', fetchError.message, fetchError.details);
-        return { success: false, error: fetchError.message };
+        return actionFail('home-actions', fetchError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
       }
 
       if (!taskRow) continue;
@@ -451,7 +455,7 @@ export async function completeSecretaryTasks(
 
       if (error) {
         console.error('Supabase Error:', error.message, error.details);
-        return { success: false, error: error.message };
+        return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
       }
 
       completedTasks.push(mapRow(data as Record<string, unknown>));
@@ -461,8 +465,7 @@ export async function completeSecretaryTasks(
     revalidatePath('/en/home');
     return { success: true, tasks: completedTasks };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: message };
+    return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
@@ -496,16 +499,14 @@ export async function syncAndFetchSecretaryBoard(opts?: {
       });
       return { success: true, ...view };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      return { success: false, error: message };
+      return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
   }
 
   try {
     await rollForwardOpenManualSecretaryTasks(dateIso);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: message };
+    return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 
   try {
@@ -513,7 +514,7 @@ export async function syncAndFetchSecretaryBoard(opts?: {
       const tasksResult = await fetchSecretaryTasks(dateIso);
 
       if (!tasksResult.success || !tasksResult.tasks) {
-        return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
+        return { success: false, error: resolveActionError(tasksResult.error, HOME_ERR_LOAD_TASKS) };
       }
 
       return {
@@ -536,13 +537,16 @@ export async function syncAndFetchSecretaryBoard(opts?: {
         baseSnapshot: opts?.baseSnapshot,
       });
       if (!syncResult.success) {
-        return { success: false, error: syncResult.error };
+        return {
+          success: false,
+          error: resolveActionError(syncResult.error, HOME_ERR_SYNC_DERIVED),
+        };
       }
 
       const tasksResult = await fetchSecretaryTasks(scopedDateIso);
 
       if (!tasksResult.success || !tasksResult.tasks) {
-        return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
+        return { success: false, error: resolveActionError(tasksResult.error, HOME_ERR_LOAD_TASKS) };
       }
 
       return {
@@ -571,7 +575,10 @@ export async function syncAndFetchSecretaryBoard(opts?: {
       snapshot,
     });
     if (!syncResult.success) {
-      return { success: false, error: syncResult.error };
+      return {
+        success: false,
+        error: resolveActionError(syncResult.error, HOME_ERR_SYNC_DERIVED),
+      };
     }
 
     const tasksResult =
@@ -580,7 +587,7 @@ export async function syncAndFetchSecretaryBoard(opts?: {
         : tasksBeforeSync;
 
     if (!tasksResult.success || !tasksResult.tasks) {
-      return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
+      return { success: false, error: resolveActionError(tasksResult.error, HOME_ERR_LOAD_TASKS) };
     }
 
     return {
@@ -589,8 +596,7 @@ export async function syncAndFetchSecretaryBoard(opts?: {
       ...(reuseHydratedSnapshot ? {} : { snapshot }),
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: message };
+    return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
@@ -621,15 +627,14 @@ export async function updateSecretaryTaskStatus(
 
     if (error) {
       console.error('Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     revalidatePath('/th/home');
     revalidatePath('/en/home');
     return { success: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: message };
+    return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
@@ -648,13 +653,12 @@ export async function deleteManualSecretaryTask(
 
     if (error) {
       console.error('Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     return { success: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: message };
+    return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
@@ -695,9 +699,7 @@ export async function hydrateSecretaryBoardSnapshot(opts: {
     const snapshot = await fetchSecretarySnapshot({ dateIso, locale });
     return { success: true, snapshot };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[hydrateSecretaryBoardSnapshot]', message);
-    return { success: false, error: message };
+    return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }
 
@@ -713,7 +715,7 @@ export async function loadHomeMemberPanel(opts?: {
     (panel) => ({ ok: true as const, panel }),
     (error: unknown) => ({
       ok: false as const,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: toUserFacingError(error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่'),
     }),
   );
   const authError = await requireReadAccess();
@@ -749,7 +751,7 @@ export async function loadSecretaryBoard(opts?: {
         tasksPromise,
       ]);
       if (!tasksResult.success || !tasksResult.tasks) {
-        return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
+        return { success: false, error: resolveActionError(tasksResult.error, HOME_ERR_LOAD_TASKS) };
       }
       return {
         success: true,
@@ -759,8 +761,7 @@ export async function loadSecretaryBoard(opts?: {
         },
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      return { success: false, error: message };
+      return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
   }
 
@@ -768,7 +769,7 @@ export async function loadSecretaryBoard(opts?: {
     if (deferDerivedSync) {
       const tasksResult = await tasksPromise;
       if (!tasksResult.success || !tasksResult.tasks) {
-        return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
+        return { success: false, error: resolveActionError(tasksResult.error, HOME_ERR_LOAD_TASKS) };
       }
 
       return {
@@ -787,7 +788,10 @@ export async function loadSecretaryBoard(opts?: {
 
     const syncResult = await syncDerivedSecretaryTasks({ snapshot, dateIso, locale });
     if (!syncResult.success) {
-      return { success: false, error: syncResult.error };
+      return {
+        success: false,
+        error: resolveActionError(syncResult.error, HOME_ERR_SYNC_DERIVED),
+      };
     }
 
     const tasksAfterSync =
@@ -796,7 +800,7 @@ export async function loadSecretaryBoard(opts?: {
         : tasksResult;
 
     if (!tasksAfterSync.success || !tasksAfterSync.tasks) {
-      return { success: false, error: tasksAfterSync.error ?? 'Failed to load tasks' };
+      return { success: false, error: resolveActionError(tasksAfterSync.error, HOME_ERR_LOAD_TASKS) };
     }
 
     return {
@@ -807,7 +811,6 @@ export async function loadSecretaryBoard(opts?: {
       },
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: message };
+    return actionFail('home-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
   }
 }

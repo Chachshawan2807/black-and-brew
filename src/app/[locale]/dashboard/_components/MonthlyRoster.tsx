@@ -20,6 +20,8 @@ import {
 } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
+import { PageStatusBanner } from '@/components/ui/page-status-banner';
+import { useTimedPageNotice } from '@/hooks/use-timed-page-notice';
 import { preloadCaptureLibraries } from '@/lib/capture-element-png';
 import { fetchRosterData } from '@/app/actions/shift-actions';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
@@ -114,6 +116,7 @@ export default function MonthlyRoster({
   initialStartDate,
   initialEndDate,
 }: MonthlyRosterProps) {
+  const { notice: pageNotice, showNotice: showPageNotice } = useTimedPageNotice(6000);
   const hasInitialData = Boolean(initialProfiles && initialProfiles.length > 0);
   const [startDate, setStartDate] = useState(
     () => resolveMonthlyRosterInitialRange(initialStartDate, initialEndDate).start,
@@ -347,7 +350,7 @@ export default function MonthlyRoster({
       }
     } catch (err) {
       console.error('Failed to export roster image:', err);
-      alert('เกิดข้อผิดพลาดในการบันทึกตารางเวรเป็นรูปภาพค่ะ');
+      showPageNotice('เกิดข้อผิดพลาดในการบันทึกตารางเวรเป็นรูปภาพ กรุณาลองใหม่');
     } finally {
       flushSync(() => {
         if (previousStaffId) setSelectedStaffId(previousStaffId);
@@ -369,6 +372,7 @@ export default function MonthlyRoster({
 
   return (
     <div className="w-full bg-card rounded-[32px] p-4 md:p-8 border border-border bb-shadow-sm min-h-[700px] antialiased">
+      <PageStatusBanner message={pageNotice} topClassName="top-4" />
       {/* Header Controls */}
       <div className="relative z-30 flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
         <div className="flex items-center gap-4">

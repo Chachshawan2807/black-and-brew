@@ -4,7 +4,10 @@ import { describe, expect, test } from 'vitest';
 import { pickClientIp } from '@/lib/security/request-ip';
 import { sanitizeXssPayload, sanitizePromptInput } from '@/lib/security/sanitize';
 import { timingSafeEqualText } from '@/lib/security/timing-safe';
-import { toPublicErrorMessage } from '@/lib/security/public-error';
+import {
+  PUBLIC_INTERNAL_ERROR,
+  toPublicErrorMessage,
+} from '@/lib/security/public-error';
 import { buildSecurityHeaders } from '@/lib/security/headers';
 
 describe('pickClientIp', () => {
@@ -46,10 +49,12 @@ describe('timingSafeEqualText', () => {
 describe('toPublicErrorMessage', () => {
   test('never returns raw exception text to clients', () => {
     expect(toPublicErrorMessage(new Error('relation "users" does not exist'))).toBe(
-      'Internal Server Error',
+      PUBLIC_INTERNAL_ERROR,
     );
-    expect(toPublicErrorMessage('ECONNREFUSED 127.0.0.1:5432')).toBe('Internal Server Error');
-    expect(toPublicErrorMessage(undefined)).toBe('Internal Server Error');
+    expect(toPublicErrorMessage('ECONNREFUSED 127.0.0.1:5432')).toBe(
+      'เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบเน็ตแล้วลองใหม่',
+    );
+    expect(toPublicErrorMessage(undefined)).toBe(PUBLIC_INTERNAL_ERROR);
   });
 });
 

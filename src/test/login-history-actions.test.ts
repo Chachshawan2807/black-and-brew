@@ -1,4 +1,5 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { UNAUTHORIZED_MSG } from '@/lib/policies/messages';
 
 const mockGet = vi.fn();
 const mockInsert = vi.fn();
@@ -147,7 +148,7 @@ describe('fetchLoginHistory', () => {
 
     const result = await fetchLoginHistory();
 
-    expect(result).toEqual({ success: false, error: 'Unauthorized' });
+    expect(result).toEqual({ success: false, error: UNAUTHORIZED_MSG });
     expect(mockSelect).not.toHaveBeenCalled();
   });
 

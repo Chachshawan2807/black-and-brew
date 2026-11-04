@@ -3,6 +3,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
 import { dispatchInventoryWebPush, rowToDataChangeLogRow } from '@/lib/web-push';
 import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
+import { toPublicErrorMessage } from '@/lib/security/public-error';
 
 export const maxDuration = 30;
 
@@ -32,6 +33,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
     console.error('[push/webhook] failed:', error);
-    return NextResponse.json({ success: false, error: 'Push dispatch failed' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: toPublicErrorMessage(error), code: 'push_dispatch_failed' },
+      { status: 500 },
+    );
   }
 }

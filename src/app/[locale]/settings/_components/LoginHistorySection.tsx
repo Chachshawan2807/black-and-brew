@@ -14,6 +14,7 @@ import {
 } from "@/lib/settings-section-data-cache";
 import { ExpandableLines } from "@/components/ui/expandable-lines";
 import { ExpandMoreButton } from "@/components/ui/expand-more-button";
+import { resolveActionError } from "@/lib/user-facing-error";
 import ActiveRemoteSessionsPanel from './ActiveRemoteSessionsPanel';
 import {
   SETTINGS_BTN_GHOST,
@@ -180,7 +181,12 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
       if (gen !== loadGenRef.current) return;
 
       if (!result.success) {
-        setError(result.error);
+        setError(
+          resolveActionError(
+            result.error,
+            isTh ? "โหลดประวัติการเข้าใช้ไม่สำเร็จ" : "Could not load login history",
+          ),
+        );
         setRows([]);
         setSessions([]);
       } else {
@@ -190,7 +196,7 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
       }
       setLoading(false);
     });
-  }, []);
+  }, [isTh]);
 
   useEffect(() => {
     const gen = ++loadGenRef.current;

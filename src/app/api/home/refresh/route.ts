@@ -28,8 +28,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Internal Server Error';
-    console.error('[home/refresh]', message);
+    console.error('[home/refresh]', error);
     return NextResponse.json(
       { success: false, error: toPublicErrorMessage(error) },
       { status: 500 },

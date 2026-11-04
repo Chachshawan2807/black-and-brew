@@ -4,4 +4,5 @@ export {
 } from '@/lib/auth-constants';
 
 /** ADR SEC-AUTH-001 shared unauthorized message for server gates. */
-export const UNAUTHORIZED_MSG = 'Unauthorized: Session missing or invalid';
+export const UNAUTHORIZED_MSG =
+  'ยังไม่ได้เข้าสู่ระบบหรือเซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่';

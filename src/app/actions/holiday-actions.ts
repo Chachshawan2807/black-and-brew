@@ -7,6 +7,7 @@ import { fetchAndPersistHolidays } from '@/lib/holiday-sync';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { gateMutation } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { actionFail, actionFailWith, logSupabaseError, toUserFacingError } from '@/lib/user-facing-error';
 
 const supabaseAdmin = getSupabaseAdmin();
 
@@ -27,7 +28,7 @@ export async function syncHolidays(startDate: string, endDate: string) {
 
   const parsed = dateRangeSchema.safeParse({ startDate, endDate });
   if (!parsed.success) {
-    return { success: false, error: 'Invalid date range' };
+    return { success: false, error: 'ช่วงวันที่ไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่' };
   }
 
   const result = await fetchAndPersistHolidays(parsed.data.startDate, parsed.data.endDate);
@@ -52,7 +53,7 @@ export async function syncHolidays(startDate: string, endDate: string) {
 
 export async function saveRegularHolidays(profileId: string, days: number[]) {
   if (!profileId) {
-    return { success: false, error: 'Missing profile ID' };
+    return { success: false, error: 'กรุณาเลือกพนักงาน' };
   }
 
   const auth = await ensureAuthorized();
@@ -114,9 +115,6 @@ export async function saveRegularHolidays(profileId: string, days: number[]) {
 
     return { success: true, data: normalizedDays };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to save regular holidays',
-    };
+    return actionFail('holiday-actions', error, 'บันทึกวันหยุดประจำไม่สำเร็จ');
   }
 }

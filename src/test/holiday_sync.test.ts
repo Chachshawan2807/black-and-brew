@@ -52,7 +52,10 @@ describe('fetchAndPersistHolidays', () => {
 
     const result = await fetchAndPersistHolidays('2026-07-27', '2026-08-02');
 
-    expect(result).toEqual({ success: false, error: 'Missing API Key' });
+    expect(result).toEqual({
+      success: false,
+      error: 'ยังไม่ตั้งค่าปฏิทินวันหยุด ติดต่อผู้ดูแล',
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -65,7 +68,10 @@ describe('fetchAndPersistHolidays', () => {
 
     const result = await fetchAndPersistHolidays('2026-07-27', '2026-08-02');
 
-    expect(result).toEqual({ success: false, error: 'Google Calendar API error (403): API key rejected' });
+    expect(result).toEqual({
+      success: false,
+      error: 'ดึงวันหยุดจาก Google ไม่สำเร็จ กรุณาลองใหม่',
+    });
   });
 
   it('sets a request timeout for Google Calendar', async () => {

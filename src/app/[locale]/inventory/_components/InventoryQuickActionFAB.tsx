@@ -23,6 +23,8 @@ import {
   shouldRefreshFrequentItems,
   touchFrequentItemInCache } from '@/lib/inventory-frequent-items';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
+import { PageStatusBanner } from '@/components/ui/page-status-banner';
+import { useTimedPageNotice } from '@/hooks/use-timed-page-notice';
 import { useInventoryHistory } from '@/hooks/use-inventory-history';
 import { prefetchInventoryHistoryFirstPage } from '@/lib/inventory-history-prefetch';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
@@ -92,7 +94,11 @@ export default function InventoryQuickActionFAB() {
     isHistoryLoading,
     isHistoryRefreshing,
     historySearchQuery,
-    handleHistorySearchQueryChange } = history;
+    handleHistorySearchQueryChange,
+    historyLoadError,
+  } = history;
+
+  const { notice: fabNotice, showNotice: showFabNotice } = useTimedPageNotice(6000);
 
   const quickAction = useInventoryQuickAction({
     items,
@@ -108,7 +114,9 @@ export default function InventoryQuickActionFAB() {
         setFrequentItems(touchFrequentItemInCache({ id: saved.id, name: saved.name }));
       }
       setIsOpen(false);
-    } });
+    },
+    onUserNotice: showFabNotice,
+  });
 
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [isExportingPO, setIsExportingPO] = useState(false);
@@ -315,6 +323,7 @@ export default function InventoryQuickActionFAB() {
 
   return (
     <>
+      <PageStatusBanner message={fabNotice} topClassName="top-20" />
       <FabFadePresence
         visible={!hideQuickActionButton}
         presenceKey="quick-action-fab"
@@ -498,6 +507,7 @@ export default function InventoryQuickActionFAB() {
             isHistoryRefreshing={isHistoryRefreshing}
             historySearchQuery={historySearchQuery}
             onSearchQueryChange={handleHistorySearchQueryChange}
+            historyLoadError={historyLoadError}
           />
         )}
       </AnimatePresence>

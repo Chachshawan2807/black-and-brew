@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { useShiftRealtime } from '@/hooks/use-shift-realtime';
 import { useMobileBackOverlayStack } from '@/hooks/use-mobile-back-overlay-stack';
 import { updateDashboardOrder } from '@/app/actions/shift-actions';
+import { resolveActionError, toUserFacingError } from '@/lib/user-facing-error';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
 import { navigateWithoutViewTransition } from '@/lib/view-transition';
@@ -349,9 +350,17 @@ export default function LiveShiftList({
       if (newOrder.length > 0) {
         try {
           const result = await updateDashboardOrder(newOrder);
-          if (!result.success) throw new Error(result.error);
+          if (!result.success) {
+            throw new Error(
+              resolveActionError(result.error, 'บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่'),
+            );
+          }
         } catch (error) {
           console.error('[Dashboard] Order Sync failed:', error);
+          const message = toUserFacingError(error, 'บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่');
+          if (typeof window !== 'undefined' && typeof window.notifyUser === 'function') {
+            window.notifyUser(message);
+          }
         }
       }
     }

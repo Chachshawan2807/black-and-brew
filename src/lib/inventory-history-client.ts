@@ -7,6 +7,7 @@ import {
 } from '@/lib/inventory-history-query';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
+import { UNAUTHORIZED_MSG } from '@/lib/policies/messages';
 
 type HistoryClientResult =
   | { success: true; data: InventoryHistoryDisplayRow[]; hasMore: boolean }
@@ -20,7 +21,7 @@ export async function fetchTransactionHistoryClient(
   if (!sessionOk) {
     return {
       success: false,
-      error: 'Unauthorized',
+      error: UNAUTHORIZED_MSG,
       data: [],
       hasMore: false,
     };

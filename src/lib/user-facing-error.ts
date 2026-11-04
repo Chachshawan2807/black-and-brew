@@ -80,9 +80,43 @@ export function toUserFacingError(error: unknown, fallbackTh: string): string {
     return 'เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบเน็ตแล้วลองใหม่';
   }
 
+  if (/Insufficient stock/i.test(message)) {
+    return 'สต็อกไม่เพียงพอ กรุณาตรวจสอบจำนวน';
+  }
+
   if (looksUserFacingThai(message)) {
     return message;
   }
 
   return fallbackTh;
+}
+
+/** Use when chaining `result.error ?? fallbackTh` for Server Action responses. */
+export function resolveActionError(
+  error: string | undefined | null,
+  fallbackTh: string,
+): string {
+  if (!error) return fallbackTh;
+  return toUserFacingError(error, fallbackTh);
+}
+
+/** Standard Server Action failure (Nielsen 9). */
+export function actionFail(
+  context: string,
+  error: unknown,
+  fallbackTh: string,
+): { success: false; error: string } {
+  logSupabaseError(context, error);
+  return { success: false, error: toUserFacingError(error, fallbackTh) };
+}
+
+/** Server Action failure with extra serializable fields (e.g. deleted count). */
+export function actionFailWith<T extends Record<string, unknown>>(
+  context: string,
+  error: unknown,
+  fallbackTh: string,
+  extra: T,
+): { success: false; error: string } & T {
+  logSupabaseError(context, error);
+  return { success: false, error: toUserFacingError(error, fallbackTh), ...extra };
 }

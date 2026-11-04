@@ -12,6 +12,12 @@ import { toPublicErrorMessage } from '@/lib/security/public-error';
 
 export const maxDuration = 60;
 
+const POSITIVE_INT_FIELD_LABEL: Record<string, string> = {
+  retentionDays: 'จำนวนวันเก็บข้อมูล',
+  batchSize: 'ขนาดชุดลบ',
+  maxBatches: 'จำนวนรอบลบสูงสุด',
+};
+
 function parsePositiveInt(
   value: string | null,
   fallback: number,
@@ -20,7 +26,8 @@ function parsePositiveInt(
   if (value == null || value.trim() === '') return fallback;
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed < 1) {
-    return { error: `${fieldName} must be a positive integer` };
+    const label = POSITIVE_INT_FIELD_LABEL[fieldName] ?? fieldName;
+    return { error: `${label} ต้องเป็นจำนวนเต็มบวก` };
   }
   return parsed;
 }
@@ -72,8 +79,7 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Internal Server Error';
-    console.error('[CRON] data-change-log-retention failed:', message);
+    console.error('[CRON] data-change-log-retention failed:', error);
     return NextResponse.json(
       { success: false, error: toPublicErrorMessage(error) },
       { status: 500 },

@@ -78,6 +78,7 @@ import {
 import { isBeanOrderEditDataReady } from '@/lib/bean-orders/form-readiness';
 import type { PaymentStatus, WeightUnit } from '@/lib/bean-orders/types';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
+import { resolveActionError } from '@/lib/user-facing-error';
 import {
   BEAN_ORDER_CARD,
   BEAN_ORDER_BTN_DANGER_GHOST,
@@ -105,6 +106,7 @@ import {
   useBeanOrderMotion,
 } from './_components/bean-order-ui-primitives';
 import { LoadingIcon } from '@/components/ui/loading-icon';
+import { TextConfirmDialog } from '@/components/ui/text-confirm-dialog';
 import { cn } from '@/lib/utils';
 
 const PasteCustomerDialog = dynamic(
@@ -293,6 +295,7 @@ function BeanOrderFormClientReady({
   const [pendingSlipFile, setPendingSlipFile] = useState<File | null>(null);
   const [confirmPaymentOnSave, setConfirmPaymentOnSave] = useState(false);
   const [revertPaymentOnSave, setRevertPaymentOnSave] = useState(false);
+  const [showRevertPaymentConfirm, setShowRevertPaymentConfirm] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteLoading, setPasteLoading] = useState(false);
   const [pasteError, setPasteError] = useState<string | null>(null);
@@ -552,7 +555,7 @@ function BeanOrderFormClientReady({
       const result = await parseBeanOrderCustomerFromText(text);
       setPasteLoading(false);
       if (!result.success || !result.data) {
-        setPasteError(result.error ?? 'แยกข้อมูลลูกค้าไม่สำเร็จ');
+        setPasteError(resolveActionError(result.error, 'แยกข้อมูลลูกค้าไม่สำเร็จ'));
         return;
       }
       setPasteData(result.data);
@@ -640,7 +643,11 @@ function BeanOrderFormClientReady({
       setError(READ_ONLY_DENY_MSG);
       return;
     }
-    if (!confirm('เปลี่ยนสถานะเป็นรอชำระ?')) return;
+    setShowRevertPaymentConfirm(true);
+  }
+
+  function confirmRevertPaymentOnSave() {
+    setShowRevertPaymentConfirm(false);
     setRevertPaymentOnSave(true);
     setConfirmPaymentOnSave(false);
   }
@@ -656,7 +663,7 @@ function BeanOrderFormClientReady({
     if (revertPaymentOnSave) {
       const result = await revertBeanOrderPayment(targetOrderId, locale);
       if (!result.success) {
-        return { error: result.error ?? 'เปลี่ยนสถานะไม่สำเร็จ' };
+        return { error: resolveActionError(result.error, 'เปลี่ยนสถานะไม่สำเร็จ') };
       }
       return {};
     }
@@ -666,7 +673,7 @@ function BeanOrderFormClientReady({
       fd.set('slip', pendingSlipFile);
       const uploadResult = await uploadBeanOrderSlip(targetOrderId, fd, locale);
       if (!uploadResult.success) {
-        return { error: uploadResult.error ?? 'อัปโหลดสลิปไม่สำเร็จ' };
+        return { error: resolveActionError(uploadResult.error, 'อัปโหลดสลิปไม่สำเร็จ') };
       }
     }
 
@@ -677,7 +684,7 @@ function BeanOrderFormClientReady({
       }
       const result = await confirmBeanOrderPayment(targetOrderId, locale);
       if (!result.success) {
-        return { error: result.error ?? 'ยืนยันชำระไม่สำเร็จ' };
+        return { error: resolveActionError(result.error, 'ยืนยันชำระไม่สำเร็จ') };
       }
     }
 
@@ -712,7 +719,7 @@ function BeanOrderFormClientReady({
         locale,
       );
       if (!shipResult.success) {
-        return { error: shipResult.error ?? 'บันทึกการจัดส่งไม่สำเร็จ' };
+        return { error: resolveActionError(shipResult.error, 'บันทึกการจัดส่งไม่สำเร็จ') };
       }
       return {};
     }
@@ -723,7 +730,7 @@ function BeanOrderFormClientReady({
       locale,
     );
     if (!planResult.success) {
-      return { error: planResult.error ?? 'บันทึกช่องทางจัดส่งไม่สำเร็จ' };
+      return { error: resolveActionError(planResult.error, 'บันทึกช่องทางจัดส่งไม่สำเร็จ') };
     }
     return {};
   }
@@ -814,7 +821,12 @@ function BeanOrderFormClientReady({
 
     if (!result.success) {
       setSaving(false);
-      setError(result.error ?? (isEdit ? 'แก้ไขออเดอร์ไม่สำเร็จ' : 'สร้างออเดอร์ไม่สำเร็จ'));
+      setError(
+        resolveActionError(
+          result.error,
+          isEdit ? 'แก้ไขออเดอร์ไม่สำเร็จ' : 'สร้างออเดอร์ไม่สำเร็จ',
+        ),
+      );
       return;
     }
 
@@ -832,7 +844,9 @@ function BeanOrderFormClientReady({
         const paymentResult = await persistPayment(targetOrderId);
         if (paymentResult.error) {
           setSaving(false);
-          setError(`${paymentResult.error} ออเดอร์ถูกบันทึกแล้ว`);
+          setError(
+            `${resolveActionError(paymentResult.error, 'บันทึกการชำระไม่สำเร็จ')} ออเดอร์ถูกบันทึกแล้ว`,
+          );
           navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
           return;
         }
@@ -846,7 +860,9 @@ function BeanOrderFormClientReady({
         );
         if (shipmentResult.error) {
           setSaving(false);
-          setError(`${shipmentResult.error} ออเดอร์ถูกบันทึกแล้ว`);
+          setError(
+            `${resolveActionError(shipmentResult.error, 'บันทึกการจัดส่งไม่สำเร็จ')} ออเดอร์ถูกบันทึกแล้ว`,
+          );
           navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
           return;
         }
@@ -1293,6 +1309,14 @@ function BeanOrderFormClientReady({
           onCancel={closeClearCustomerConfirm}
         />
       ) : null}
+      <TextConfirmDialog
+        open={showRevertPaymentConfirm}
+        title="เปลี่ยนสถานะชำระเงิน"
+        description="เปลี่ยนสถานะเป็นรอชำระ? จะบันทึกเมื่อกดบันทึกออเดอร์"
+        confirmLabel="เปลี่ยนเป็นรอชำระ"
+        onClose={() => setShowRevertPaymentConfirm(false)}
+        onConfirm={confirmRevertPaymentOnSave}
+      />
     </form>
     </BeanOrderPageShell>
   );

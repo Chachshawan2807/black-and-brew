@@ -5,6 +5,7 @@ const { mockGet, mockFrom } = vi.hoisted(() => ({
   mockFrom: vi.fn(),
 }));
 
+import { UNAUTHORIZED_MSG } from '@/lib/policies/messages';
 import {
   fetchCountAccuracyStats,
   fetchFrequentItems,
@@ -49,7 +50,7 @@ describe('read server actions auth gate', () => {
   test('fetchTransactionHistory rejects unauthenticated callers', async () => {
     const result = await fetchTransactionHistory();
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Unauthorized');
+    expect(result.error).toBe(UNAUTHORIZED_MSG);
     expect(result.data).toEqual([]);
     expect(mockFrom).not.toHaveBeenCalled();
   });
@@ -57,7 +58,7 @@ describe('read server actions auth gate', () => {
   test('fetchFrequentItems rejects unauthenticated callers', async () => {
     const result = await fetchFrequentItems();
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Unauthorized');
+    expect(result.error).toBe(UNAUTHORIZED_MSG);
     expect(result.data).toEqual([]);
     expect(mockFrom).not.toHaveBeenCalled();
   });
@@ -65,7 +66,7 @@ describe('read server actions auth gate', () => {
   test('fetchCountAccuracyStats rejects unauthenticated callers', async () => {
     const result = await fetchCountAccuracyStats();
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Unauthorized');
+    expect(result.error).toBe(UNAUTHORIZED_MSG);
     expect(mockFrom).not.toHaveBeenCalled();
   });
 });

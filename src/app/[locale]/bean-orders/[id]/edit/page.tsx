@@ -8,6 +8,7 @@ import {
 } from '@/app/actions/bean-order-actions';
 import { canEditOrderLines } from '@/lib/bean-orders/order-status';
 import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
+import { resolveActionError } from '@/lib/user-facing-error';
 
 const BeanOrderFormClient = createLazyFeatureClient(
   () => import('../../BeanOrderFormClient'),
@@ -36,7 +37,9 @@ export default async function EditBeanOrderPage({
   // Genuine miss -> 404; transient failure -> retryable error boundary (not blank).
   if (orderResult.notFound) notFound();
   if (!orderResult.success || !orderResult.data) {
-    throw new Error(orderResult.error ?? 'โหลดรายละเอียดออเดอร์ไม่สำเร็จ');
+    throw new Error(
+      resolveActionError(orderResult.error, 'โหลดรายละเอียดออเดอร์ไม่สำเร็จ'),
+    );
   }
   if (!canEditOrderLines(orderResult.data.cancelledAt)) notFound();
 

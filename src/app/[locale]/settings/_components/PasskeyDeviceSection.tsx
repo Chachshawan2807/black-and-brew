@@ -28,78 +28,15 @@ import {
   SETTINGS_BTN_DANGER,
   SETTINGS_STATUS_CARD,
 } from './settings-ui-primitives';
+import { localizePasskeyError } from '@/lib/passkey/passkey-error-copy';
 
 interface PasskeyDeviceSectionProps {
   locale: string;
 }
 
-const PASSKEY_ERROR_MAP: Record<string, { th: string; en: string }> = {
-  'กรุณาเข้าสู่ระบบด้วยรหัส PIN ก่อนบันทึกเครื่องนี้': {
-    th: 'กรุณาเข้าสู่ระบบด้วยรหัส PIN ก่อนบันทึกเครื่องนี้',
-    en: 'Sign in with your PIN before saving this device',
-  },
-  'กรุณาเข้าสู่ระบบด้วยรหัส PIN ก่อน': {
-    th: 'กรุณาเข้าสู่ระบบด้วยรหัส PIN ก่อน',
-    en: 'Sign in with your PIN first',
-  },
-  'กรุณาเข้าสู่ระบบก่อน': {
-    th: 'กรุณาเข้าสู่ระบบก่อน',
-    en: 'Please sign in first',
-  },
-  'ไม่พบข้อมูลอุปกรณ์': {
-    th: 'ไม่พบข้อมูลอุปกรณ์',
-    en: 'Device information is missing',
-  },
-  'ไม่พบข้อมูลเครื่องนี้': {
-    th: 'ไม่พบข้อมูลเครื่องนี้',
-    en: 'This device could not be identified',
-  },
-  'ไม่สามารถเตรียมการลงทะเบียนลายนิ้วมือได้': {
-    th: 'ไม่สามารถเตรียมการลงทะเบียนลายนิ้วมือได้',
-    en: 'Could not start biometric registration',
-  },
-  'ข้อมูลลงทะเบียนไม่ถูกต้อง': {
-    th: 'ข้อมูลลงทะเบียนไม่ถูกต้อง',
-    en: 'Invalid registration data',
-  },
-  'หมดเวลาลงทะเบียน กรุณาลองใหม่': {
-    th: 'หมดเวลาลงทะเบียน กรุณาลองใหม่',
-    en: 'Registration timed out. Try again',
-  },
-  'ยืนยันลายนิ้วมือไม่สำเร็จ': {
-    th: 'ยืนยันลายนิ้วมือไม่สำเร็จ',
-    en: 'Biometric verification failed',
-  },
-  'บันทึกลายนิ้วมือไม่สำเร็จ': {
-    th: 'บันทึกลายนิ้วมือไม่สำเร็จ',
-    en: 'Could not save biometric login',
-  },
-  'ลงทะเบียนลายนิ้วมือไม่สำเร็จ': {
-    th: 'ลงทะเบียนลายนิ้วมือไม่สำเร็จ',
-    en: 'Biometric registration failed',
-  },
-  'ลบลายนิ้วมือไม่สำเร็จ': {
-    th: 'ลบลายนิ้วมือไม่สำเร็จ',
-    en: 'Could not remove biometric login',
-  },
-  'ยกเลิกการสแกนลายนิ้วมือ/ใบหน้า': {
-    th: 'ยกเลิกการสแกนลายนิ้วมือ/ใบหน้า',
-    en: 'Biometric scan cancelled',
-  },
-  'การสแกนลายนิ้วมือ/ใบหน้าถูกยกเลิก': {
-    th: 'การสแกนลายนิ้วมือ/ใบหน้าถูกยกเลิก',
-    en: 'Biometric scan was cancelled',
-  },
-};
-
-function localizePasskeyError(error: string, isTh: boolean): string {
-  const mapped = PASSKEY_ERROR_MAP[error];
-  if (mapped) return isTh ? mapped.th : mapped.en;
-  return error;
-}
-
 export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionProps) {
   const isTh = locale === 'th';
+  const passkeyLocale = isTh ? 'th' : 'en';
   const [biometricKind, setBiometricKind] = useState<BiometricKind>(() =>
     detectBiometricKind()
   );
@@ -149,7 +86,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
       const device = collectClientDeviceInfo();
       const result = await registerDevicePasskey(device);
       if (!result.success) {
-        setError(localizePasskeyError(result.error, isTh));
+        setError(localizePasskeyError(result.error, passkeyLocale));
         return;
       }
       setMessage(biometricLabels.settingsEnabled);
@@ -166,7 +103,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
     try {
       const result = await removePasskeyForCurrentDevice();
       if (!result.success) {
-        setError(localizePasskeyError(result.error, isTh));
+        setError(localizePasskeyError(result.error, passkeyLocale));
         return;
       }
       setMessage(

@@ -61,6 +61,8 @@ type InventoryHistoryModalProps = {
 
   onSearchQueryChange: (query: string) => void;
 
+  historyLoadError?: string | null;
+
 };
 
 
@@ -182,6 +184,7 @@ export function InventoryHistoryModal({
   isHistoryRefreshing,
   historySearchQuery,
   onSearchQueryChange,
+  historyLoadError = null,
 }: InventoryHistoryModalProps) {
 
   const [isMounted, setIsMounted] = useState(false);
@@ -390,9 +393,11 @@ export function InventoryHistoryModal({
                       <InventoryEmptyState
                         icon={<History className="w-8 h-8" strokeWidth={ICON_STROKE} />}
                         message={
-                          isSearchActive
-                            ? `ไม่พบประวัติที่ตรงกับ "${historySearchQuery.trim()}"`
-                            : 'ยังไม่มีประวัติการเคลื่อนไหวในขณะนี้'
+                          historyLoadError && !isSearchActive
+                            ? historyLoadError
+                            : isSearchActive
+                              ? `ไม่พบประวัติที่ตรงกับ "${historySearchQuery.trim()}"`
+                              : 'ยังไม่มีประวัติการเคลื่อนไหวในขณะนี้'
                         }
                         className="border-0 bg-transparent shadow-none"
                       />

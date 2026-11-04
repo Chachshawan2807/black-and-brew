@@ -6,14 +6,15 @@ import {
   updateInventoryStock,
 } from '@/app/actions/inventory-actions';
 import { isOfflineReplayFailureRetryable } from '@/lib/offline-replay-retry';
+import { toUserFacingError } from '@/lib/user-facing-error';
 import type { OfflineMutation } from '@/lib/offline-mutation-types';
 
 export type OfflineReplayResult =
   | { success: true }
   | { success: false; error: string; retryable: boolean };
 
-function failureResult(error: string, fallback: string): OfflineReplayResult {
-  const message = error || fallback;
+function failureResult(error: string, fallbackTh: string): OfflineReplayResult {
+  const message = toUserFacingError(error || fallbackTh, fallbackTh);
   return {
     success: false,
     error: message,
@@ -36,7 +37,7 @@ export async function replayOfflineMutation(
         },
       );
       if (!result.success) {
-        return failureResult(result.error ?? '', 'Field update failed');
+        return failureResult(result.error ?? '', 'บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่');
       }
       return { success: true };
     }
@@ -52,7 +53,7 @@ export async function replayOfflineMutation(
         },
       );
       if (!result.success) {
-        return failureResult(result.error ?? '', 'Stock update failed');
+        return failureResult(result.error ?? '', 'บันทึกสต็อกไม่สำเร็จ กรุณาลองใหม่');
       }
       return { success: true };
     }
@@ -61,11 +62,11 @@ export async function replayOfflineMutation(
       clientSessionId: mutation.clientSessionId,
     });
     if (!result.success) {
-      return failureResult(result.error ?? '', 'Reorder failed');
+      return failureResult(result.error ?? '', 'บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่');
     }
     return { success: true };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    return failureResult(message, 'Replay failed');
+    return failureResult(message, 'ซิงค์ออฟไลน์ไม่สำเร็จ กรุณาลองใหม่');
   }
 }

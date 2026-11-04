@@ -98,7 +98,8 @@ describe('/api/daily-report (cron-job.org)', () => {
 
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toBe('invalid_schedule');
+    expect(body.code).toBe('invalid_schedule');
+    expect(body.error).toMatch(/schedule/);
     expect(dispatchPushMock).not.toHaveBeenCalled();
   });
 

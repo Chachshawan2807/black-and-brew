@@ -9,6 +9,7 @@ import {
 import { fetchBeanOrderDetail } from '@/app/actions/bean-order-actions';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
+import { resolveActionError } from '@/lib/user-facing-error';
 import { SecretaryOverlayErrorState } from './SecretaryOverlayErrorState';
 import { SecretaryOverlayLoadingSkeleton } from './SecretaryOverlayLoadingSkeleton';
 import SecretaryTaskSubwindow from './SecretaryTaskSubwindow';
@@ -60,7 +61,7 @@ export default function BeanOrdersOverlay({ task, locale, onClose }: BeanOrdersO
     void prefetchBeanOrdersForOverlay().then((result) => {
       if (cancelled) return;
       if (!result.success) {
-        setLoadError(result.error ?? 'ไม่สามารถโหลดออเดอร์ได้');
+        setLoadError(resolveActionError(result.error, 'ไม่สามารถโหลดออเดอร์ได้'));
         setOrders([]);
         return;
       }
@@ -81,7 +82,7 @@ export default function BeanOrdersOverlay({ task, locale, onClose }: BeanOrdersO
       if (cancelled) return;
       setDetailLoading(false);
       if (!result.success || !result.data) {
-        setLoadError(result.error ?? 'ไม่สามารถโหลดรายละเอียดออเดอร์ได้');
+        setLoadError(resolveActionError(result.error, 'ไม่สามารถโหลดรายละเอียดออเดอร์ได้'));
         setSelectedOrderId(null);
         setSelectedOrder(null);
         return;

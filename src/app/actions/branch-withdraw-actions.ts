@@ -16,6 +16,7 @@ import { evaluateAuthz, subjectFromServerAuth } from '@/lib/policies/authz';
 import { requireReadAccess } from '@/lib/policies/server-gate';
 import { ensureServerSession } from '@/lib/security/server-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { actionFail, actionFailWith, logSupabaseError, toUserFacingError } from '@/lib/user-facing-error';
 
 const saveLineSchema = z.object({
   itemId: z.string().uuid(),
@@ -52,7 +53,7 @@ async function loadBranchWithdrawItemSnapshots(
 
   if (error) {
     console.error('[loadBranchWithdrawItemSnapshots] Supabase Error:', error.message, error.details);
-    return { error: error.message };
+    return { error: toUserFacingError(error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่') };
   }
 
   return new Map(
@@ -143,7 +144,7 @@ export type BranchWithdrawHistoryRow = {
 };
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  return toUserFacingError(error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
 }
 
 export async function saveBranchWithdrawal(raw: z.infer<typeof saveSchema>) {
@@ -185,7 +186,7 @@ export async function saveBranchWithdrawal(raw: z.infer<typeof saveSchema>) {
         error.details,
         error.hint,
       );
-      return { success: false as const, error: error.message };
+      return actionFail('branch-withdraw-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     const withdrawalId = String(data?.withdrawal_id ?? '');
@@ -228,12 +229,7 @@ export async function saveBranchWithdrawal(raw: z.infer<typeof saveSchema>) {
       lineMessage: (data?.line_message as string) ?? lineMessage,
     };
   } catch (error: unknown) {
-    const message = getErrorMessage(error);
-    console.error('[saveBranchWithdrawal] Unexpected Error:', message);
-    return {
-      success: false as const,
-      error: message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล',
-    };
+    return actionFail('branch-withdraw-actions', error, 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
   }
 }
 
@@ -261,20 +257,16 @@ export async function fetchBranchWithdrawalHistory(limit = 30) {
         error.message,
         error.details,
       );
-      return {
-        success: false as const,
-        error: error.message,
+      return actionFailWith('branch-withdraw-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่', {
         data: [] as BranchWithdrawHistoryRow[],
-      };
+      });
     }
 
     return { success: true as const, data: (data ?? []) as BranchWithdrawHistoryRow[] };
   } catch (error: unknown) {
-    return {
-      success: false as const,
-      error: getErrorMessage(error),
+    return actionFailWith('branch-withdraw-actions', error, 'โหลดประวัติไม่สำเร็จ', {
       data: [] as BranchWithdrawHistoryRow[],
-    };
+    });
   }
 }
 
@@ -300,19 +292,15 @@ export async function fetchBranchWithdrawInventoryItems() {
         error.message,
         error.details,
       );
-      return {
-        success: false as const,
-        error: error.message,
+      return actionFailWith('branch-withdraw-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่', {
         data: [],
-      };
+      });
     }
 
     return { success: true as const, data: data ?? [] };
   } catch (error: unknown) {
-    return {
-      success: false as const,
-      error: getErrorMessage(error),
+    return actionFailWith('branch-withdraw-actions', error, 'โหลดรายการสินค้าไม่สำเร็จ', {
       data: [],
-    };
+    });
   }
 }

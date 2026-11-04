@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { logSupabaseError, toUserFacingError } from '@/lib/user-facing-error';
+import {
+  logSupabaseError,
+  resolveActionError,
+  toUserFacingError,
+} from '@/lib/user-facing-error';
 
 describe('toUserFacingError', () => {
   test('maps duplicate key / 23505 to Thai copy', () => {
@@ -48,6 +52,16 @@ describe('toUserFacingError', () => {
   test('uses fallback for empty / unknown', () => {
     expect(toUserFacingError(null, 'ลองใหม่')).toBe('ลองใหม่');
     expect(toUserFacingError({}, 'ลองใหม่')).toBe('ลองใหม่');
+  });
+});
+
+describe('resolveActionError', () => {
+  test('uses fallback when error is empty', () => {
+    expect(resolveActionError(undefined, 'โหลดไม่สำเร็จ')).toBe('โหลดไม่สำเร็จ');
+  });
+
+  test('passes through safe Thai action errors', () => {
+    expect(resolveActionError('ไม่พบออเดอร์', 'โหลดไม่สำเร็จ')).toBe('ไม่พบออเดอร์');
   });
 });
 

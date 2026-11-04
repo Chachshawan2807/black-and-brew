@@ -22,6 +22,7 @@ import {
   shouldPromptTransactionDate,
 } from '@/lib/inventory-transaction-date';
 import { READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import { resolveActionError } from '@/lib/user-facing-error';
 import {
   addBulkQueueItem,
   canSubmitBulkQueue,
@@ -77,6 +78,8 @@ type UseInventoryQuickActionOptions<T extends BulkStockItem> = {
   isItemsLoaded?: boolean;
   /** Tags audit logs so only this UI origin triggers notifications. */
   notificationSource: InventoryNotificationSource;
+  /** In-app status (N1/N9); avoids blocking `notifyUser()`. */
+  onUserNotice?: (message: string) => void;
 };
 
 function readInitialDraft(): InventoryQuickActionDraft {
@@ -97,8 +100,22 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
   onSaveError,
   isItemsLoaded = true,
   notificationSource,
+  onUserNotice,
 }: UseInventoryQuickActionOptions<T>) {
   const initialDraft = useMemo(() => readInitialDraft(), []);
+
+  const notifyUser = useCallback(
+    (message: string) => {
+      if (onUserNotice) {
+        onUserNotice(message);
+        return;
+      }
+      if (typeof window !== 'undefined') {
+        window.notifyUser(message);
+      }
+    },
+    [onUserNotice],
+  );
 
   const [quickSearch, setQuickSearch] = useState(initialDraft.quickSearch);
   const [quickQty, setQuickQty] = useState(initialDraft.quickQty);
@@ -244,7 +261,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     }
     
     if (!item) {
-      alert(`ไม่พบสินค้าที่ระบุค่ะ (${name})`);
+      notifyUser(`ไม่พบสินค้าที่ระบุค่ะ (${name})`);
       return;
     }
     const result = addBulkQueueItem(bulkQueue, item);
@@ -333,7 +350,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
               itemId: entry.itemId,
               success: result.success,
               newStock: result.newStock,
-              error: result.error,
+              error: resolveActionError(result.error, 'บันทึกไม่สำเร็จ'),
             };
           }),
         );
@@ -383,11 +400,11 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         if (restoredQueue.length > 0) {
           setBulkQueue(restoredQueue);
         }
-        alert(
+        notifyUser(
           `บันทึกสำเร็จ ${succeeded.length}/${resultCount} ${failed
             .map((row) => {
               const name = items.find((item) => item.id === row.itemId)?.name ?? row.itemId;
-              return `${name}: ${row.error ?? 'ล้มเหลว'}`;
+              return `${name}: ${resolveActionError(row.error, 'ล้มเหลว')}`;
             })
             .join('; ')}`,
         );
@@ -441,7 +458,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
               prev.map((row) => (row.id === item.id ? { ...row, stock: previousStock } : row)),
             );
             onSaveError?.();
-            alert(res.error);
+            notifyUser(resolveActionError(res.error, 'บันทึกไม่สำเร็จ กรุณาลองใหม่'));
             return;
           }
 
@@ -470,7 +487,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
 
   const confirmBulkSubmit = useCallback(() => {
     if (isReadOnly) {
-      alert(READ_ONLY_DENY_MSG);
+      notifyUser(READ_ONLY_DENY_MSG);
       return;
     }
     if (isQuickPending || !bulkSubmitReady) return;
@@ -505,7 +522,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     if (!pendingSubmit) return;
     const today = todayDate || getBangkokTodayDateString();
     if (!isValidTransactionDateString(transactionDate, today)) {
-      alert('กรุณาเลือกวันที่ที่ถูกต้อง (ไม่เกินวันนี้)');
+      notifyUser('กรุณาเลือกวันที่ที่ถูกต้อง (ไม่เกินวันนี้)');
       return;
     }
 
@@ -548,7 +565,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     (e: React.FormEvent) => {
       e.preventDefault();
       if (isReadOnly) {
-        alert(READ_ONLY_DENY_MSG);
+        notifyUser(READ_ONLY_DENY_MSG);
         return;
       }
       if (isQuickPending || backgroundSyncRef.current) return;
@@ -564,7 +581,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
 
       const item = items.find((row) => row.name === quickSearch || row.id === quickSearch);
       if (!item) {
-        alert('ไม่พบสินค้าที่ระบุค่ะ');
+        notifyUser('ไม่พบสินค้าที่ระบุค่ะ');
         return;
       }
 
@@ -572,13 +589,13 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       if (quickType === 'ADJUST') {
         qty = Number(quickQty);
         if (Number.isNaN(qty) || qty < 0) {
-          alert('กรุณาระบุจำนวนคงเหลือที่ถูกต้องค่ะ');
+          notifyUser('กรุณาระบุจำนวนคงเหลือที่ถูกต้องค่ะ');
           return;
         }
       } else {
         const resolved = resolveInOutQuantity(quickQty);
         if (resolved === null) {
-          alert('กรุณาระบุจำนวนที่ถูกต้องค่ะ');
+          notifyUser('กรุณาระบุจำนวนที่ถูกต้องค่ะ');
           return;
         }
         qty = resolved;
@@ -587,7 +604,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       const previousStock = Number(item.stock) || 0;
       const optimisticStock = computeOptimisticStockAfterTransaction(previousStock, quickType, qty);
       if (optimisticStock === null) {
-        alert('ยอดคงเหลือไม่เพียงพอสำหรับการนำออก');
+        notifyUser('ยอดคงเหลือไม่เพียงพอสำหรับการนำออก');
         return;
       }
 
@@ -617,7 +634,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
                 prev.map((row) => (row.id === item.id ? { ...row, stock: previousStock } : row)),
               );
               onSaveError?.();
-              alert(res.error);
+              notifyUser(resolveActionError(res.error, 'บันทึกไม่สำเร็จ กรุณาลองใหม่'));
               return;
             }
 

@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { logSupabaseError, toUserFacingError } from '@/lib/user-facing-error';
+
+const HOLIDAY_SYNC_FAIL = 'ซิงค์วันหยุดไม่สำเร็จ กรุณาลองใหม่';
 
 const CALENDAR_ID = 'th.th#holiday@group.v.calendar.google.com';
 
@@ -107,12 +110,12 @@ export async function fetchAndPersistHolidays(
 ): Promise<{ success: true; count: number } | { success: false; error: string }> {
   const apiKey = process.env.GOOGLE_CALENDAR_API_KEY;
   if (!apiKey) {
-    return { success: false, error: 'Missing API Key' };
+    return { success: false, error: 'ยังไม่ตั้งค่าปฏิทินวันหยุด ติดต่อผู้ดูแล' };
   }
 
   const parsed = dateRangeSchema.safeParse({ startDate, endDate });
   if (!parsed.success) {
-    return { success: false, error: 'Invalid date range' };
+    return { success: false, error: 'ช่วงวันที่ไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่' };
   }
 
   try {
@@ -137,12 +140,18 @@ export async function fetchAndPersistHolidays(
       const data = await response.json() as GoogleCalendarEventsResponse;
 
       if (!response.ok) {
-        const message = typeof data?.error?.message === 'string' ? data.error.message : response.statusText;
-        return { success: false, error: `Google Calendar API error (${response.status}): ${message}` };
+        logSupabaseError(
+          'holiday-sync/google',
+          typeof data?.error?.message === 'string' ? data.error.message : response.statusText,
+        );
+        return {
+          success: false,
+          error: 'ดึงวันหยุดจาก Google ไม่สำเร็จ กรุณาลองใหม่',
+        };
       }
 
       if (!Array.isArray(data.items)) {
-        return { success: false, error: 'Google Calendar API returned an invalid response' };
+        return { success: false, error: 'ข้อมูลวันหยุดจาก Google ไม่ถูกต้อง กรุณาลองใหม่' };
       }
 
       items.push(...data.items);
@@ -166,7 +175,8 @@ export async function fetchAndPersistHolidays(
       .in('date', dates);
 
     if (existingError) {
-      return { success: false, error: existingError.message };
+      logSupabaseError('holiday-sync/existing', existingError);
+      return { success: false, error: toUserFacingError(existingError, HOLIDAY_SYNC_FAIL) };
     }
 
     const existingByDate = new Map(
@@ -187,13 +197,15 @@ export async function fetchAndPersistHolidays(
     if (toInsert.length > 0) {
       const { error: insertError } = await supabaseAdmin.from('holidays').insert(toInsert);
       if (insertError) {
-        return { success: false, error: insertError.message };
+        logSupabaseError('holiday-sync/insert', insertError);
+        return { success: false, error: toUserFacingError(insertError, HOLIDAY_SYNC_FAIL) };
       }
       syncedCount += toInsert.length;
     }
 
     return { success: true, count: syncedCount };
   } catch (error) {
-    return { success: false, error: String(error) };
+    logSupabaseError('holiday-sync', error);
+    return { success: false, error: toUserFacingError(error, HOLIDAY_SYNC_FAIL) };
   }
 }

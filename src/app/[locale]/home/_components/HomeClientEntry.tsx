@@ -23,6 +23,9 @@ import {
   writeCachedSecretaryBoard,
 } from '@/lib/secretary/home-board-cache';
 import HomeClient from '../HomeClient';
+import { resolveActionError, toUserFacingError } from '@/lib/user-facing-error';
+
+const HOME_LOAD_FAIL = 'ไม่สามารถโหลดงานได้ กรุณาลองใหม่';
 import { HomePageLoadingSkeleton } from './HomePageLoadingSkeleton';
 
 const PIN_WAIT_MS = 15_000;
@@ -204,12 +207,11 @@ export function HomeClientEntry({ locale }: HomeClientEntryProps) {
       }
 
       if (!isUnauthorizedBoardError(boardResult.error) && !boardRef.current) {
-        setLoadError(boardResult.error ?? 'ไม่สามารถโหลดงานได้');
+        setLoadError(resolveActionError(boardResult.error, HOME_LOAD_FAIL));
       }
     } catch (error) {
       if (boardRef.current) return;
-      const message = error instanceof Error ? error.message : 'ไม่สามารถโหลดงานได้';
-      setLoadError(message);
+      setLoadError(toUserFacingError(error, 'ไม่สามารถโหลดงานได้ กรุณาลองใหม่'));
     } finally {
       loadInFlightRef.current = false;
     }

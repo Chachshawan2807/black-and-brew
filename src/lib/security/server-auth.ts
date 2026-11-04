@@ -3,12 +3,13 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { SESSION_FP_COOKIE } from '@/lib/auth-constants';
 import { isSessionFingerprintRevoked } from '@/lib/session-revocation';
+import { UNAUTHORIZED_MSG } from '@/lib/policies/messages';
 
 export type ServerAuthResult =
   | { ok: true; userId?: string; readOnly: boolean }
   | { ok: false; error: string };
 
-const UNAUTHORIZED_MSG = 'Unauthorized: Session missing or invalid';
+const SYSTEM_CONFIG_ERROR_MSG = 'การตั้งค่าระบบมีปัญหา ติดต่อผู้ดูแล';
 
 function clearPinAuthCookies(cookieStore: Awaited<ReturnType<typeof cookies>>): void {
   cookieStore.delete('bb_auth_pin_verified');
@@ -44,7 +45,7 @@ export const ensureServerSession = cache(async (): Promise<ServerAuthResult> => 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {
-    return { ok: false, error: 'System configuration error' };
+    return { ok: false, error: SYSTEM_CONFIG_ERROR_MSG };
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);

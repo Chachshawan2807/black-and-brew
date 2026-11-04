@@ -11,6 +11,7 @@ import {
 } from '@/lib/secretary/retire-stale-tasks';
 import type { DerivedTaskDraft, SecretaryModule } from '@/lib/secretary/types';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { actionFail } from '@/lib/user-facing-error';
 
 const DERIVED_TASK_LOOKUP_SELECT = 'id, status, scheduled_date, metadata, task_type';
 
@@ -103,7 +104,7 @@ export async function applyDerivedTaskDrafts(
       const { error } = await getSupabaseAdmin().from('operational_tasks').insert(decision.row);
       if (error) {
         console.error('Supabase Error:', error.message, error.details);
-        return { success: false, error: error.message };
+        return actionFail('apply-derived-task-drafts', error, 'บันทึกงานไม่สำเร็จ');
       }
     } else {
       const { error } = await getSupabaseAdmin()
@@ -120,7 +121,7 @@ export async function applyDerivedTaskDrafts(
         .eq('id', decision.id);
       if (error) {
         console.error('Supabase Error:', error.message, error.details);
-        return { success: false, error: error.message };
+        return actionFail('apply-derived-task-drafts', error, 'บันทึกงานไม่สำเร็จ');
       }
     }
     upserted += 1;
@@ -137,7 +138,7 @@ export async function applyDerivedTaskDrafts(
 
   if (fetchError) {
     console.error('Supabase Error:', fetchError.message, fetchError.details);
-    return { success: false, error: fetchError.message };
+    return actionFail('apply-derived-task-drafts', fetchError, 'บันทึกงานไม่สำเร็จ');
   }
 
   const scopedRows = (existingDerived ?? []).filter((row) => {
@@ -170,8 +171,7 @@ export async function applyDerivedTaskDrafts(
       try {
         autoSkipped += await skipInactiveDerivedTaskIds(staleTaskIds, 'stale_derived');
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        return { success: false, error: message };
+        return actionFail('apply-derived-task-drafts', error, 'บันทึกงานไม่สำเร็จ');
       }
     }
   }
@@ -205,8 +205,7 @@ export async function applyDerivedTaskDrafts(
           'legacy_bean_orders',
         );
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        return { success: false, error: message };
+        return actionFail('apply-derived-task-drafts', error, 'บันทึกงานไม่สำเร็จ');
       }
     }
   }
@@ -215,8 +214,7 @@ export async function applyDerivedTaskDrafts(
     autoSkipped += await skipInactiveBranch2DerivedTasks(dateIso);
     autoSkipped += await skipInactiveInventoryCountDerivedTasks(dateIso);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: message };
+    return actionFail('apply-derived-task-drafts', error, 'บันทึกงานไม่สำเร็จ');
   }
 
   return { success: true, upserted, autoSkipped };

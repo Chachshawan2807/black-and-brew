@@ -8,6 +8,7 @@ import { staggerListItem, staggerDelay, BUTTON_HOVER, BUTTON_TAP } from '@/lib/m
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { saveServiceRecord, deleteServiceRecord } from '@/app/actions/maintenance-actions';
+import { resolveActionError, toUserFacingError } from '@/lib/user-facing-error';
 import {
   buildServiceRecordPayload,
   parseFrequencyMonthsForDisplay,
@@ -201,13 +202,18 @@ export default function MaintenanceClient({
         .order('start_date', { ascending: false });
 
       if (error) {
-        setToast({ message: `ดึงข้อมูลไม่สำเร็จ: ${error.message}`, type: 'error' });
+        setToast({
+          message: toUserFacingError(error, 'ดึงข้อมูลไม่สำเร็จ กรุณาลองใหม่'),
+          type: 'error',
+        });
       } else {
         setRecords(data || []);
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'ไม่สามารถเชื่อมต่อได้';
-      setToast({ message: `เครือข่ายขัดข้อง: ${message}`, type: 'error' });
+      setToast({
+        message: toUserFacingError(err, 'ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่'),
+        type: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -235,7 +241,10 @@ export default function MaintenanceClient({
           const result = await saveServiceRecord(payload, editingRecord?.id);
 
           if (!result.success) {
-            setToast({ message: result.error || `บันทึกไม่สำเร็จค่ะ`, type: 'error' });
+            setToast({
+              message: resolveActionError(result.error, 'บันทึกไม่สำเร็จค่ะ'),
+              type: 'error',
+            });
           } else {
             setToast({ message: 'บันทึกข้อมูลสำเร็จแล้วค่ะ', type: 'success' });
             
@@ -255,8 +264,10 @@ export default function MaintenanceClient({
             void fetchRecords();
           }
         } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : 'โปรดลองอีกครั้ง';
-          setToast({ message: `ระบบขัดข้อง: ${message}`, type: 'error' });
+          setToast({
+            message: toUserFacingError(err, 'ระบบขัดข้อง กรุณาลองใหม่'),
+            type: 'error',
+          });
         } finally {
           setLoading(false);
         }
@@ -278,7 +289,10 @@ export default function MaintenanceClient({
           const result = await deleteServiceRecord(recordToDelete);
 
           if (!result.success) {
-            setToast({ message: result.error || `ลบไม่สำเร็จค่ะ`, type: 'error' });
+            setToast({
+              message: resolveActionError(result.error, 'ลบไม่สำเร็จค่ะ'),
+              type: 'error',
+            });
           } else {
             setToast({ message: 'ลบข้อมูลสำเร็จแล้วค่ะ', type: 'success' });
             
@@ -292,8 +306,10 @@ export default function MaintenanceClient({
             void fetchRecords();
           }
         } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : 'โปรดลองอีกครั้ง';
-          setToast({ message: `ระบบขัดข้อง: ${message}`, type: 'error' });
+          setToast({
+            message: toUserFacingError(err, 'ระบบขัดข้อง กรุณาลองใหม่'),
+            type: 'error',
+          });
         } finally {
           setLoading(false);
         }

@@ -370,7 +370,7 @@ export async function fetchLoginHistory(
 
   } catch {
 
-    return { success: false, error: 'Failed to load login history' };
+    return { success: false, error: 'โหลดประวัติการเข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่' };
 
   }
 

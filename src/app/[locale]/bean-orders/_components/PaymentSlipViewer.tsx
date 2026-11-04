@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useMobileBackLayer } from '@/hooks/use-mobile-back-layer';
 import { ZoomIn } from '@/lib/icons';
 import { getBeanOrderSlipSignedUrl } from '@/app/actions/bean-order-actions';
+import { resolveActionError } from '@/lib/user-facing-error';
 import {
   BEAN_ORDER_ACTION_BTN_OUTLINE,
   BEAN_ORDER_BTN_SLIP,
@@ -81,7 +82,9 @@ export function PaymentSlipViewer({
     setLoading(false);
 
     if (!result.success) {
-      if (mode === 'modal') setError(result.error ?? 'โหลดสลิปไม่สำเร็จ');
+      if (mode === 'modal') {
+        setError(resolveActionError(result.error, 'โหลดสลิปไม่สำเร็จ'));
+      }
       return;
     }
     if (!result.slipUrl) {

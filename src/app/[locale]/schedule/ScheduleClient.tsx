@@ -27,7 +27,10 @@ import {
   weekHasShiftData,
 } from '@/lib/schedule/schedule-week-sync';
 import { FloatingAlert } from '@/components/ui/floating-alert';
-import { toUserFacingError } from '@/lib/user-facing-error';
+import { PageStatusBanner } from '@/components/ui/page-status-banner';
+import { TextConfirmDialog } from '@/components/ui/text-confirm-dialog';
+import { useTimedPageNotice } from '@/hooks/use-timed-page-notice';
+import { resolveActionError, toUserFacingError } from '@/lib/user-facing-error';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -514,22 +517,25 @@ export default function ScheduleClient({
   const searchParams = useSearchParams();
   const isReadOnly = useReadOnly();
 
-  const blockIfReadOnly = useCallback(() => {
-    if (isReadOnly) {
-      alert(READ_ONLY_DENY_MSG);
-      return true;
-    }
-    return false;
-  }, [isReadOnly]);
-
   const [currentDate, setCurrentDate] = useState(() => parseScheduleDateOnly(initialDateStr));
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
   const [holidays, setHolidays] = useState<ScheduleHoliday[]>(initialHolidays);
   const [holidaySyncNotice, setHolidaySyncNotice] = useState(false);
-  const [copyWeekNotice, setCopyWeekNotice] = useState('');
+  const { notice: pageNotice, showNotice: showPageNotice } = useTimedPageNotice(6000);
+  const blockIfReadOnly = useCallback(() => {
+    if (isReadOnly) {
+      showPageNotice(READ_ONLY_DENY_MSG);
+      return true;
+    }
+    return false;
+  }, [isReadOnly, showPageNotice]);
   const [isCopyingPreviousWeek, setIsCopyingPreviousWeek] = useState(false);
   const [showCopyPreviousWeekConfirm, setShowCopyPreviousWeekConfirm] = useState(false);
+  const [confirmDeleteHistoryItem, setConfirmDeleteHistoryItem] =
+    useState<ManagementHistoryItem | null>(null);
+  const [confirmDeleteEmployeeId, setConfirmDeleteEmployeeId] = useState<string | null>(null);
+  const [showGoogleSheetSyncConfirm, setShowGoogleSheetSyncConfirm] = useState(false);
   const holidaySyncNoticeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [loading, setLoading] = useState(false);
@@ -734,7 +740,9 @@ export default function ScheduleClient({
       if (renames.length > 0) {
         const result = await renameShiftLocations(renames);
         if (!result.success) {
-          alert(result.error || 'ไม่สามารถอัปเดตชื่อกะในฐานข้อมูลได้');
+          showPageNotice(
+            resolveActionError(result.error, 'ไม่สามารถอัปเดตชื่อกะในฐานข้อมูลได้'),
+          );
           return;
         }
 
@@ -758,7 +766,7 @@ export default function ScheduleClient({
       setShowShiftSettingsModal(false);
     } catch (err) {
       console.error('Failed to save shift settings:', err);
-      alert('เกิดข้อผิดพลาดในการบันทึกการตั้งค่า');
+      showPageNotice('เกิดข้อผิดพลาดในการบันทึกการตั้งค่า');
     } finally {
       setShiftSettingsSaving(false);
     }
@@ -843,7 +851,9 @@ export default function ScheduleClient({
           for (const [profileId, days] of migratableEntries) {
             const result = await saveRegularHolidays(profileId, days);
             if (!result.success) {
-              throw new Error(result.error || `Failed to migrate regular holidays for ${profileId}`);
+              throw new Error(
+                resolveActionError(result.error, 'ย้ายวันหยุดประจำไม่สำเร็จ กรุณาลองใหม่'),
+              );
             }
           }
 
@@ -859,7 +869,7 @@ export default function ScheduleClient({
         } catch (error) {
           console.error('Failed to migrate cached regular holidays:', error);
           regularHolidayMigrationInFlightRef.current = false;
-          alert('เกิดข้อผิดพลาดในการย้ายข้อมูลวันหยุดประจำขึ้น Supabase ข้อมูลในเครื่องยังอยู่ค่ะ');
+          showPageNotice('เกิดข้อผิดพลาดในการย้ายข้อมูลวันหยุดประจำขึ้น Supabase ข้อมูลในเครื่องยังอยู่ค่ะ');
         } finally {
           if (!cancelled) {
             setLoading(false);
@@ -895,7 +905,9 @@ export default function ScheduleClient({
     try {
       const result = await saveRegularHolidays(holidayFormEmployee, normalizedDays);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to save regular holidays');
+        throw new Error(
+          resolveActionError(result.error, 'บันทึกวันหยุดประจำไม่สำเร็จ กรุณาลองใหม่'),
+        );
       }
 
       setRegularHolidays(nextRegularHolidays);
@@ -904,7 +916,7 @@ export default function ScheduleClient({
       setTimeout(() => setHolidaySaveSuccess(false), 2000);
     } catch (error) {
       console.error('Failed to save regular holidays:', error);
-      alert('เกิดข้อผิดพลาดในการบันทึกวันหยุดประจำ ข้อมูลเดิมยังคงอยู่ค่ะ');
+      showPageNotice('เกิดข้อผิดพลาดในการบันทึกวันหยุดประจำ ข้อมูลเดิมยังคงอยู่ค่ะ');
     } finally {
       setLoading(false);
     }
@@ -1318,11 +1330,14 @@ export default function ScheduleClient({
     setManagementForm({ employeeId: '', shiftType: '6:30', startDate: '', endDate: '', remark: '' });
   };
 
-  const handleDeleteHistory = async (historyItem: ManagementHistoryItem) => {
+  const requestDeleteHistory = (historyItem: ManagementHistoryItem) => {
     if (blockIfReadOnly()) return;
-    if (!window.confirm(`คุณต้องการลบประวัติการจัดการของ ${historyItem.employee_name} วันที่ ${format(new Date(historyItem.startDate), 'dd/MM/yyyy')} ใช่หรือไม่?\n(การกระทำนี้จะลบกะการทำงานในช่วงนี้ออกด้วย)`)) {
-      return;
-    }
+    setConfirmDeleteHistoryItem(historyItem);
+  };
+
+  const executeDeleteHistory = async () => {
+    const historyItem = confirmDeleteHistoryItem;
+    if (!historyItem) return;
 
     setConfirmDeleteId(historyItem.id);
     const previousRaw = [...mgmtRawShiftsRef.current];
@@ -1337,7 +1352,9 @@ export default function ScheduleClient({
         historyItem.endDate
       );
 
-      if (!success) throw new Error(error || 'Failed to delete history');
+      if (!success) {
+        throw new Error(resolveActionError(error, 'ลบประวัติไม่สำเร็จ กรุณาลองใหม่'));
+      }
 
       const { data: freshShifts } = await supabase
         .from('shifts')
@@ -1347,20 +1364,20 @@ export default function ScheduleClient({
       if (freshShifts) setShifts(freshShifts);
 
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ';
       console.error('Failed to delete history:', err);
       mgmtRawShiftsRef.current = previousRaw;
       setMgmtRawShifts(previousRaw);
-      alert('ไม่สามารถลบประวัติได้: ' + message);
+      showPageNotice(toUserFacingError(err, 'ไม่สามารถลบประวัติได้ กรุณาลองใหม่'));
     } finally {
       setConfirmDeleteId(null);
+      setConfirmDeleteHistoryItem(null);
     }
   };
 
   const handleSaveManagement = async () => {
     if (blockIfReadOnly()) return;
     if (!managementForm.employeeId || !managementForm.startDate || !managementForm.endDate) {
-      alert('กรุณากรอกข้อมูลให้ครบถ้วน (พนักงาน, วันเริ่มต้น, วันสิ้นสุด)');
+      showPageNotice('กรุณากรอกข้อมูลให้ครบถ้วน (พนักงาน, วันเริ่มต้น, วันสิ้นสุด)');
       return;
     }
 
@@ -1398,7 +1415,9 @@ export default function ScheduleClient({
       });
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to save management history');
+        throw new Error(
+          resolveActionError(result.error, 'บันทึกประวัติการจัดการไม่สำเร็จ กรุณาลองใหม่'),
+        );
       }
 
       const insertedShifts = (result.data ?? []) as ManagementHistoryShiftRow[];
@@ -1433,8 +1452,7 @@ export default function ScheduleClient({
       setShifts(previousShifts);
       mgmtRawShiftsRef.current = previousRawHistory;
       setMgmtRawShifts(previousRawHistory);
-      const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
-      alert(message);
+      showPageNotice(toUserFacingError(err, 'เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่'));
     } finally {
       setLoading(false);
     }
@@ -1463,18 +1481,29 @@ export default function ScheduleClient({
 
       try {
         const result = await updateStaffOrder(newOrder);
-        if (!result.success) throw new Error(result.error);
+        if (!result.success) {
+          throw new Error(
+            resolveActionError(result.error, 'ไม่สามารถจัดลำดับได้ กรุณาลองใหม่'),
+          );
+        }
       } catch (error) {
         console.error('World-Class DND Rollback (Schedule):', error);
         setOrderedProfileIds(rollbackOrder);
-        alert('ไม่สามารถจัดลำดับได้ เนื่องจากปัญหาการเชื่อมต่อหรือสิทธิ์การเข้าถึง');
+        showPageNotice(
+          toUserFacingError(error, 'ไม่สามารถจัดลำดับได้ กรุณาลองใหม่'),
+        );
       }
     }
   };
 
-  const handleDeleteEmployee = async (employeeId: string) => {
+  const requestDeleteEmployee = (employeeId: string) => {
     if (blockIfReadOnly()) return;
-    if (!window.confirm('คุณแน่ใจหรือไม่ที่จะลบพนักงานคนนี้ถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้ และจะลบกะงานทั้งหมดที่เกี่ยวข้องด้วย')) return;
+    setConfirmDeleteEmployeeId(employeeId);
+  };
+
+  const executeDeleteEmployee = async () => {
+    const employeeId = confirmDeleteEmployeeId;
+    if (!employeeId) return;
 
     setLoading(true);
     pushToHistory(profiles, orderedProfileIds, shifts); 
@@ -1489,9 +1518,10 @@ export default function ScheduleClient({
       revalidateAppPaths();
     } catch (error) {
       console.error('Failed to delete employee:', error);
-      alert('เกิดข้อผิดพลาดในการลบพนักงาน');
+      showPageNotice('เกิดข้อผิดพลาดในการลบพนักงาน');
     } finally {
       setLoading(false);
+      setConfirmDeleteEmployeeId(null);
     }
   };
 
@@ -1519,7 +1549,7 @@ export default function ScheduleClient({
       }
     } catch (error) {
       console.error('Failed to add employee:', error);
-      alert('เกิดข้อผิดพลาดในการเพิ่มพนักงาน');
+      showPageNotice('เกิดข้อผิดพลาดในการเพิ่มพนักงาน');
     } finally {
       setLoading(false);
     }
@@ -1535,7 +1565,7 @@ export default function ScheduleClient({
       await supabase.from('profiles').update({ full_name: nameInput }).eq('id', id);
       revalidateAppPaths(); 
     } catch {
-      alert('เกิดข้อผิดพลาดในการบันทึกชื่อ');
+      showPageNotice('เกิดข้อผิดพลาดในการบันทึกชื่อ');
     }
   };
 
@@ -1593,7 +1623,9 @@ export default function ScheduleClient({
       if (!res.success) {
         console.error('[handleSave] Server action failed:', res.error);
         setShifts(previousShifts);
-        alert(`ไม่สามารถบันทึกกะงานได้: ${res.error || 'เกิดข้อผิดพลาด'}`);
+        showPageNotice(
+          `ไม่สามารถบันทึกกะงานได้: ${resolveActionError(res.error, 'เกิดข้อผิดพลาด กรุณาลองใหม่')}`,
+        );
         return;
       }
       if (res.data?.id) {
@@ -1604,7 +1636,9 @@ export default function ScheduleClient({
     } catch (error) {
       console.error('[handleSave] Network Error:', error);
       setShifts(previousShifts);
-      alert('ไม่สามารถบันทึกกะงานได้: เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showPageNotice(
+        `ไม่สามารถบันทึกกะงานได้: ${toUserFacingError(error, 'เกิดข้อผิดพลาด กรุณาลองใหม่')}`,
+      );
     } finally {
       endShiftMutation({ scheduleRefresh: true });
     }
@@ -1634,11 +1668,15 @@ export default function ScheduleClient({
       if (!result.success) {
         console.error('[handleClear] Server action failed:', result.error);
         setShifts(previousShifts);
+        showPageNotice(
+          resolveActionError(result.error, 'ลบกะงานไม่สำเร็จ กรุณาลองใหม่'),
+        );
         return;
       }
     } catch (error) {
       console.error('[handleClear] Network Error:', error);
       setShifts(previousShifts);
+      showPageNotice(toUserFacingError(error, 'ลบกะงานไม่สำเร็จ กรุณาลองใหม่'));
     } finally {
       endShiftMutation({ scheduleRefresh: true });
     }
@@ -1761,7 +1799,11 @@ export default function ScheduleClient({
     setIsCopyingPreviousWeek(true);
     try {
       const result = await copyWeeklyShifts(sourceStartDate, targetStartDate);
-      if (!result.success) throw new Error(result.error || 'คัดลอกตารางไม่สำเร็จ');
+      if (!result.success) {
+        throw new Error(
+          resolveActionError(result.error, 'คัดลอกตารางไม่สำเร็จ กรุณาลองใหม่'),
+        );
+      }
       if (weekDays[0] !== targetStartDate) return;
 
       const previousShifts = (result.previousShifts ?? []) as Shift[];
@@ -1778,17 +1820,15 @@ export default function ScheduleClient({
         result.skippedRequests ? `คำขอลา ${result.skippedRequests}` : '',
         result.skippedUnassigned ? `ข้อมูลไม่ครบ ${result.skippedUnassigned}` : '',
       ].filter(Boolean).join(' · ');
-      setCopyWeekNotice(
+      showPageNotice(
         copiedShifts.length > 0
           ? `คัดลอกแล้ว ${copiedShifts.length} กะ${skipped ? ` ข้าม: ${skipped}` : ''}`
           : `ไม่มีช่องว่างให้เติม${skipped ? ` ข้าม: ${skipped}` : ''}`,
       );
-      setTimeout(() => setCopyWeekNotice(''), 4000);
       setShowCopyPreviousWeekConfirm(false);
     } catch (error) {
       console.error('Failed to copy previous schedule week:', error);
-      setCopyWeekNotice(toUserFacingError(error, 'คัดลอกตารางไม่สำเร็จ กรุณาลองใหม่'));
-      setTimeout(() => setCopyWeekNotice(''), 4000);
+      showPageNotice(toUserFacingError(error, 'คัดลอกตารางไม่สำเร็จ กรุณาลองใหม่'));
     } finally {
       setIsCopyingPreviousWeek(false);
     }
@@ -1814,7 +1854,7 @@ export default function ScheduleClient({
       setHolidayInput('');
       revalidateAppPaths(); 
     } catch {
-      alert('เกิดข้อผิดพลาดในการบันทึกวันหยุดค่ะ');
+      showPageNotice('เกิดข้อผิดพลาดในการบันทึกวันหยุดค่ะ');
     }
   };
 
@@ -1837,14 +1877,27 @@ export default function ScheduleClient({
       downloadPngBlob(blob, `Schedule-${new Date().toISOString().split('T')[0]}.png`);
     } catch (err) {
       console.error('Failed to export image:', err);
-      alert('เกิดข้อผิดพลาดในการบันทึกตารางงานเป็นรูปภาพค่ะ');
+      showPageNotice('เกิดข้อผิดพลาดในการบันทึกตารางงานเป็นรูปภาพค่ะ');
     } finally {
       setIsExportingImage(false);
     }
   };
 
-  const syncGoogleSheet = async () => {
+  const googleSheetWeekLabel = useMemo(() => {
+    const weekStart = weekDays[0];
+    const weekEnd = weekDays[6];
+    if (!weekStart || !weekEnd) return '';
+    return formatScheduleWeekRangeLabel(weekStart, weekEnd);
+  }, [weekDays]);
+
+  const requestSyncGoogleSheet = () => {
     if (blockIfReadOnly()) return;
+    if (!weekDays[0] || !weekDays[6]) return;
+    setShowGoogleSheetSyncConfirm(true);
+  };
+
+  const executeSyncGoogleSheet = async () => {
+    setShowGoogleSheetSyncConfirm(false);
 
     const weekStart = weekDays[0];
     const weekEnd = weekDays[6];
@@ -1852,30 +1905,24 @@ export default function ScheduleClient({
     if (!weekStart || !weekEnd) return;
 
     const weekLabel = formatScheduleWeekRangeLabel(weekStart, weekEnd);
-    const confirmed = window.confirm(
-      `ซิงค์ Google Sheet สำหรับสัปดาห์ ${weekLabel} เท่านั้น\n(ซิงค์เมื่อกดปุ่มนี้เท่านั้น ไม่มีการซิงค์อัตโนมัติ)`,
-    );
-    if (!confirmed) return;
 
     setIsSyncingGoogleSheet(true);
     try {
       const result = await syncScheduleToGoogleSheet(weekStart, viewedDateStr);
       if (!result.success) {
-        alert(`ซิงค์ Google Sheet ไม่สำเร็จ: ${result.error}`);
+        showPageNotice(
+          `ซิงค์ Google Sheet ไม่สำเร็จ: ${resolveActionError(result.error, 'กรุณาลองใหม่')}`,
+        );
         return;
       }
       const sheetTabs =
         'sheetTabs' in result && result.sheetTabs.length > 0
           ? result.sheetTabs.join(', ')
           : result.sheetTab;
-      alert(`ซิงค์ Google Sheet สำเร็จแล้วค่ะ\nสัปดาห์: ${weekLabel}\nชีท: ${sheetTabs}`);
+      showPageNotice(`ซิงค์ Google Sheet สำเร็จแล้วค่ะ\nสัปดาห์: ${weekLabel}\nชีท: ${sheetTabs}`);
     } catch (err) {
       console.error('Failed to sync Google Sheet:', err);
-      const message =
-        err instanceof Error && err.message
-          ? `ซิงค์ Google Sheet ไม่สำเร็จ: ${err.message}`
-          : 'เกิดข้อผิดพลาดในการซิงค์ Google Sheet ค่ะ';
-      alert(message);
+      showPageNotice(toUserFacingError(err, 'เกิดข้อผิดพลาดในการซิงค์ Google Sheet กรุณาลองใหม่'));
     } finally {
       setIsSyncingGoogleSheet(false);
     }
@@ -1928,7 +1975,7 @@ export default function ScheduleClient({
           setShowManagementModal(true);
         }}
         onExportScheduleImage={exportScheduleImage}
-        onSyncGoogleSheet={syncGoogleSheet}
+        onSyncGoogleSheet={requestSyncGoogleSheet}
         isSyncingGoogleSheet={isSyncingGoogleSheet}
         syncWeekLabel={
           weekDays[0] && weekDays[6]
@@ -2071,7 +2118,7 @@ export default function ScheduleClient({
                           setNameInput={setNameInput}
                           onNameClick={(id, name) => { setEditingNameId(id); setNameInput(name); }}
                           onSaveName={handleSaveName}
-                          onDeleteEmployee={handleDeleteEmployee}
+                          onDeleteEmployee={requestDeleteEmployee}
                           isReadOnly={isReadOnly}
                           gridFocus={gridFocus}
                           onCellFocus={handleCellFocus}
@@ -2253,14 +2300,7 @@ export default function ScheduleClient({
           อัปเดตแล้ว
         </div>
       )}
-      {copyWeekNotice && (
-        <div
-          role="status"
-          className="fixed right-4 top-14 z-50 max-w-[calc(100vw-2rem)] rounded-full border border-border bg-card px-3 py-1.5 text-xs text-foreground shadow-sm"
-        >
-          {copyWeekNotice}
-        </div>
-      )}
+      <PageStatusBanner message={pageNotice} />
 
       <ShiftSettingsModal
         open={showShiftSettingsModal}
@@ -2476,7 +2516,7 @@ export default function ScheduleClient({
                                 </HintTooltip>
                                 <HintTooltip tip="ลบประวัติการจัดการ">
                                   <button
-                                    onClick={() => handleDeleteHistory(item)}
+                                    onClick={() => requestDeleteHistory(item)}
                                     disabled={confirmDeleteId === item.id}
                                     className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg bb-transition flex items-center justify-center disabled:opacity-50"
                                     aria-label="ลบประวัติการจัดการ"
@@ -2829,6 +2869,47 @@ export default function ScheduleClient({
             </div>
       </FadeModalScaffold>
       </ModalPortal>
+
+      <TextConfirmDialog
+        open={confirmDeleteHistoryItem !== null}
+        title="ลบประวัติการจัดการ"
+        description={
+          confirmDeleteHistoryItem
+            ? `คุณต้องการลบประวัติการจัดการของ ${confirmDeleteHistoryItem.employee_name} วันที่ ${format(new Date(confirmDeleteHistoryItem.startDate), 'dd/MM/yyyy')} ใช่หรือไม่?\n(การกระทำนี้จะลบกะการทำงานในช่วงนี้ออกด้วย)`
+            : undefined
+        }
+        confirmLabel="ลบประวัติ"
+        destructive
+        busy={confirmDeleteId === confirmDeleteHistoryItem?.id}
+        onClose={() => setConfirmDeleteHistoryItem(null)}
+        onConfirm={() => void executeDeleteHistory()}
+        zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
+      />
+      <TextConfirmDialog
+        open={confirmDeleteEmployeeId !== null}
+        title="ลบพนักงานถาวร"
+        description="คุณแน่ใจหรือไม่ที่จะลบพนักงานคนนี้ถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้ และจะลบกะงานทั้งหมดที่เกี่ยวข้องด้วย"
+        confirmLabel="ลบพนักงาน"
+        destructive
+        busy={loading}
+        onClose={() => setConfirmDeleteEmployeeId(null)}
+        onConfirm={() => void executeDeleteEmployee()}
+        zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
+      />
+      <TextConfirmDialog
+        open={showGoogleSheetSyncConfirm}
+        title="ซิงค์ Google Sheet"
+        description={
+          googleSheetWeekLabel
+            ? `ซิงค์ Google Sheet สำหรับสัปดาห์ ${googleSheetWeekLabel} เท่านั้น\n(ซิงค์เมื่อกดปุ่มนี้เท่านั้น ไม่มีการซิงค์อัตโนมัติ)`
+            : undefined
+        }
+        confirmLabel="ซิงค์เลย"
+        busy={isSyncingGoogleSheet}
+        onClose={() => !isSyncingGoogleSheet && setShowGoogleSheetSyncConfirm(false)}
+        onConfirm={() => void executeSyncGoogleSheet()}
+        zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
+      />
 
       {toastAlert && (
         <FloatingAlert

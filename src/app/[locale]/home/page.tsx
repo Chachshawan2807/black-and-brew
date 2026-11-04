@@ -9,6 +9,9 @@ import {
 } from '@/app/actions/home-actions';
 import type { HomeBoardDetailUpdate } from '@/lib/secretary/snapshot-patch';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
+import { resolveActionError } from '@/lib/user-facing-error';
+
+const HOME_LOAD_FAIL = 'ไม่สามารถโหลดงานได้ กรุณาลองใหม่';
 import {
   HomeCachedPageFallback,
   HomeCachedTaskFallback,
@@ -52,7 +55,7 @@ async function HomeTasksSlot({
   if (!boardResult.success || !boardResult.board) {
     return (
       <div className="px-1 py-4 text-[14px] text-muted-foreground">
-        ไม่สามารถโหลดงานได้{boardResult.error ? `: ${boardResult.error}` : ''}
+        {resolveActionError(boardResult.error, HOME_LOAD_FAIL)}
       </div>
     );
   }

@@ -9,6 +9,7 @@ import {
   type NotificationPreferences,
 } from '@/lib/notification-types';
 import { pushSubscriptionIdsToPruneForSession } from '@/lib/push-subscription-prune';
+import { actionFail, actionFailWith, logSupabaseError, toUserFacingError } from '@/lib/user-facing-error';
 
 const subscriptionSchema = z.object({
   accessToken: z.string().min(1),
@@ -264,7 +265,7 @@ export async function registerPushSubscription(
         return { success: false, error: 'push_subscriptions_table_missing' };
       }
       console.error('Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message || 'supabase_upsert_failed' };
+      return actionFail('push-actions', error, 'ลงทะเบียนการแจ้งเตือนไม่สำเร็จ');
     }
 
     await pruneDuplicatePushSubscriptionsForDevice(supabase, {

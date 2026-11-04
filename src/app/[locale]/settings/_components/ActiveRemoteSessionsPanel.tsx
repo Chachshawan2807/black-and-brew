@@ -10,6 +10,8 @@ import {
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
 import { formatLoginDeviceLabel } from '@/lib/format-login-device';
 import { cn } from '@/lib/utils';
+import { TextConfirmDialog } from '@/components/ui/text-confirm-dialog';
+import { resolveActionError } from '@/lib/user-facing-error';
 import {
   SETTINGS_BTN_DANGER,
   SETTINGS_BTN_GHOST,
@@ -60,6 +62,7 @@ export default function ActiveRemoteSessionsPanel({
   const [error, setError] = useState<string | null>(null);
   const [busyFp, setBusyFp] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [showRevokeAllConfirm, setShowRevokeAllConfirm] = useState(false);
 
   const remoteSessions = sessions.filter((s) => !s.isCurrentDevice);
 
@@ -77,7 +80,12 @@ export default function ActiveRemoteSessionsPanel({
         collectClientDeviceInfo()
       );
       if (!result.success) {
-        setError(result.error ?? (isTh ? 'บังคับออกไม่สำเร็จ' : 'Revoke failed'));
+        setError(
+          resolveActionError(
+            result.error,
+            isTh ? 'บังคับออกไม่สำเร็จ' : 'Revoke failed',
+          ),
+        );
         return;
       }
       setPin('');
@@ -87,18 +95,16 @@ export default function ActiveRemoteSessionsPanel({
     }
   };
 
-  const handleRevokeAll = async () => {
+  const requestRevokeAll = () => {
     if (pin.length < PIN_LENGTH) {
       setError(isTh ? 'กรอกรหัสหลัก 6 หลักก่อนบังคับออก' : 'Enter master PIN first');
       return;
     }
-    const confirmed = window.confirm(
-      isTh
-        ? 'บังคับออกจากระบบทุกเครื่องอื่นใช่ไหม?'
-        : 'Sign out all other devices?'
-    );
-    if (!confirmed) return;
+    setShowRevokeAllConfirm(true);
+  };
 
+  const executeRevokeAll = async () => {
+    setShowRevokeAllConfirm(false);
     setBulkLoading(true);
     setError(null);
     try {
@@ -108,7 +114,12 @@ export default function ActiveRemoteSessionsPanel({
         collectClientDeviceInfo()
       );
       if (!result.success) {
-        setError(result.error ?? (isTh ? 'บังคับออกไม่สำเร็จ' : 'Revoke failed'));
+        setError(
+          resolveActionError(
+            result.error,
+            isTh ? 'บังคับออกไม่สำเร็จ' : 'Revoke failed',
+          ),
+        );
         return;
       }
       setPin('');
@@ -158,7 +169,7 @@ export default function ActiveRemoteSessionsPanel({
         {remoteSessions.length > 1 && (
           <button
             type="button"
-            onClick={() => void handleRevokeAll()}
+            onClick={() => requestRevokeAll()}
             disabled={bulkLoading || pin.length < PIN_LENGTH || Boolean(busyFp)}
             className={cn(
               SETTINGS_BTN_DANGER,
@@ -266,6 +277,21 @@ export default function ActiveRemoteSessionsPanel({
           {error}
         </p>
       )}
+
+      <TextConfirmDialog
+        open={showRevokeAllConfirm}
+        title={isTh ? 'บังคับออกทุกเครื่องอื่น' : 'Sign out other devices'}
+        description={
+          isTh
+            ? 'บังคับออกจากระบบทุกเครื่องอื่นใช่ไหม?'
+            : 'Sign out all other devices?'
+        }
+        confirmLabel={isTh ? 'บังคับออกทั้งหมด' : 'Sign out all'}
+        destructive
+        busy={bulkLoading}
+        onClose={() => !bulkLoading && setShowRevokeAllConfirm(false)}
+        onConfirm={() => void executeRevokeAll()}
+      />
     </div>
   );
 }

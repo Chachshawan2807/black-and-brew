@@ -35,6 +35,7 @@ import {
 } from '@/lib/inventory-count-today';
 import { isSameThaiDay } from '@/lib/date-utils';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
+import { resolveActionError } from '@/lib/user-facing-error';
 import { INVENTORY_COUNT_SELECT } from '@/lib/inventory-queries';
 import {
   isCountAdjustUnlocked,
@@ -1065,7 +1066,9 @@ export default function InventoryCountClient({
       } satisfies InventoryCountSaveOptions);
 
       if (!verification.success) {
-        throw new Error(verification.error);
+        throw new Error(
+          resolveActionError(verification.error, 'บันทึกจำนวนสต็อกไม่สำเร็จ กรุณาลองใหม่'),
+        );
       }
 
       const countedQty = verification.countedQty ?? value;
@@ -1255,7 +1258,9 @@ export default function InventoryCountClient({
       });
 
       if (!result.success) {
-        throw new Error(result.error);
+        throw new Error(
+          resolveActionError(result.error, 'ปรับจำนวนคงเหลือไม่สำเร็จ กรุณาลองใหม่'),
+        );
       }
 
       const savedStock = result.newStock ?? value;

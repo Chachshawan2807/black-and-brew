@@ -82,6 +82,8 @@ describe('inventory history loading reliability', () => {
     expect(queryCode).toContain("HISTORY_ORDER_COLUMN = 'transaction_at'");
     expect(queryCode).toContain('.order(HISTORY_ORDER_COLUMN');
     expect(queryCode).not.toContain(".order('created_at'");
+    expect(queryCode).not.toContain('DB Error:');
+    expect(queryCode).toContain('toUserFacingError');
   });
 
   test('inventory page seeds history cache before lazy client hydrates', () => {

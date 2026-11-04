@@ -10,6 +10,7 @@ const NON_RETRYABLE_ERROR_RES = [
   new RegExp(UNAUTHORIZED_MSG.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
   new RegExp(READ_ONLY_DENY_MSG.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
   /invalid.*payload/i,
+  /ไม่ถูกต้อง/,
 ];
 
 /** Permanent auth/validation failures should drop queued mutations instead of retrying forever. */

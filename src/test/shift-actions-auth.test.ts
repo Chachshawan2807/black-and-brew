@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { UNAUTHORIZED_MSG } from '@/lib/policies/messages';
 
 const { mockGet, mockFrom } = vi.hoisted(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
@@ -48,13 +49,13 @@ describe('shift server actions auth gate', () => {
   test('fetchRosterData rejects unauthenticated callers', async () => {
     const result = await fetchRosterData('2026-07-01', '2026-07-07');
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Unauthorized');
+    expect(result.error).toBe(UNAUTHORIZED_MSG);
     expect(mockFrom).not.toHaveBeenCalled();
   });
 
   test('revalidateAppPaths rejects unauthenticated callers', async () => {
     const result = await revalidateAppPaths();
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Unauthorized');
+    expect(result.error).toBe(UNAUTHORIZED_MSG);
   });
 });

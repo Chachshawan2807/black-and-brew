@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { filterReorderRowsToExistingIds, sanitizeStockValue } from '@/lib/inventory-stock';
-import { computeFieldChanges } from '@/lib/data-change-log';
+import { computeFieldChanges, dataChangeLogErrorFromUnknown } from '@/lib/data-change-log';
 import {
   computeAggregateCountAccuracyPct,
   computeCountDiscrepancy,
@@ -44,6 +44,7 @@ import {
   type InventoryHistoryDisplayRow,
   type InventoryTransactionFilterType,
 } from '@/lib/inventory-history-query';
+import { actionFail, actionFailWith, logSupabaseError, toUserFacingError } from '@/lib/user-facing-error';
 
 function getDb() {
   return getSupabaseAdmin();
@@ -63,8 +64,8 @@ async function fetchInventoryItemAuditMeta(itemId: string) {
   return data as { name: string; stock: number | null; order_point: number | null } | null;
 }
 
-function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+function getErrorMessage(error: unknown, fallback = 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่'): string {
+  return toUserFacingError(error, fallback);
 }
 
 type InventoryAuditOptions = {
@@ -215,11 +216,11 @@ export async function recordTransaction(
 
     const parsed = transactionSchema.safeParse({ productId, type, quantity, note });
     if (!parsed.success) {
-      return { success: false, error: 'Invalid transaction payload' };
+      return { success: false, error: 'ข้อมูลธุรกรรมไม่ถูกต้อง กรุณาลองใหม่' };
     }
 
     if (quantity <= 0) {
-      return { success: false, error: 'Quantity must be greater than 0' };
+      return { success: false, error: 'กรุณาระบุจำนวนมากกว่า 0' };
     }
 
     const { data, error } = await getDb().rpc('record_inventory_transaction', {
@@ -241,7 +242,7 @@ export async function recordTransaction(
           entityId: productId,
           entityLabel: itemMeta?.name ?? null,
           status: 'failed',
-          errorMessage: error.message,
+          errorMessage: dataChangeLogErrorFromUnknown(error),
           metadata: withAuditMetadata(
             {
               operation: 'record_transaction',
@@ -256,7 +257,7 @@ export async function recordTransaction(
       if (error.message.includes('Insufficient stock')) {
         return { success: false, error: 'ยอดคงเหลือไม่เพียงพอสำหรับการนำออก' };
       }
-      return { success: false, error: error.message };
+      return actionFail('inventory-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     const { oldStock, newStock } = resolveRecordedStockChange(data, type, quantity);
@@ -329,7 +330,11 @@ export async function recordBulkInventoryTransactions(
 
     const parsed = bulkTransactionsSchema.safeParse({ entries, note });
     if (!parsed.success) {
-      return { success: false, error: 'Invalid bulk transaction payload', results: [] as BulkInventoryTransactionResult[] };
+      return {
+        success: false,
+        error: 'ข้อมูลหลายรายการไม่ถูกต้อง กรุณาลองใหม่',
+        results: [] as BulkInventoryTransactionResult[],
+      };
     }
 
     const pendingAudits: Array<() => Promise<void>> = [];
@@ -356,7 +361,7 @@ export async function recordBulkInventoryTransactions(
                 entityId: entry.itemId,
                 entityLabel: itemMeta?.name ?? null,
                 status: 'failed',
-                errorMessage: error.message,
+                errorMessage: dataChangeLogErrorFromUnknown(error),
                 metadata: withAuditMetadata(
                   {
                     operation: 'record_transaction',
@@ -369,10 +374,11 @@ export async function recordBulkInventoryTransactions(
                 ),
               });
             });
-            const message = error.message.includes('Insufficient stock')
-              ? 'ยอดคงเหลือไม่เพียงพอสำหรับการนำออก'
-              : error.message;
-            return { itemId: entry.itemId, success: false, error: message };
+            return {
+              itemId: entry.itemId,
+              success: false,
+              error: toUserFacingError(error, 'ยอดคงเหลือไม่เพียงพอสำหรับการนำออก'),
+            };
           }
 
           const { oldStock, newStock } = resolveRecordedStockChange(
@@ -414,7 +420,11 @@ export async function recordBulkInventoryTransactions(
           };
         } catch (err: unknown) {
           console.error(`[recordBulkInventoryTransactions] Error on itemId ${entry.itemId}:`, err);
-          return { itemId: entry.itemId, success: false, error: getErrorMessage(err) || 'Error processing item' };
+          return {
+            itemId: entry.itemId,
+            success: false,
+            error: getErrorMessage(err, 'บันทึกรายการไม่สำเร็จ'),
+          };
         }
       })
     );
@@ -467,7 +477,7 @@ export async function updateInventoryStock(
 
     const parsed = stockUpdateSchema.safeParse({ itemId, stock, note });
     if (!parsed.success) {
-      return { success: false, error: 'Invalid stock update payload' };
+      return { success: false, error: 'ข้อมูลอัปเดตสต็อกไม่ถูกต้อง กรุณาลองใหม่' };
     }
 
     let newStock = stock;
@@ -491,11 +501,11 @@ export async function updateInventoryStock(
 
         if (updateErr) {
           console.error('[updateInventoryStock] Fallback update error:', updateErr.message, updateErr.details);
-          return { success: false, error: updateErr.message };
+          return actionFail('inventory-actions', updateErr, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
         }
       } else {
         console.error('[updateInventoryStock] Supabase RPC Error:', error.message, error.details, error.hint);
-        return { success: false, error: error.message };
+        return actionFail('inventory-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
       }
     } else {
       newStock = data?.new_stock ?? stock;
@@ -566,7 +576,7 @@ export async function updateInventoryItemField(
 
     const parsed = inventoryFieldUpdateSchema.safeParse({ itemId, field, value });
     if (!parsed.success) {
-      return { success: false, error: 'Invalid inventory field update payload' };
+      return { success: false, error: 'ข้อมูลแก้ไขไม่ถูกต้อง กรุณาลองใหม่' };
     }
 
     const sanitizedValue = sanitizeInventoryFieldValue(parsed.data.field, parsed.data.value);
@@ -581,7 +591,7 @@ export async function updateInventoryItemField(
 
     if (error) {
       console.error('[updateInventoryItemField] Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      return actionFail('inventory-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     deferInventorySideEffects('updateInventoryItemField', async () => {
@@ -632,7 +642,7 @@ export async function reorderInventoryItems(
 
     const parsed = inventoryReorderSchema.safeParse(sortOrders);
     if (!parsed.success) {
-      return { success: false, error: 'Invalid inventory reorder payload' };
+      return { success: false, error: 'ข้อมูลจัดลำดับไม่ถูกต้อง กรุณาลองใหม่' };
     }
 
     const { data: existingRows, error: existingError } = await getDb()
@@ -642,7 +652,7 @@ export async function reorderInventoryItems(
 
     if (existingError) {
       console.error('[reorderInventoryItems] Supabase Error:', existingError.message, existingError.details);
-      return { success: false, error: existingError.message };
+      return actionFail('inventory-actions', existingError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     const rows = filterReorderRowsToExistingIds(
@@ -650,7 +660,7 @@ export async function reorderInventoryItems(
       (existingRows ?? []).map((row) => row.id),
     );
     if (rows.length === 0) {
-      return { success: false, error: 'Invalid inventory reorder payload' };
+      return { success: false, error: 'ข้อมูลจัดลำดับไม่ถูกต้อง กรุณาลองใหม่' };
     }
 
     const { error } = await getDb()
@@ -659,7 +669,7 @@ export async function reorderInventoryItems(
 
     if (error) {
       console.error('[reorderInventoryItems] Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      return actionFail('inventory-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     deferInventorySideEffects('reorderInventoryItems', async () => {
@@ -695,7 +705,7 @@ export async function saveWithdrawRequiredItemOrder(itemIds: string[]) {
 
     const parsed = withdrawRequiredOrderSchema.safeParse(itemIds);
     if (!parsed.success) {
-      return { success: false, error: 'Invalid withdraw required order payload' };
+      return { success: false, error: 'ข้อมูลลำดับรายการเบิกไม่ถูกต้อง กรุณาลองใหม่' };
     }
 
     const { error } = await getDb().from('inventory_config').upsert({
@@ -705,7 +715,7 @@ export async function saveWithdrawRequiredItemOrder(itemIds: string[]) {
 
     if (error) {
       console.error('[saveWithdrawRequiredItemOrder] Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      return actionFail('inventory-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     deferInventorySideEffects('saveWithdrawRequiredItemOrder', async () => {
@@ -769,11 +779,11 @@ export async function deleteInventoryItem(itemId: string, auditOptions?: Invento
           entityLabel: itemBeforeDelete?.name ?? null,
           oldValue: itemBeforeDelete ?? null,
           status: 'failed',
-          errorMessage: error.message,
+          errorMessage: dataChangeLogErrorFromUnknown(error),
           metadata: withAuditMetadata({}, auditOptions),
         });
       });
-      return { success: false, error: error.message };
+      return actionFail('inventory-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     deferInventorySideEffects('deleteInventoryItem', async () => {
@@ -835,11 +845,11 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
           module: 'inventory',
           entityType: 'inventory_item',
           status: 'failed',
-          errorMessage: error.message,
+          errorMessage: dataChangeLogErrorFromUnknown(error),
           metadata: withAuditMetadata({ itemIds, count: itemIds.length }, auditOptions),
         });
       });
-      return { success: false, error: error.message, deleted: 0 };
+      return actionFailWith('inventory-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่', { deleted: 0 });
     }
 
     deferInventorySideEffects('deleteInventoryItemsBulk', async () => {
@@ -930,7 +940,7 @@ export async function fetchInventoryInOutActivitySnapshot() {
 
     if (error) {
       console.error('[fetchInventoryInOutActivitySnapshot] Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message, data: null };
+      return actionFailWith('inventory-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่', { data: null });
     }
 
     return {
@@ -1021,13 +1031,12 @@ export async function fetchComprehensiveInventoryData() {
 
     if (itemsError) {
       console.error('[fetchComprehensiveInventoryData] Items Error:', itemsError);
-      return {
-        success: false, error: itemsError.message, data: null };
+      return actionFailWith('inventory-actions', itemsError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่', { data: null });
     }
 
     if (txError) {
       console.error('[fetchComprehensiveInventoryData] Transactions Error:', txError);
-      return { success: false, error: txError.message, data: null };
+      return actionFailWith('inventory-actions', txError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่', { data: null });
     }
 
     type InventorySummaryRow = {
@@ -1184,7 +1193,7 @@ export async function recordCountVerification(itemId: string, countedQty: number
 
     if (itemError) {
       console.error('[recordCountVerification] Supabase Error:', itemError.message, itemError.details);
-      return { success: false, error: itemError.message };
+      return actionFail('inventory-actions', itemError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     const baselineStock = Number(itemRow?.stock ?? 0);
@@ -1196,7 +1205,7 @@ export async function recordCountVerification(itemId: string, countedQty: number
       systemStockQty: baselineStock,
     });
     if (!parsed.success) {
-      return { success: false, error: 'Invalid count verification payload' };
+      return { success: false, error: 'ข้อมูลตรวจนับไม่ถูกต้อง กรุณาลองใหม่' };
     }
 
     if (countPolicy !== 'exact_count') {
@@ -1220,7 +1229,7 @@ export async function recordCountVerification(itemId: string, countedQty: number
 
     if (error) {
       console.error('[recordCountVerification] Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      return actionFail('inventory-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     return {
@@ -1273,7 +1282,7 @@ export async function recordInventoryCountAndUpdateStock(
 
     if (itemError) {
       console.error('[recordInventoryCountAndUpdateStock] Supabase Error:', itemError.message, itemError.details);
-      return { success: false, error: itemError.message };
+      return actionFail('inventory-actions', itemError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     const baselineStock = Number(itemRow?.stock ?? 0);
@@ -1285,7 +1294,7 @@ export async function recordInventoryCountAndUpdateStock(
     });
 
     if (!parsed.success) {
-      return { success: false, error: 'Invalid count verification payload' };
+      return { success: false, error: 'ข้อมูลตรวจนับไม่ถูกต้อง กรุณาลองใหม่' };
     }
 
     const matched = countPolicy === 'exact_count'
@@ -1311,11 +1320,11 @@ export async function recordInventoryCountAndUpdateStock(
 
           if (updateErr) {
             console.error('[recordInventoryCountAndUpdateStock] Fallback update error:', updateErr.message, updateErr.details);
-            return { success: false, error: updateErr.message };
+            return actionFail('inventory-actions', updateErr, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
           }
         } else {
           console.error('[recordInventoryCountAndUpdateStock] Supabase RPC Error:', error.message, error.details, error.hint);
-          return { success: false, error: error.message };
+          return actionFail('inventory-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
         }
       } else {
         newStock = data?.new_stock ?? countedQty;
@@ -1448,12 +1457,12 @@ export async function fetchCountAccuracyStats(): Promise<{
 
     if (error) {
       console.error('[fetchCountAccuracyStats] Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      return actionFail('inventory-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     if (itemsError) {
       console.error('[fetchCountAccuracyStats] Supabase Error:', itemsError.message, itemsError.details);
-      return { success: false, error: itemsError.message };
+      return actionFail('inventory-actions', itemsError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     const exactItemById = new Map(
@@ -1581,12 +1590,12 @@ export async function fetchTodayInventoryCountStatus(): Promise<{
 
     if (error) {
       console.error('[fetchTodayInventoryCountStatus] Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      return actionFail('inventory-actions', error, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     if (itemsError) {
       console.error('[fetchTodayInventoryCountStatus] Supabase Error:', itemsError.message, itemsError.details);
-      return { success: false, error: itemsError.message };
+      return actionFail('inventory-actions', itemsError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
     if (logsError) {

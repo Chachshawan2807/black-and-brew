@@ -9,6 +9,7 @@ import { useMobileNavDrawerInert } from "@/hooks/use-mobile-nav-drawer-inert";
 import { useMaxMd } from "@/hooks/use-max-md";
 import { PageTransition } from "@/components/ui/page-transition";
 import { SidebarMenuOrderSync } from "@/components/sidebar/SidebarMenuOrderSync";
+import { SidebarMenuOrderSaveNotice } from "@/components/sidebar/SidebarMenuOrderSaveNotice";
 import { OfflineStatusBanner } from "@/components/shell/OfflineStatusBanner";
 
 export default function SidebarLayout({
@@ -28,6 +29,7 @@ export default function SidebarLayout({
   return (
     <>
       <SidebarMenuOrderSync />
+      <SidebarMenuOrderSaveNotice />
       {showMobileNav && <MobileNavHeader />}
       {showMobileNav && <MobileNavDrawer />}
       {showDesktopSidebar && <Sidebar />}

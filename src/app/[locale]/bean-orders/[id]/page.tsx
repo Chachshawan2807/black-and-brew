@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { connection } from 'next/server';
 import { checkAuth } from '@/app/actions/auth';
 import { fetchBeanOrderDetail } from '@/app/actions/bean-order-actions';
+import { resolveActionError } from '@/lib/user-facing-error';
 import BeanOrderDetailClient from '../BeanOrderDetailClient';
 
 /** Build-time validation path for Cache Components (requires ≥1 static param). */
@@ -22,7 +23,9 @@ export default async function BeanOrderDetailPage({
   // must surface a retryable error boundary instead of a blank not-found page.
   if (result.notFound) notFound();
   if (!result.success || !result.data) {
-    throw new Error(result.error ?? 'โหลดรายละเอียดออเดอร์ไม่สำเร็จ');
+    throw new Error(
+      resolveActionError(result.error, 'โหลดรายละเอียดออเดอร์ไม่สำเร็จ'),
+    );
   }
 
   return <BeanOrderDetailClient key={id} order={result.data} locale={locale} />;

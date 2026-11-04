@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
 import { HISTORY_PAGE_SIZE } from '@/lib/inventory-history-query';
+import { resolveActionError } from '@/lib/user-facing-error';
 import {
   getHistoryPageCache,
   invalidateInventoryHistoryPrefetch,
@@ -135,6 +136,7 @@ export function useInventoryHistory(options?: UseInventoryHistoryOptions) {
   );
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryRefreshing, setIsHistoryRefreshing] = useState(false);
+  const [historyLoadError, setHistoryLoadError] = useState<string | null>(null);
 
   const requestIdRef = useRef(0);
   const transactionHistoryRef = useRef(transactionHistory);
@@ -154,6 +156,7 @@ export function useInventoryHistory(options?: UseInventoryHistoryOptions) {
     if (!showHistoryModal) {
       setIsHistoryLoading(false);
       setIsHistoryRefreshing(false);
+      setHistoryLoadError(null);
     }
   }
 
@@ -243,8 +246,12 @@ export function useInventoryHistory(options?: UseInventoryHistoryOptions) {
 
         if (!res.success) {
           console.error('[UI] History fetch failed:', res.error);
+          setHistoryLoadError(
+            resolveActionError(res.error, 'โหลดประวัติคลังไม่สำเร็จ กรุณาลองใหม่'),
+          );
           if (!append) setHasMoreHistory(false);
         } else if (res.data) {
+          setHistoryLoadError(null);
           if (offset === 0 && !append) {
             setHistoryPageCache(
               { type, searchQuery },
@@ -392,6 +399,7 @@ export function useInventoryHistory(options?: UseInventoryHistoryOptions) {
     hasMoreHistory,
     isHistoryLoading,
     isHistoryRefreshing,
+    historyLoadError,
     handleOpenHistory,
     handleHistoryTypeFilterChange,
     handleHistorySearchQueryChange,

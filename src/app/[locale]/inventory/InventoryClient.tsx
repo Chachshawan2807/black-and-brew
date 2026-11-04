@@ -50,6 +50,8 @@ import { useInventoryHistory } from '@/hooks/use-inventory-history';
 import { preloadInventoryHistoryModal } from '@/lib/preload-inventory-history-modal';
 import { preloadWithdrawRequiredItemsModal } from '@/lib/preload-withdraw-required-items-modal';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
+import { PageStatusBanner } from '@/components/ui/page-status-banner';
+import { useTimedPageNotice } from '@/hooks/use-timed-page-notice';
 import { InventoryQuickActionBar } from './_components/InventoryQuickActionBar';
 import { InventoryModalPortal } from './_components/InventoryModalPortal';
 import { InventoryGridSearchBar } from './_components/InventoryGridSearchBar';
@@ -86,6 +88,7 @@ import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import { logSupabaseError, resolveActionError, toUserFacingError } from '@/lib/user-facing-error';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { SortableDragHandle } from '@/components/ui/sortable-drag-handle';
@@ -966,6 +969,7 @@ export default function InventoryClient({
   initialWithdrawRequiredOrder = [],
 }: InventoryClientProps) {
   const isReadOnly = useReadOnly();
+  const { notice: pageNotice, showNotice: showPageNotice } = useTimedPageNotice(6000);
   const { overlay: addModalOverlay, panelPhases: addModalPanelPhases } = useInventoryMotion();
   const { isOpen: isFloatingOverlayOpen } = useFloatingOverlay();
   const quickActionFabOpen = isFloatingOverlayOpen('quick-action');
@@ -973,11 +977,11 @@ export default function InventoryClient({
 
   const blockIfReadOnly = useCallback(() => {
     if (isReadOnly) {
-      alert(READ_ONLY_DENY_MSG);
+      showPageNotice(READ_ONLY_DENY_MSG);
       return true;
     }
     return false;
-  }, [isReadOnly]);
+  }, [isReadOnly, showPageNotice]);
   const [items, setItems] = useState<InventoryItem[]>(initialItems);
   const itemsRef = useRef(items);
   itemsRef.current = items;
@@ -1059,6 +1063,7 @@ export default function InventoryClient({
       }
     },
     onSaveError: () => setSavingState('idle'),
+    onUserNotice: showPageNotice,
   });
 
   const inventoryOverlayLayers = useMemo(
@@ -1141,12 +1146,14 @@ export default function InventoryClient({
     try {
       const result = await saveWithdrawRequiredItemOrder(orderedIds);
       if (!result.success) {
-        throw new Error(result.error);
+        throw new Error(
+          resolveActionError(result.error, 'บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่'),
+        );
       }
     } catch (error) {
       console.error('[handleWithdrawRequiredReorder]', error);
       setWithdrawRequiredOrder(rollbackOrder);
-      alert('บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+      showPageNotice(toUserFacingError(error, 'บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่'));
     } finally {
       setIsSavingWithdrawRequiredOrder(false);
     }
@@ -1274,12 +1281,12 @@ export default function InventoryClient({
 
       previousStateRef.current = { items: sanitizedLoadedItems, cols: loadedCols };
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('Failed to fetch inventory:', message);
+      logSupabaseError('fetchConfigAndInventory', err);
+      showPageNotice(toUserFacingError(err, 'โหลดข้อมูลคลังไม่สำเร็จ กรุณาลองใหม่'));
     } finally {
       setLoading(false);
     }
-  }, [refresh]);
+  }, [refresh, showPageNotice]);
 
   const handleOpenPurchaseOrders = useCallback(() => {
     preloadPurchaseOrdersModal();
@@ -1444,8 +1451,8 @@ export default function InventoryClient({
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('Failed to add item:', message);
+      logSupabaseError('handleAddItemSubmit', err);
+      showPageNotice(toUserFacingError(err, 'ไม่สามารถเพิ่มรายการได้ กรุณาลองใหม่'));
       setItems(prev => prev.filter(item => item.id !== tempId));
       setSavingState('idle');
     }
@@ -1469,7 +1476,9 @@ export default function InventoryClient({
         notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
         notificationContext: 'inventory',
       });
-      if (!res.success) throw new Error(res.error);
+      if (!res.success) {
+        throw new Error(resolveActionError(res.error, 'ลบรายการไม่สำเร็จ กรุณาลองใหม่'));
+      }
 
       if (history.showHistoryModal) {
         await history.refreshHistory();
@@ -1478,8 +1487,8 @@ export default function InventoryClient({
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('Supabase Error (Delete):', message);
+      logSupabaseError('executeDelete', err);
+      showPageNotice(toUserFacingError(err, 'ลบรายการไม่สำเร็จ กรุณาลองใหม่'));
       fetchConfigAndInventory();
     }
   }
@@ -1508,7 +1517,7 @@ export default function InventoryClient({
       
       // Check if valid number, >= 1, <= totalItems
       if (isNaN(numValue) || numValue < 1 || numValue > totalItems) {
-        alert(`กรุณาป้อนตัวเลขลำดับที่ถูกต้อง (1 ถึง ${totalItems})`);
+        showPageNotice(`กรุณาป้อนตัวเลขลำดับที่ถูกต้อง (1 ถึง ${totalItems})`);
         // Reset the value to original
         setItems(prev => prev.map(item => item.id === id ? { ...item, sort_order: original?.sort_order || item.sort_order } : item));
         return false;
@@ -1552,13 +1561,14 @@ export default function InventoryClient({
             markQueuedSave();
             return true;
           }
-          throw new Error(result.error);
+          throw new Error(
+            resolveActionError(result.error, 'บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่'),
+          );
         }
         setSavingState('synced');
         setTimeout(() => setSavingState('idle'), 2000);
         return true;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
         if (shouldQueueMutationError(err)) {
           await queueOfflineMutation({
             kind: 'inventory_reorder',
@@ -1571,7 +1581,8 @@ export default function InventoryClient({
           markQueuedSave();
           return true;
         }
-        console.error('Failed to update sort_order:', message);
+        logSupabaseError('inventory_reorder', err);
+        showPageNotice(toUserFacingError(err, 'บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่'));
         setSavingState('idle');
         fetchConfigAndInventory();
         return false;
@@ -1621,7 +1632,9 @@ export default function InventoryClient({
             markQueuedSave();
             return true;
           }
-          throw new Error(result.error);
+          throw new Error(
+            resolveActionError(result.error, 'บันทึกไม่สำเร็จ กรุณาลองใหม่'),
+          );
         }
         handleUpdateField(id, 'stock', result.newStock ?? sanitizedValue);
       } else {
@@ -1645,14 +1658,15 @@ export default function InventoryClient({
             markQueuedSave();
             return true;
           }
-          throw new Error(result.error);
+          throw new Error(
+            resolveActionError(result.error, 'บันทึกไม่สำเร็จ กรุณาลองใหม่'),
+          );
         }
       }
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
       if (shouldQueueMutationError(err)) {
         if (field === 'stock') {
           await queueOfflineMutation({
@@ -1676,7 +1690,8 @@ export default function InventoryClient({
         markQueuedSave();
         return true;
       }
-      console.error(`Failed to update ${field}:`, message);
+      logSupabaseError(`inventory_update_${field}`, err);
+      showPageNotice(toUserFacingError(err, 'บันทึกไม่สำเร็จ กรุณาลองใหม่'));
       setSavingState('idle');
       fetchConfigAndInventory();
       return false;
@@ -1687,6 +1702,7 @@ export default function InventoryClient({
     handleUpdateField,
     markQueuedSave,
     pushHistory,
+    showPageNotice,
   ]);
 
   async function handleDragEndRows(event: DragEndEvent) {
@@ -1725,7 +1741,9 @@ export default function InventoryClient({
           markQueuedSave();
           return;
         }
-        throw new Error(result.error);
+        throw new Error(
+          resolveActionError(result.error, 'บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่'),
+        );
       }
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
@@ -1745,7 +1763,7 @@ export default function InventoryClient({
       console.error('World-Class DND Rollback (Inventory):', err);
       setItems(rollbackItems);
       setSavingState('idle');
-      alert('ไม่สามารถจัดลำดับได้ เนื่องจากปัญหาการเชื่อมต่อ');
+      showPageNotice(toUserFacingError(err, 'บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่'));
     }
   }
 
@@ -1798,7 +1816,11 @@ export default function InventoryClient({
           clientSessionId: getClientSessionId(),
           suppressNotification: true,
         });
-        if (!delResult.success) throw new Error(delResult.error);
+        if (!delResult.success) {
+          throw new Error(
+            resolveActionError(delResult.error, 'บันทึก undo/redo ไม่สำเร็จ กรุณาลองใหม่'),
+          );
+        }
       }
 
       const settings = {
@@ -1820,8 +1842,8 @@ export default function InventoryClient({
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('Error syncing undo/redo:', message);
+      logSupabaseError('syncFullStateToDB', err);
+      showPageNotice(toUserFacingError(err, 'บันทึก undo/redo ไม่สำเร็จ กรุณาลองใหม่'));
       setSavingState('idle');
       fetchConfigAndInventory();
     } finally {
@@ -2301,6 +2323,7 @@ export default function InventoryClient({
             isHistoryRefreshing={history.isHistoryRefreshing}
             historySearchQuery={history.historySearchQuery}
             onSearchQueryChange={history.handleHistorySearchQueryChange}
+            historyLoadError={history.historyLoadError}
           />
         )}
       </AnimatePresence>
@@ -2333,6 +2356,8 @@ export default function InventoryClient({
           />
         )}
       </AnimatePresence>
+
+      <PageStatusBanner message={pageNotice} />
 
       <ExportProgressOverlay
         visible={isExportingPO}

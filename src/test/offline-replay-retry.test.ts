@@ -10,8 +10,8 @@ describe('isOfflineReplayFailureRetryable', () => {
   });
 
   test('validation failures are not retryable', () => {
-    expect(isOfflineReplayFailureRetryable('Invalid inventory field update payload')).toBe(false);
-    expect(isOfflineReplayFailureRetryable('Invalid stock update payload')).toBe(false);
+    expect(isOfflineReplayFailureRetryable('ข้อมูลแก้ไขไม่ถูกต้อง กรุณาลองใหม่')).toBe(false);
+    expect(isOfflineReplayFailureRetryable('ข้อมูลอัปเดตสต็อกไม่ถูกต้อง กรุณาลองใหม่')).toBe(false);
   });
 
   test('network failures remain retryable', () => {

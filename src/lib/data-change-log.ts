@@ -1,5 +1,6 @@
 import type { Json } from '@/lib/database.types';
 import { parseUserAgent } from '@/lib/parse-user-agent';
+import { toUserFacingError } from '@/lib/user-facing-error';
 
 export type DataChangeAction =
   | 'CREATE'
@@ -182,4 +183,17 @@ export function filterEditHistoryRows<
     const kind = row.metadata?.kind;
     return !(typeof kind === 'string' && excludedKinds.has(kind));
   });
+}
+
+/** Staff-facing copy for settings edit history (`error_message` column). */
+export function sanitizeDataChangeLogErrorMessage(
+  message: string | null | undefined,
+): string | null {
+  if (!message?.trim()) return null;
+  return toUserFacingError(message, 'บันทึกไม่สำเร็จ');
+}
+
+/** Staff-facing copy when persisting failed rows via `recordDataChange`. */
+export function dataChangeLogErrorFromUnknown(error: unknown): string {
+  return toUserFacingError(error, 'บันทึกไม่สำเร็จ');
 }

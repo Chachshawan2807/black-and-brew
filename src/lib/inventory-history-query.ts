@@ -1,6 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { logSupabaseError, toUserFacingError } from '@/lib/user-facing-error';
 
 export const HISTORY_PAGE_SIZE = 50;
+
+const HISTORY_FETCH_FAIL = 'โหลดประวัติคลังไม่สำเร็จ กรุณาลองใหม่';
+
+function historyFetchError(error: unknown): string {
+  logSupabaseError('fetchTransactionHistory', error);
+  return toUserFacingError(error, HISTORY_FETCH_FAIL);
+}
 
 export const HISTORY_ORDER_COLUMN = 'transaction_at' as const;
 
@@ -107,12 +115,7 @@ async function fetchTransactionHistoryByItemName(
     .limit(NAME_SEARCH_MAX_ITEM_IDS);
 
   if (searchError) {
-    console.error(
-      '[fetchTransactionHistory] Item name search error:',
-      searchError.message,
-      searchError.details,
-    );
-    return { success: false, error: `DB Error: ${searchError.message}` };
+    return { success: false, error: historyFetchError(searchError) };
   }
 
   const matchingIds = (matchingItems ?? []).map((item) => item.id);
@@ -144,14 +147,7 @@ async function fetchTransactionHistoryByItemName(
   const results = await Promise.all(queries);
   for (const result of results) {
     if (result.error) {
-      console.error('[fetchTransactionHistory] Supabase Deep Error:', result.error);
-      console.error(
-        '[fetchTransactionHistory] Details:',
-        result.error.message,
-        result.error.details,
-        result.error.hint,
-      );
-      return { success: false, error: `DB Error: ${result.error.message}` };
+      return { success: false, error: historyFetchError(result.error) };
     }
   }
 
@@ -224,14 +220,12 @@ export async function fetchTransactionHistoryPage(
     const { data: transactionRows, error: txError } = await query;
 
     if (txError) {
-      console.error('[fetchTransactionHistory] Supabase Deep Error:', txError);
-      console.error(
-        '[fetchTransactionHistory] Details:',
-        txError.message,
-        txError.details,
-        txError.hint,
-      );
-      return { success: false, error: `DB Error: ${txError.message}`, data: [], hasMore: false };
+      return {
+        success: false,
+        error: historyFetchError(txError),
+        data: [],
+        hasMore: false,
+      };
     }
 
     const transactions = (transactionRows ?? []) as RawInventoryTransaction[];
@@ -249,11 +243,9 @@ export async function fetchTransactionHistoryPage(
       hasMore,
     };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error('[fetchTransactionHistory] Unexpected Error:', message);
     return {
       success: false,
-      error: message || 'เกิดข้อผิดพลาดในการดึงประวัติ',
+      error: historyFetchError(error),
       data: [],
       hasMore: false,
     };

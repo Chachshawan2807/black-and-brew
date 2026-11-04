@@ -7,6 +7,7 @@
 import { addDays, format, parseISO, startOfWeek } from 'date-fns';
 import { z } from 'zod';
 import { requireMutationAccess } from '@/lib/policies/server-gate';
+import { actionFail } from '@/lib/user-facing-error';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import {
   batchReadGoogleSheetValues,
@@ -86,12 +87,10 @@ export async function syncScheduleToGoogleSheet(
     ]);
 
     if (profilesRes.error) {
-      console.error('Supabase Error:', profilesRes.error.message, profilesRes.error.details);
-      return { success: false as const, error: profilesRes.error.message };
+      return actionFail('schedule-sheets-sync', profilesRes.error, 'โหลดข้อมูลพนักงานไม่สำเร็จ');
     }
     if (shiftsRes.error) {
-      console.error('Supabase Error:', shiftsRes.error.message, shiftsRes.error.details);
-      return { success: false as const, error: shiftsRes.error.message };
+      return actionFail('schedule-sheets-sync', shiftsRes.error, 'โหลดข้อมูลกะไม่สำเร็จ');
     }
 
     const weekDays = buildWeekDayIsoStrings(mondayStr);
@@ -192,8 +191,6 @@ export async function syncScheduleToGoogleSheet(
       cellUpdates: tabsToSync.reduce((sum, tab) => sum + tab.cellUpdates, 0),
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Google Sheets sync failed:', message);
-    return { success: false as const, error: message };
+    return actionFail('schedule-sheets-sync', err, 'ซิงก์ Google Sheet ไม่สำเร็จ');
   }
 }

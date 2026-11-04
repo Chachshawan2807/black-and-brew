@@ -8,6 +8,7 @@ import { verifyPin } from '@/app/actions/auth';
 import { setClientAuthSession } from '@/lib/client-auth-storage';
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
 import { cn } from '@/lib/utils';
+import { resolveActionError } from '@/lib/user-facing-error';
 
 const PIN_LENGTH = 6;
 
@@ -69,7 +70,7 @@ export function CountAdjustPinDialog({
         const res = await verifyPin(nextPin, device);
 
         if (!res.success) {
-          setError(res.error ?? 'รหัส PIN ไม่ถูกต้อง');
+          setError(resolveActionError(res.error, 'รหัส PIN ไม่ถูกต้อง'));
           window.setTimeout(() => {
             setPin('');
             hiddenInputRef.current?.focus({ preventScroll: true });
