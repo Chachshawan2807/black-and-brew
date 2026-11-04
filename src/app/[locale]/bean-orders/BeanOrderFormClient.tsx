@@ -1267,9 +1267,10 @@ function BeanOrderFormClientReady({
               type="button"
               onClick={() => void handleConfirmSave()}
               disabled={saving}
+              aria-busy={saving}
               className={cn(BEAN_ORDER_BTN_DIALOG_CONFIRM, 'min-h-11 px-4 disabled:opacity-50')}
             >
-              ยืนยันบันทึก
+              {saving ? 'กำลังบันทึก…' : 'ยืนยันบันทึก'}
             </button>
           </div>
         </div>

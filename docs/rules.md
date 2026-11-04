@@ -196,11 +196,31 @@
 - ✅ **SELF-VALIDATION:** ห้ามหยุดรอกดอนุมัติระหว่างขั้นตอนการแก้ไขเล็กน้อย (เช่น ปิด Tag, แก้ Lint)
 - ✅ **ZERO-STUTTER:** รายงานผลเฉพาะเมื่อบรรลุ Milestone หรือพบ Error ระดับ R2 ที่ต้องตัดสินใจร่วมกันเท่านั้น
 
+### Usability (Nielsen 10)
+
+Source of truth: [`AGENTS.md`](../AGENTS.md) `nielsen-usability-heuristics-standard`. Audit backlog: [`docs/usability-heuristics-audit.md`](usability-heuristics-audit.md).
+
+| MUST | Meaning |
+| ---- | ------- |
+| Status feedback | Loading, optimistic UI, toast/alert, busy submit |
+| Shop language | Thai / glossary terms; GMT+7; no raw Supabase/RPC in UI |
+| Escape hatches | Cancel, Escape, undo/redo where editable |
+| Consistency | Theme tokens, confirm/cancel patterns, motion presets |
+| Prevent errors | Confirm destructive; sanitize NUMERIC; constrained inputs |
+| Recognition | Labels, icons, HintTooltip, static row `#` |
+| Efficiency | Enter-next-row, full hitboxes; accelerators optional |
+| Minimal | Outcome-first; no decorative chrome |
+| Recoverable errors | `toUserFacingError` + next step; log via `logSupabaseError` |
+| Help | HintTooltip / short steps; glossary in `docs/context.md` |
+
+Exceptions (ERP wins): notification panel view-only; spreadsheet inline cells; transaction ledger not on UI undo stack.
+
 ### Agent engineering workflow (Mandatory)
 
 - ✅ **Skill routing:** ตามตารางใน [`AGENTS.md`](../AGENTS.md) (engineering-workflow-standard) คู่ hub-first ใน `.cursorrules`
 - ✅ **Explore:** codebase-memory-mcp ก่อน grep/glob · domain consumption: [`docs/agents/domain.md`](agents/domain.md)
 - ✅ **Tracker:** GitHub Issues + `gh` · [`docs/agents/issue-tracker.md`](agents/issue-tracker.md)
+- ✅ **UI work:** Nielsen pre-ship checklist + `npm run skill:run design-review` when touching `src/app/[locale]/**` or `src/components/`
 - ❌ **ห้าม** refactor กว้างโดยไม่ผ่าน `improve-codebase-architecture` (ยกเว้น R0/hotfix ตาม exceptions ใน AGENTS.md)
 
 ---

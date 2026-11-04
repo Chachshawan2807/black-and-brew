@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { parseSidebarMenuOrder } from '@/lib/sidebar-menu-order';
+import { logSupabaseError, toUserFacingError } from '@/lib/user-facing-error';
 
 const menuOrderSchema = z.array(z.string().min(1)).max(50);
 
@@ -33,8 +34,11 @@ export async function getSidebarMenuOrder(): Promise<SidebarMenuOrderResult> {
       .maybeSingle();
 
     if (error) {
-      console.error('[getSidebarMenuOrder] Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      logSupabaseError('getSidebarMenuOrder', error);
+      return {
+        success: false,
+        error: toUserFacingError(error, 'โหลดลำดับเมนูไม่สำเร็จ'),
+      };
     }
 
     const rawOrder = data?.sidebar_menu_order;
@@ -48,9 +52,11 @@ export async function getSidebarMenuOrder(): Promise<SidebarMenuOrderResult> {
       updatedAt: data?.updated_at ?? null,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to load sidebar menu order';
-    console.error('[getSidebarMenuOrder] Error:', message);
-    return { success: false, error: message };
+    logSupabaseError('getSidebarMenuOrder', error);
+    return {
+      success: false,
+      error: toUserFacingError(error, 'โหลดลำดับเมนูไม่สำเร็จ'),
+    };
   }
 }
 
@@ -64,7 +70,7 @@ export async function saveSidebarMenuOrder(
 
   const parsed = menuOrderSchema.safeParse(orderIds);
   if (!parsed.success) {
-    return { success: false, error: 'Invalid sidebar menu order' };
+    return { success: false, error: 'ลำดับเมนูไม่ถูกต้อง' };
   }
 
   try {
@@ -81,14 +87,19 @@ export async function saveSidebarMenuOrder(
       );
 
     if (error) {
-      console.error('[saveSidebarMenuOrder] Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      logSupabaseError('saveSidebarMenuOrder', error);
+      return {
+        success: false,
+        error: toUserFacingError(error, 'บันทึกลำดับเมนูไม่สำเร็จ'),
+      };
     }
 
     return { success: true, updatedAt };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to save sidebar menu order';
-    console.error('[saveSidebarMenuOrder] Error:', message);
-    return { success: false, error: message };
+    logSupabaseError('saveSidebarMenuOrder', error);
+    return {
+      success: false,
+      error: toUserFacingError(error, 'บันทึกลำดับเมนูไม่สำเร็จ'),
+    };
   }
 }

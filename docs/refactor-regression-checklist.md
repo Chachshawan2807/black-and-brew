@@ -19,6 +19,7 @@ Quick reference for smoke testing after each refactor PR.
 | Notifications | bell count (unread counter reconcile), panel, cross-tab sync, iOS/Android Web Push resume; automated: `npm run test:notifications` |
 | Settings | theme, notification prefs, data change history |
 | Tooltips | HintTooltip on FAB/toolbar icons (hover + keyboard focus) |
+| Nielsen quick pass | N1 feedback on async; N2 no raw DB errors; N3 cancel/undo; N5 confirm destructive; N9 `toUserFacingError`; see `AGENTS.md` nielsen-usability-heuristics-standard |
 
 **Automated:** `npm run lint && npm run test && npm run build`
 

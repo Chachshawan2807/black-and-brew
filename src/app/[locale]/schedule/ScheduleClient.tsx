@@ -27,6 +27,7 @@ import {
   weekHasShiftData,
 } from '@/lib/schedule/schedule-week-sync';
 import { FloatingAlert } from '@/components/ui/floating-alert';
+import { toUserFacingError } from '@/lib/user-facing-error';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -1786,7 +1787,7 @@ export default function ScheduleClient({
       setShowCopyPreviousWeekConfirm(false);
     } catch (error) {
       console.error('Failed to copy previous schedule week:', error);
-      setCopyWeekNotice(error instanceof Error ? error.message : 'คัดลอกตารางไม่สำเร็จ');
+      setCopyWeekNotice(toUserFacingError(error, 'คัดลอกตารางไม่สำเร็จ กรุณาลองใหม่'));
       setTimeout(() => setCopyWeekNotice(''), 4000);
     } finally {
       setIsCopyingPreviousWeek(false);
@@ -2576,14 +2577,20 @@ export default function ScheduleClient({
             type="button"
             onClick={() => void handleCopyPreviousWeek()}
             disabled={isCopyingPreviousWeek}
+            aria-busy={isCopyingPreviousWeek}
             className={cn(SCHEDULE_BTN_PRIMARY, 'inline-flex flex-1 items-center justify-center gap-2')}
           >
             {isCopyingPreviousWeek ? (
-              <LoadingIcon size="md" />
+              <>
+                <LoadingIcon size="md" />
+                กำลังคัดลอก…
+              </>
             ) : (
-              <Copy className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+              <>
+                <Copy className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+                ยืนยันคัดลอก
+              </>
             )}
-            ยืนยันคัดลอก
           </button>
         </div>
       </FadeModalScaffold>

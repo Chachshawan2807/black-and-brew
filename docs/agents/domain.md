@@ -24,6 +24,7 @@ Fallback to grep/glob only when the graph has no hits (strings, config, unindexe
 | **`docs/adr/`** | Markdown ADRs (`0001-slug.md`, …) when `/domain-modeling` records a decision. Directory may not exist until the first ADR. |
 | **codebase-memory-mcp ADRs** | Architecture decisions synced from the graph (`manage_adr`). Treat as authoritative for **structure and dependencies**; flag conflicts with markdown ADRs explicitly. |
 | **`AGENTS.md` domain standards** | Notification hub, spreadsheet UI, typography (no U+2014), data sync, project structure. |
+| **`AGENTS.md` nielsen-usability-heuristics-standard** | Project-wide UX/UI baseline (Jakob Nielsen 10). Yields to ERP spreadsheet/pastel/notification exceptions. Audit: `docs/usability-heuristics-audit.md`. |
 
 If `CONTEXT.md` or `docs/adr/` do not exist yet, proceed silently. Do not block work to create empty scaffolding.
 

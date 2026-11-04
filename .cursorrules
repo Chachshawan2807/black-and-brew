@@ -6,6 +6,7 @@ This project uses **codebase-memory-mcp** as the primary backend knowledge graph
 - After code changes: re-index via MCP (`ingest` / agent-triggered refresh per tool docs)
 - Prefer `search_graph`, `trace_path`, `query_graph` over reading entire files for architecture questions
 - Typography iron rule: never use em dash (U+2014); use spaces instead (see `AGENTS.md` typography-no-em-dash-standard)
+- UX baseline: Jakob Nielsen 10 heuristics (`AGENTS.md` nielsen-usability-heuristics-standard); ERP spreadsheet / pastel / notification exceptions still win
 
 ## Centralized fix workflow (hub-first, IRON RULE)
 

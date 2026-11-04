@@ -589,10 +589,11 @@ export default function BeanOrderDetailClient({
           <button
             type="button"
             disabled={busy}
+            aria-busy={busy}
             onClick={() => void handleDelete()}
             className={BEAN_ORDER_ACTION_BTN_DANGER}
           >
-            ลบออเดอร์
+            {busy ? 'กำลังลบ…' : 'ลบออเดอร์'}
           </button>
         </div>
       ) : null}

@@ -85,6 +85,7 @@ Before applying any search result:
 
 ## Serious polish workflow
 
+0. **Nielsen heuristics** read `AGENTS.md` `nielsen-usability-heuristics-standard`; pass/fail the 10 MUST rows before upstream search
 1. `web-design-guidelines` spacing, type, a11y
 2. `impeccable` `critique` sub-command only (not `bolder` / `delight` / `overdrive`)
 3. `chrome-modern-web-guidance` Baseline overlays, mobile, forms

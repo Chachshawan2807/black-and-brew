@@ -112,6 +112,7 @@ Sources: [Modern Web Guidance](https://developer.chrome.com/docs/modern-web-guid
 Apply in order higher wins:
 
 1. **ERP domain rules** spreadsheet grids, pastel shift colors, Supabase sync, numeric/undo rules, data symmetry (sections in this file).
+1b. **Nielsen usability heuristics** (`nielsen-usability-heuristics-standard` below) project-wide UX baseline for every UI surface. Yields to ERP domain rules when they conflict (e.g. spreadsheet inline cells, notification panel view-only).
 2. **chrome-modern-web-guidance** `.cursor/skills/chrome-modern-web-guidance/SKILL.md` + **modern-web-guidance** (`npx modern-web-guidance search/retrieve`) for Baseline Widely available, native overlays, mobile layout.
 3. **React & Next.js skills** `next-best-practices`, `vercel-react-best-practices`, `shadcn`, `webapp-testing` in `.agents/skills/` for App Router conventions, performance, components, and testing **never** override ERP spreadsheet/pastel rules or Supabase sync freshness.
 4. **Design review skills** `web-design-guidelines`, `impeccable` (`critique` only), then `ui-ux-pro-max` review/checklist via `ui-ux-pro-max-erp` overlay; must stay minimalist + time-based pastel. Do not use impeccable `bolder` / `delight` / `overdrive` when they conflict with ERP tone.
@@ -160,8 +161,55 @@ When React, Next.js, or design skills suggest modals for grid edits, aggressive 
 - [ ] Spreadsheet mode: inline inputs, auto-save, no unnecessary modals
 - [ ] Mobile: viewport meta, touch targets, safe-area on fixed UI
 - [ ] No deprecated patterns from chrome-modern-web-guidance skill table
+- [ ] **N1 Visibility:** async/mutation feedback visible (loading, optimistic, toast/alert, disabled submit)
+- [ ] **N2 Real world:** Thai / shop language; no RPC/column/Supabase jargon in UI
+- [ ] **N3 Control:** Cancel / Escape / undo where editable; no trapped overlays
+- [ ] **N4 Consistency:** same tokens, confirm/cancel patterns, motion presets
+- [ ] **N5 Prevention:** confirm destructive; numeric sanitize; constrained inputs
+- [ ] **N6 Recognition:** labels, icons, tooltips; static row `#` where grids reorder
+- [ ] **N7 Efficiency:** Enter/keyboard/touch accelerators without blocking novices
+- [ ] **N8 Minimal:** no decorative chrome; outcome-first density
+- [ ] **N9 Errors:** user-facing copy + next step; details only in `console.error`
+- [ ] **N10 Help:** HintTooltip / short steps for non-obvious flows
 
 <!-- END:modern-web-baseline-standard -->
+
+<!-- BEGIN:nielsen-usability-heuristics-standard -->
+
+## NIELSEN 10 USABILITY HEURISTICS (IRON RULE)
+
+Jakob Nielsen’s 10 Usability Heuristics are the **project-wide UX/UI baseline** for every existing and future surface. Source of truth for agents: this block. Human summary: `docs/rules.md` (Usability). Audit backlog: `docs/usability-heuristics-audit.md`.
+
+Impeccable `critique` may score these 0–4; that review **does not replace** this MUST list during implement.
+
+### MUST per heuristic
+
+| # | Heuristic | ERP MUST |
+| - | --------- | -------- |
+| 1 | Visibility of system status | Every mutation/async path shows timely feedback: optimistic UI, route `loading.tsx`, toast/`FloatingAlert`, active nav, or inline save state. Disable or busy-state submit controls while in flight. |
+| 2 | Match between system and real world | UI copy in Thai / shop terms from `docs/context.md`. Display times in GMT+7 (Bangkok). Never show RPC names, DB columns, or raw Supabase messages to users. |
+| 3 | User control and freedom | Cancel on `<dialog>`; Escape/backdrop exit; undo/redo on inventory/schedule grids per error-handling standard. Clear way out of multi-step flows. |
+| 4 | Consistency and standards | Theme tokens, `rounded-3xl`, shared motion presets, same confirm/cancel button patterns across features (`docs/rules.md`, `docs/design.md`). |
+| 5 | Error prevention | Confirm before destructive actions; constrain inputs (date pickers, selects); sanitize empty → `0` for NUMERIC; prefer preventing invalid states over post-error recovery. |
+| 6 | Recognition rather than recall | Visible labels/icons; static row `#` on sortable tables; `HintTooltip` on FAB/toolbar icons; do not force users to remember values across pages. |
+| 7 | Flexibility and efficiency of use | Spreadsheet Enter → next row; full-width date/touch hitboxes; keyboard + touch. Accelerators (shortcuts) may be added for experts without breaking novice paths. |
+| 8 | Aesthetic and minimalist design | Outcome-first, minimalist ERP. Reject decorative SaaS/marketing chrome (Hallmark redesign, ui-ux-pro-max style/color domains). |
+| 9 | Help users recognize, diagnose, and recover from errors | User-facing errors: plain language + what to do next. Use `toUserFacingError` / `logSupabaseError` (`src/lib/user-facing-error.ts`). Log technical detail with `console.error` only. |
+| 10 | Help and documentation | Non-obvious controls: `HintTooltip`. Glossary: `docs/context.md`. Complex multi-step: short numbered steps inside the dialog/help copy. No full help-center required. |
+
+### Exceptions (ERP overrides heuristic defaults)
+
+- **Notification in-app panel:** view-only inbox; no row navigation or deep links (`notification-panel-view-only-standard`).
+- **Inventory spreadsheet:** native `<input>` in cells; no edit modals for simple cells; confirm only for bulk/destructive.
+- **Transaction ledger:** must not use the UI undo/redo stack (`docs/rules.md` Transaction Integrity).
+
+### When UI work ships
+
+1. Pass the Nielsen checkboxes in **Frontend pre-ship checklist** above.
+2. For changes under `src/app/[locale]/**` or shared UI in `src/components/`, run `npm run skill:run design-review` (heuristic pass is step 0).
+3. Before merge, `code-review` against this table when the diff touches UX copy, overlays, forms, or feedback.
+
+<!-- END:nielsen-usability-heuristics-standard -->
 
 <!-- BEGIN:ui-ux-pro-max-skill -->
 
@@ -348,7 +396,8 @@ Domain formatters (`src/lib/*-notification.ts`, `inventory-notification-filter.t
 - **Root Cause First:** NO FIXES WITHOUT ROOT CAUSE INVESTIGATION. Follow `systematic-debugging` phases (Phase 1: Root Cause -> Phase 2: Pattern -> Phase 3: Hypothesis -> Phase 4: Fix).
 - **Failing Test First:** Every bug fix MUST start with a failing test case that reproduces the issue.
 - **Supabase Fetches & Mutations:** Always wrap Supabase calls in try/catch blocks.
-- **Detailed Logging:** In the catch block or when `error` is returned from Supabase, you must log the precise details: `if (error) { console.error('Supabase Error:', error.message, error.details); throw error; }`.
+- **Detailed Logging:** In the catch block or when `error` is returned from Supabase, you must log the precise details via `logSupabaseError(context, error)` (or equivalent `console.error('Supabase Error:', error.message, error.details)`). Never surface raw `error.message` / codes to the UI.
+- **User-facing errors (Nielsen 9):** Map to Thai copy with `toUserFacingError(error, fallbackTh)` from `src/lib/user-facing-error.ts` before returning to clients or rendering alerts.
 - **Graceful Fallbacks:** Handle empty or null data gracefully (e.g., `setItems(data || [])`). Do not allow the UI to crash if data is missing.
 - **Numeric Data Sanitization:** Never send an empty string `""` to a `numeric` or `integer` column in Supabase. Always sanitize inputs: `const sanitized = value === "" ? 0 : Number(value)`.
 - **Numeric Formatting & Undo-Sync Standard:**
@@ -412,7 +461,7 @@ Domain capability triggers (mobile UX, AI context, inventory integrity, token ec
 
 **AgentSkillOS Runbooks:** ทักษะโปรเจกต์ (clean cache, smoke check, db wrappers) อยู่ใน `.agent-skills/skills/` แยกจาก `.agents/skills/` (third-party). ลงทะเบียนใน `.agent-skills/registry.json` · blueprint ใน `.agent-skills/README.md`
 
-**ลำดับความสำคัญเมื่อขัดกัน:** ERP domain rules → chrome-modern-web-guidance → React & Next.js skills → design review skills (`web-design-guidelines`, `impeccable` critique) → ui-ux-pro-max (via `ui-ux-pro-max-erp` overlay) → hallmark (`audit` / `study` via `hallmark-erp` overlay เท่านั้น) → supplementary design skills (via `supplementary-design-erp` overlay เท่านั้น)
+**ลำดับความสำคัญเมื่อขัดกัน:** ERP domain rules → Nielsen usability heuristics (`nielsen-usability-heuristics-standard`) → chrome-modern-web-guidance → React & Next.js skills → design review skills (`web-design-guidelines`, `impeccable` critique) → ui-ux-pro-max (via `ui-ux-pro-max-erp` overlay) → hallmark (`audit` / `study` via `hallmark-erp` overlay เท่านั้น) → supplementary design skills (via `supplementary-design-erp` overlay เท่านั้น)
 
 **อัปเดต skills:** `npx skills add <owner/repo@skill> -y` (เช่น `pedronauck/skills@next-best-practices`, `GoogleChrome/modern-web-guidance@modern-web-guidance`, `nutlope/hallmark@hallmark`, `vercel-labs/agent-skills@web-design-guidelines`, `pbakaus/impeccable@impeccable`, `arvindrk/extract-design-system@extract-design-system`, `vercel-labs/agent-skills@vercel-composition-patterns`, `sleekdotdesign/agent-skills@sleek-design-mobile-apps`, `emilkowalski/skill@emil-design-eng`). ห้ามใช้ `vercel-labs/next-skills` (repo ถูกลบแล้ว). Overlay ที่ดูแลเอง: `.cursor/skills/chrome-modern-web-guidance/`, `.cursor/skills/hallmark-erp/`, `.cursor/skills/supplementary-design-erp/` (อ่านหลังอัปเดต upstream ทุกครั้ง)
 
@@ -444,7 +493,8 @@ Skills อยู่ที่ `.agents/skills/<name>/SKILL.md` อ่านแล
 | ศัพท์โดเมนสับสน / บันทึก decision | `domain-modeling` | ตั้งชื่อ module ใหม่, ขัด glossary, หรือต้อง ADR |
 | Refactor กว้าง / deepen module | `improve-codebase-architecture` (+ `codebase-design` ตาม skill) | ก่อนแตะโครงสร้างหลายไฟล์หรือย้าย domain |
 | บั๊กยาก / sync / performance | `diagnosing-bugs` | หลัง locate hub ด้วย `search_graph` / `trace_path` แล้วยังไม่รู้ root cause |
-| ก่อน merge / ปิดงาน | `code-review` | Branch มี diff ที่จะ merge หรือ user ขอ review |
+| ก่อน merge / ปิดงาน | `code-review` (+ Nielsen checklist ถ้าแตะ UI) | Branch มี diff ที่จะ merge หรือ user ขอ review |
+| งานแตะ UI (`src/app/[locale]/**`, `src/components/`) | Nielsen pre-ship checklist → `npm run skill:run design-review` | ก่อน merge เมื่อแก้ UX copy, overlays, forms, feedback |
 | ขอบเขต import TS ระยะยาว | `setup-ts-deep-modules` | User สั่งชัด หรือ epic refactor package boundaries |
 
 **ทุกเส้นทางด้านบน:**
@@ -452,6 +502,7 @@ Skills อยู่ที่ `.agents/skills/<name>/SKILL.md` อ่านแล
 1. Explore: codebase-memory-mcp (`search_graph`, `trace_path`) ก่อน grep/glob
 2. Mutations: `src/app/actions/` · logic: `src/lib/` · รายละเอียด: `docs/agents/domain.md`
 3. เปลี่ยนสถาปัตย์: MCP `index_repository` → `get_architecture` → `manage_adr(mode='store')` ก่อนจบงาน
+4. UI changes: pass `nielsen-usability-heuristics-standard` checkboxes; design-review step 0 is the 10-heuristic pass/fail
 
 **Issue tracker:** spec และ ticket อยู่ที่ GitHub Issues (`docs/agents/issue-tracker.md`)
 
@@ -459,7 +510,7 @@ Skills อยู่ที่ `.agents/skills/<name>/SKILL.md` อ่านแล
 
 | กรณี | อนุญาต |
 | ---- | ------ |
-| R0 แก้ copy/UI เล็กน้อย ไม่แตะ domain logic | ทำตรงๆ ไม่ต้อง `to-spec` ถ้า user ไม่ขอ issue |
+| R0 แก้ copy/UI เล็กน้อย ไม่แตะ domain logic | ทำตรงๆ ไม่ต้อง `to-spec` ถ้า user ไม่ขอ issue; ยังต้องผ่าน Nielsen N2/N9 copy rules |
 | Hotfix production ที่ user ระบุชัด | ข้าม `to-spec` ได้ แต่หลัง merge ควรมี issue สรุปย้อนหลัง |
 | Spike / คำถาม architecture only | `search_graph` + อ่าน `docs/context.md` ไม่ต้อง `implement-spec` |
 
