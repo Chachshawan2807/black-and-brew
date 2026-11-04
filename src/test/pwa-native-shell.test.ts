@@ -139,15 +139,20 @@ describe('PWA native shell', () => {
     expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain(JSON.stringify(PWA_DISPLAY_NAME));
     expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain('navigator.standalone');
     expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain('/Android/i.test(ua)');
-    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain(String(PWA_LAUNCH_SPLASH_MIN_VISIBLE_MS));
-    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain('scheduleDismiss');
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain(
+      `minVisible=${PWA_LAUNCH_SPLASH_MIN_VISIBLE_MS}`,
+    );
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).toContain('setTimeout(dismiss,minVisible)');
     expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).not.toContain('requestAnimationFrame(dismiss)');
+    expect(PWA_IOS_LAUNCH_SPLASH_SCRIPT).not.toContain("addEventListener('load'");
   });
 
   test('globals.css styles PWA launch splash overlay with project font stack', () => {
     const css = readFileSync(resolve(ROOT, 'src/app/[locale]/globals.css'), 'utf-8');
     expect(css).toContain('.bb-pwa-launch-splash');
     expect(css).toMatch(/\.bb-pwa-launch-splash__title[\s\S]*?font-family:\s*var\(--font-sans\)/);
+    expect(css).toMatch(/\.bb-pwa-launch-splash__title[\s\S]*?font-weight:\s*400/);
+    expect(css).toMatch(/\.bb-pwa-launch-splash__title[\s\S]*?font-size:\s*1\.375rem/);
     expect(css).toContain('prefers-reduced-motion');
   });
 

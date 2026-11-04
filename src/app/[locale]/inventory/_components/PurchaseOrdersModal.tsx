@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { fetchLatestInventoryStockChangeTimesClient } from '@/lib/inventory-latest-count-times-client';
-import { preloadCaptureLibraries } from '@/lib/capture-element-png';
+import { preloadCaptureLibraries } from '@/lib/purchase-order-export-capture';
 import { motion } from 'framer-motion';
 import { CloseIcon } from '@/components/ui/close-icon';
 import { AlertCircle, CheckCircle2, Copy, ImageDown, ShoppingCart } from '@/lib/icons';

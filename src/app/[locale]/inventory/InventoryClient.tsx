@@ -1157,11 +1157,8 @@ export default function InventoryClient({
     if (!element) return;
     try {
       setIsExportingPO(true);
-      const { captureElementAsPng, downloadPngBlob, preloadCaptureLibraries } = await import('@/lib/capture-element-png');
-      preloadCaptureLibraries();
-      const blob = await captureElementAsPng(element, {
-        backgroundColor: '#fff3dd',
-        preserveOverflow: true,
+      const { capturePurchaseOrderAsPng, downloadPngBlob } = await import('@/lib/purchase-order-export-capture');
+      const blob = await capturePurchaseOrderAsPng(element, {
         filter: (node: HTMLElement) => node?.id !== 'po-action-buttons',
       });
       const channelSuffix = selectedChannels.includes('all')

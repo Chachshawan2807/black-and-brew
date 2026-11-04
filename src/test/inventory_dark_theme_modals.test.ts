@@ -45,9 +45,9 @@ describe('inventory modals dark theme readability', () => {
       'utf-8',
     );
 
-    expect(pageCode).toContain('preserveOverflow: true');
+    expect(pageCode).toContain('capturePurchaseOrderAsPng');
     expect(pageCode).toContain('downloadPngBlob');
-    expect(fabCode).toContain('preserveOverflow: true');
+    expect(fabCode).toContain('capturePurchaseOrderAsPng');
     expect(fabCode).toContain('downloadPngBlob');
   });
 
