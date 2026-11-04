@@ -111,7 +111,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         return;
       }
       if (typeof window !== 'undefined') {
-        window.notifyUser(message);
+        window.notifyUser?.(message);
       }
     },
     [onUserNotice],
