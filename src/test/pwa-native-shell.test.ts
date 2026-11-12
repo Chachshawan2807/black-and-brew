@@ -186,6 +186,15 @@ describe('PWA native shell', () => {
     expect(pwa).not.toContain('router.push');
   });
 
+  test('AppShell recovers empty iOS PWA main after shortcut launch', () => {
+    const appShell = readFileSync(resolve(ROOT, 'src/components/shell/AppShell.tsx'), 'utf-8');
+    const recovery = readFileSync(resolve(ROOT, 'src/components/PwaEmptyMainRecovery.tsx'), 'utf-8');
+    expect(appShell).toContain('PwaEmptyMainRecovery');
+    expect(recovery).toContain('isAppMainVisuallyEmpty');
+    expect(recovery).toContain('safeRouterRefresh');
+    expect(recovery).toContain('pageshow');
+  });
+
   test('PwaShellSync updates theme-color when resolved theme changes', () => {
     const sync = readFileSync(resolve(ROOT, 'src/components/PwaShellSync.tsx'), 'utf-8');
     expect(sync).toContain('useTheme');

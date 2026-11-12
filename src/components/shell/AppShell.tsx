@@ -13,6 +13,14 @@ const PwaShellSync = dynamic(
   { ssr: false },
 );
 
+const PwaEmptyMainRecovery = dynamic(
+  () =>
+    import('@/components/PwaEmptyMainRecovery').then((m) => ({
+      default: m.PwaEmptyMainRecovery,
+    })),
+  { ssr: false },
+);
+
 const PwaRegister = dynamic(() => import('@/components/PwaRegister'), { ssr: false });
 
 const RoutePrefetchOnIdle = dynamic(
@@ -73,6 +81,7 @@ export function AppShell({
   return (
     <>
       <PwaShellSync />
+      <PwaEmptyMainRecovery />
       <AppTooltipProvider>
         <PwaRegister />
         <RoutePrefetchOnIdle />

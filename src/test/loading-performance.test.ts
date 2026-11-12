@@ -56,9 +56,9 @@ describe('loading performance patterns', () => {
     expect(listPage).not.toContain('createLazyFeatureClient');
   });
 
-  test('lazy feature client defers to route loading.tsx instead of a second skeleton', () => {
+  test('lazy feature client shows skeleton while client chunk loads', () => {
     const lazy = readFileSync(resolve(__dirname, '../lib/lazy-feature-client.tsx'), 'utf-8');
-    expect(lazy).toContain('loading: () => null');
-    expect(lazy).not.toContain('RouteLoadingSkeleton');
+    expect(lazy).toContain('RouteLoadingSkeleton');
+    expect(lazy).toContain('กำลังโหลด...');
   });
 });
