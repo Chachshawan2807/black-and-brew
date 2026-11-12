@@ -37,6 +37,15 @@ export const JOB_DEFINITIONS = [
     minute: 0,
     wdays: [0],
   },
+  {
+    title: `${JOB_TITLE_PREFIX} Inventory Transaction Retention`,
+    path: '/api/inventory-transaction-retention',
+    hour: 3,
+    minute: 30,
+    mdays: [1],
+    months: [1, 7],
+    scheduleKind: 'semiannual',
+  },
 ];
 
 /**
@@ -57,6 +66,41 @@ export function dailyScheduleAt(hour, minute = 0, wdays = [-1]) {
 }
 
 /**
+ * @param {number} hour 0–23 in Asia/Bangkok
+ * @param {number} [minute=0]
+ * @param {number[]} [mdays=[1]] day(s) of month
+ */
+export function monthlyScheduleAt(hour, minute = 0, mdays = [1]) {
+  return {
+    timezone: CRON_TIMEZONE,
+    expiresAt: 0,
+    hours: [hour],
+    mdays,
+    minutes: [minute],
+    months: [-1],
+    wdays: [-1],
+  };
+}
+
+/**
+ * @param {number} hour 0–23 in Asia/Bangkok
+ * @param {number} [minute=0]
+ * @param {number[]} [mdays=[1]] day(s) of month
+ * @param {number[]} [months=[1, 7]] months to run (1 = Jan … 12 = Dec)
+ */
+export function semiannualScheduleAt(hour, minute = 0, mdays = [1], months = [1, 7]) {
+  return {
+    timezone: CRON_TIMEZONE,
+    expiresAt: 0,
+    hours: [hour],
+    mdays,
+    minutes: [minute],
+    months,
+    wdays: [-1],
+  };
+}
+
+/**
  * @param {string} baseUrl e.g. https://blackandbrew.vercel.app
  * @param {string} cronSecret CRON_SECRET for app API auth
  * @returns {Array<JobDefinition & { url: string; schedule: ReturnType<typeof dailyScheduleAt> }>}
@@ -68,7 +112,17 @@ export function buildDesiredJobs(baseUrl, cronSecret) {
   return JOB_DEFINITIONS.map((def) => ({
     ...def,
     url: `${normalizedBase}${def.path}`,
-    schedule: dailyScheduleAt(def.hour, def.minute ?? 0, def.wdays ?? [-1]),
+    schedule:
+      def.scheduleKind === 'semiannual'
+        ? semiannualScheduleAt(
+            def.hour,
+            def.minute ?? 0,
+            def.mdays ?? [1],
+            def.months ?? [1, 7],
+          )
+        : def.scheduleKind === 'monthly'
+          ? monthlyScheduleAt(def.hour, def.minute ?? 0, def.mdays ?? [1])
+          : dailyScheduleAt(def.hour, def.minute ?? 0, def.wdays ?? [-1]),
     extendedData: {
       headers: {
         Authorization: authValue,

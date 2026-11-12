@@ -38,6 +38,7 @@ const EXPENSIVE_API_PATHS = [
   '/api/daily-report',
   '/api/insight-alerts',
   '/api/data-change-log-retention',
+  '/api/inventory-transaction-retention',
   '/api/home/refresh',
   '/api/push/webhook',
 ] as const;

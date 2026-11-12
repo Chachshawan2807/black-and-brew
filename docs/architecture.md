@@ -109,6 +109,7 @@ src/app/
 │   ├── daily-report/route.ts            # cron-job.org → schedule Web Push
 │   ├── insight-alerts/route.ts          # cron-job.org → proactive insights
 │   ├── data-change-log-retention/route.ts # cron-job.org → purge old data_change_logs
+│   ├── inventory-transaction-retention/route.ts # cron-job.org semiannual → purge old IN/OUT/ADJUST
 │   ├── push/webhook/route.ts            # Optional Supabase DB webhook → Web Push dispatch
 │   ├── home/refresh/route.ts            # Privileged refresh of derived operational tasks
 │   └── inventory/offline-mutation/route.ts  # Service worker background sync replay
