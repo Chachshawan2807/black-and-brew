@@ -179,7 +179,7 @@ function getDropdownPosition(
   anchorX: number,
   anchorY: number,
   menuWidth: number,
-  menuHeight: number
+  _menuHeight: number
 ) {
   const GAP = 12;
 
@@ -190,28 +190,15 @@ function getDropdownPosition(
   let top = anchorY;
 
   const spaceRight = vw - anchorX;
-  const spaceBottom = vh - anchorY;
 
-  // Flip Horizontal
   if (spaceRight < menuWidth + GAP) {
     left = anchorX - menuWidth;
   }
 
-  // Flip Vertical
-  if (spaceBottom < menuHeight + GAP) {
-    top = anchorY - menuHeight;
-  }
+  left = Math.max(GAP, Math.min(left, vw - menuWidth - GAP));
 
-  // Clamp
-  left = Math.max(
-    GAP,
-    Math.min(left, vw - menuWidth - GAP)
-  );
-
-  top = Math.max(
-    GAP,
-    Math.min(top, vh - menuHeight - GAP)
-  );
+  // Always open below the anchor; list scrolls when near the viewport edge.
+  top = Math.max(GAP, Math.min(anchorY + GAP, vh - GAP));
 
   return { left, top };
 }
@@ -2248,7 +2235,7 @@ export default function ScheduleClient({
                 {profileById.get(selectedCell.employeeId)?.full_name}
               </h2>
             </div>
-            <div className="grid gap-1 p-2">
+            <div className="grid max-h-60 gap-1 overflow-y-auto bb-smooth-scroll p-2">
               {shiftTypes.map(type => (
                 <button
                   key={type.value}

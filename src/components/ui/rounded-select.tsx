@@ -12,7 +12,10 @@ import {
   parseSelectOptions,
 } from '@/components/ui/select-trigger-styles';
 import { SELECT_LISTBOX_Z_CLASS } from '@/lib/floating-action-layout';
-import { getAnchoredSuggestionsOverlayStyle } from '@/lib/quick-search-suggestions-layout';
+import {
+  ANCHORED_SUGGESTIONS_MAX_HEIGHT_PX,
+  getAnchoredSuggestionsOverlayStyle,
+} from '@/lib/quick-search-suggestions-layout';
 import { bindPointerSafeOptionSelect } from '@/lib/pointer-overlay-selection';
 import {
   resolveOverlayPortalContainer,
@@ -32,7 +35,7 @@ type RoundedSelectProps = Omit<React.ComponentProps<'select'>, 'size'> & {
 };
 
 const LISTBOX_GAP_PX = 6;
-const LISTBOX_MAX_HEIGHT_PX = 240;
+const LISTBOX_MAX_HEIGHT_PX = ANCHORED_SUGGESTIONS_MAX_HEIGHT_PX;
 
 function emitChange(
   onChange: RoundedSelectProps['onChange'] | undefined,
@@ -102,8 +105,7 @@ export function RoundedSelect({
       width: anchored.width,
       maxWidth: anchored.maxWidth,
       top: anchored.top,
-      bottom: anchored.bottom,
-      maxHeight: Math.min(anchored.maxHeight, LISTBOX_MAX_HEIGHT_PX),
+      maxHeight: LISTBOX_MAX_HEIGHT_PX,
     });
   }, []);
 

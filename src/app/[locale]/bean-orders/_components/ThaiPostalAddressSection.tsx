@@ -13,6 +13,11 @@ import {
   profilesMatchingName,
   uniqueFieldValues,
 } from '@/lib/bean-orders/form-suggestions';
+import {
+  BB_DROPDOWN_BELOW_ANCHOR_CLASS,
+  BB_DROPDOWN_LIST_MAX_HEIGHT_CLASS,
+} from '@/components/ui/select-trigger-styles';
+import { cn } from '@/lib/utils';
 import { AutocompleteTextField } from './AutocompleteTextField';
 import { AddressProfilePicker } from './AddressProfilePicker';
 import { BEAN_ORDER_CARD } from './bean-order-layout';
@@ -188,11 +193,15 @@ export function ThaiPostalAddressSection({
         />
         {showAreaPicker && (
           <ul
-            className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-border bg-card shadow-sm"
+            className={cn(
+              BB_DROPDOWN_BELOW_ANCHOR_CLASS,
+              BB_DROPDOWN_LIST_MAX_HEIGHT_CLASS,
+              'z-30 mt-1 w-full rounded-xl border border-border bg-card shadow-sm',
+            )}
             role="listbox"
             aria-label="ตัวเลือกพื้นที่ตามรหัสไปรษณีย์"
           >
-            {areaOptions.slice(0, 12).map((option) => (
+            {areaOptions.map((option) => (
               <li key={option.id}>
                 <button
                   type="button"

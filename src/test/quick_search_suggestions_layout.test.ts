@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+  ANCHORED_SUGGESTIONS_MAX_HEIGHT_PX,
   getAnchoredSuggestionsOverlayStyle,
   getQuickSearchSuggestionsPlacement,
   shouldCollapseBulkQueueForMobileSearch,
@@ -14,9 +15,10 @@ describe('quick search suggestions layout', () => {
     expect(shouldPortalQuickSearchSuggestions(false, true)).toBe(false);
   });
 
-  test('prefers below placement when there is more room under the input', () => {
+  test('always opens downward regardless of viewport space', () => {
     expect(getQuickSearchSuggestionsPlacement(220, 80)).toBe('below');
-    expect(getQuickSearchSuggestionsPlacement(60, 180)).toBe('above');
+    expect(getQuickSearchSuggestionsPlacement(100, 180)).toBe('below');
+    expect(getQuickSearchSuggestionsPlacement(60, 180)).toBe('below');
   });
 
   test('anchors portaled suggestions below the input using top positioning', () => {
@@ -27,57 +29,18 @@ describe('quick search suggestions layout', () => {
 
     expect(style.placement).toBe('below');
     expect(style.top).toBe(168);
-    expect(style.maxHeight).toBe(252);
+    expect(style.maxHeight).toBe(ANCHORED_SUGGESTIONS_MAX_HEIGHT_PX);
   });
 
-  test('anchors portaled suggestions in the visible band above the input', () => {
-    const style = getAnchoredSuggestionsOverlayStyle(
-      { top: 180, bottom: 220, left: 16, width: 320 },
-      { offsetTop: 0, visibleHeight: 420 },
-    );
-
-    expect(style.placement).toBe('below');
-    expect(style.top).toBe(228);
-  });
-
-  test('anchors portaled suggestions directly above the input when space below is limited', () => {
+  test('keeps full scrollable height when space below the anchor is limited', () => {
     const style = getAnchoredSuggestionsOverlayStyle(
       { top: 180, bottom: 220, left: 16, width: 320 },
       { offsetTop: 0, visibleHeight: 220 },
     );
 
-    expect(style.placement).toBe('above');
-    expect(style.bottom).toBe(48);
-    expect(style.top).toBeUndefined();
-    expect(style.maxHeight).toBe(172);
-  });
-
-  test('keeps mobile keyboard suggestions below the input when space below is limited', () => {
-    const style = getAnchoredSuggestionsOverlayStyle(
-      { top: 180, bottom: 220, left: 16, width: 320 },
-      { offsetTop: 0, visibleHeight: 220 },
-      8,
-      true,
-    );
-
     expect(style.placement).toBe('below');
     expect(style.top).toBe(228);
-    expect(style.bottom).toBeUndefined();
-    expect(style.maxHeight).toBe(80);
-  });
-
-  test('FAB quick search always anchors suggestions below the input', () => {
-    const style = getAnchoredSuggestionsOverlayStyle(
-      { top: 180, bottom: 220, left: 16, width: 320 },
-      { offsetTop: 0, visibleHeight: 220 },
-      8,
-      true,
-    );
-
-    expect(style.placement).toBe('below');
-    expect(style.top).toBe(228);
-    expect(style.bottom).toBeUndefined();
-    expect(style.maxHeight).toBe(80);
+    expect(style.maxHeight).toBe(ANCHORED_SUGGESTIONS_MAX_HEIGHT_PX);
   });
 
   test('clamps portaled suggestions within the visible viewport band on iOS keyboard pan', () => {

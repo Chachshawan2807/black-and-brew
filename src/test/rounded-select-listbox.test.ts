@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { Children, createElement } from 'react';
 import {
+  BB_DROPDOWN_BELOW_ANCHOR_CLASS,
   BB_SELECT_LIST_CLASS,
   BB_SELECT_OPTION_CLASS,
   parseSelectOptions,
@@ -8,6 +9,8 @@ import {
 
 describe('rounded select custom listbox options', () => {
   test('list and option tokens use theme surfaces and rounded corners', () => {
+    expect(BB_DROPDOWN_BELOW_ANCHOR_CLASS).toMatch(/\btop-full\b/);
+    expect(BB_SELECT_LIST_CLASS).toMatch(/\btop-full\b/);
     expect(BB_SELECT_LIST_CLASS).toMatch(/\brounded-2xl\b/);
     expect(BB_SELECT_LIST_CLASS).toMatch(/\bbg-card\b/);
     expect(BB_SELECT_LIST_CLASS).toMatch(/\btext-foreground\b/);

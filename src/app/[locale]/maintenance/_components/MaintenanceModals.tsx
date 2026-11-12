@@ -11,6 +11,10 @@ import {
 } from '@/lib/icons';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { RoundedSelect } from '@/components/ui/rounded-select';
+import {
+  BB_DROPDOWN_BELOW_ANCHOR_CLASS,
+  BB_DROPDOWN_LIST_MAX_HEIGHT_CLASS,
+} from '@/components/ui/select-trigger-styles';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { BB_BTN_CLOSE, BB_BTN_OUTLINE, BB_BTN_OUTLINE_DANGER } from '@/lib/ui-outlined-tokens';
@@ -268,7 +272,11 @@ export default function MaintenanceModals({
                         <ul
                           id={equipmentListId}
                           role="listbox"
-                          className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-2xl border border-border bg-card bb-shadow-lg"
+                          className={cn(
+                            BB_DROPDOWN_BELOW_ANCHOR_CLASS,
+                            BB_DROPDOWN_LIST_MAX_HEIGHT_CLASS,
+                            'z-20 mt-1 w-full rounded-2xl border border-border bg-card bb-shadow-lg',
+                          )}
                         >
                           {filteredEquipmentSuggestions.map((suggestion, index) => (
                             <li

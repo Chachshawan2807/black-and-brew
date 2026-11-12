@@ -1,8 +1,12 @@
 'use client';
 
-import { useId, useMemo, useState } from 'react';
+import { useId, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { bindPointerSafeOptionSelect } from '@/lib/pointer-overlay-selection';
+import {
+  BB_DROPDOWN_BELOW_ANCHOR_CLASS,
+  BB_DROPDOWN_LIST_MAX_HEIGHT_CLASS,
+} from '@/components/ui/select-trigger-styles';
 import { BEAN_ORDER_BTN_LIST } from './bean-order-layout';
 
 type Props = {
@@ -43,7 +47,7 @@ export function AutocompleteTextField({
   const fieldId = id ?? autoId;
   const fieldName = name ?? `autocomplete-${fieldId.replace(/:/g, '')}`;
   const [open, setOpen] = useState(false);
-  const visibleSuggestions = useMemo(() => suggestions.slice(0, 12), [suggestions]);
+  const visibleSuggestions = suggestions;
 
   function handleSelect(next: string) {
     onChange(next);
@@ -84,7 +88,11 @@ export function AutocompleteTextField({
       {open && visibleSuggestions.length > 0 && (
         <ul
           id={listId}
-          className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-border bg-card shadow-sm"
+          className={cn(
+            BB_DROPDOWN_BELOW_ANCHOR_CLASS,
+            BB_DROPDOWN_LIST_MAX_HEIGHT_CLASS,
+            'z-20 mt-1 w-full rounded-xl border border-border bg-card shadow-sm',
+          )}
           role="listbox"
         >
           {visibleSuggestions.map((suggestion) => (

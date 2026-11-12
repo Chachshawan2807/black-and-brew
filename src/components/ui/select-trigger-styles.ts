@@ -8,9 +8,15 @@ export const BB_SELECT_TRIGGER_CLASS =
 export const BB_SELECT_LIST_BASE_CLASS =
   'overflow-y-auto rounded-2xl border border-border bg-card p-1.5 text-foreground bb-shadow-lg';
 
+/** Anchor an in-flow dropdown directly under its trigger (relative parent). */
+export const BB_DROPDOWN_BELOW_ANCHOR_CLASS = 'absolute top-full left-0';
+
+/** Scrollable option list height (matches ANCHORED_SUGGESTIONS_MAX_HEIGHT_PX). */
+export const BB_DROPDOWN_LIST_MAX_HEIGHT_CLASS = 'max-h-60 overflow-y-auto bb-smooth-scroll';
+
 /** In-flow listbox (legacy); prefer portaled list in RoundedSelect. */
 export const BB_SELECT_LIST_CLASS =
-  `absolute z-50 mt-1.5 max-h-60 w-full min-w-[10rem] ${BB_SELECT_LIST_BASE_CLASS}`;
+  `${BB_DROPDOWN_BELOW_ANCHOR_CLASS} z-50 mt-1.5 max-h-60 w-full min-w-[10rem] ${BB_SELECT_LIST_BASE_CLASS}`;
 
 /** Individual option row rounded, no OS-blue highlight. */
 export const BB_SELECT_OPTION_CLASS =

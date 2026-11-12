@@ -134,23 +134,7 @@ export function ClickableDatePicker({
     // ถ้าเลื่อนแล้วยังเกินขอบซ้าย ให้ clamp ไว้ที่ขอบซ้าย
     left = Math.max(SCREEN_PADDING, left);
 
-    // ─── คำนวณแนวตั้ง ──────────────────────────────────────────────────────
-    // พื้นที่ด้านล่าง trigger
-    const spaceBelow = viewportHeight - rect.bottom - SCREEN_PADDING;
-    // พื้นที่ด้านบน trigger
-    const spaceAbove = rect.top - SCREEN_PADDING;
-
-    let top: number;
-
-    if (spaceBelow >= POPOVER_HEIGHT || spaceBelow >= spaceAbove) {
-      // เปิดลงข้างล่าง: ดีที่สุด (ตามธรรมชาติของ UI)
-      top = rect.bottom + 8;
-    } else {
-      // เปิดขึ้นข้างบน: เมื่อพื้นที่ด้านล่างไม่พอ
-      top = rect.top - POPOVER_HEIGHT - 8;
-      // ถ้าเปิดขึ้นแล้วยังเกินขอบบน ให้ clamp เอาไว้
-      top = Math.max(SCREEN_PADDING, top);
-    }
+    const top = Math.max(SCREEN_PADDING, rect.bottom + 8);
 
     setCoords({ top, left, width: POPOVER_WIDTH });
   }, []);

@@ -35,6 +35,7 @@ import {
 import { ICON_STROKE } from '@/lib/icons';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import { cn } from '@/lib/utils';
+import { BB_DROPDOWN_LIST_MAX_HEIGHT_CLASS } from '@/components/ui/select-trigger-styles';
 
 function useClientMounted() {
   return useSyncExternalStore(() => () => {}, () => true, () => false);
@@ -821,7 +822,6 @@ export function InventoryQuickActionBar({
             visibleWidth: viewportWidth,
           },
           8,
-          isFabPanel || (isMobile && viewportInsets.isKeyboardOpen),
         ),
       );
     };
@@ -857,7 +857,6 @@ export function InventoryQuickActionBar({
             visibleWidth: viewportWidth,
           },
           8,
-          isFabPanel || (isMobile && viewportInsets.isKeyboardOpen),
         ),
       );
     };
@@ -1016,7 +1015,7 @@ export function InventoryQuickActionBar({
       <div
         className={cn(
           suggestionsScrollClassName,
-          portalSuggestions ? 'max-h-full' : 'max-h-[min(50dvh,16rem)]',
+          portalSuggestions ? 'max-h-full' : BB_DROPDOWN_LIST_MAX_HEIGHT_CLASS,
         )}
       >
         {suggestionButtons}

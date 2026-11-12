@@ -142,16 +142,7 @@ export function ClickableDateRangePicker({
     }
     left = Math.max(SCREEN_PADDING, left);
 
-    const spaceBelow = viewportHeight - rect.bottom - SCREEN_PADDING;
-    const spaceAbove = rect.top - SCREEN_PADDING;
-
-    let top: number;
-    if (spaceBelow >= POPOVER_HEIGHT || spaceBelow >= spaceAbove) {
-      top = rect.bottom + 8;
-    } else {
-      top = rect.top - POPOVER_HEIGHT - 8;
-      top = Math.max(SCREEN_PADDING, top);
-    }
+    const top = Math.max(SCREEN_PADDING, rect.bottom + 8);
 
     setCoords({ top, left, width: POPOVER_WIDTH });
   }, []);

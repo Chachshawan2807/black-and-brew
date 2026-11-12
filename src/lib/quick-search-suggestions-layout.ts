@@ -1,4 +1,4 @@
-export type QuickSearchSuggestionsPlacement = 'below' | 'above';
+export type QuickSearchSuggestionsPlacement = 'below';
 
 type AnchorRect = Pick<DOMRect, 'top' | 'bottom' | 'left' | 'width'>;
 
@@ -9,7 +9,9 @@ export type SuggestionsViewport = {
   visibleWidth?: number;
 };
 
-const MIN_SUGGESTIONS_HEIGHT = 80;
+/** Full list panel height; options scroll inside instead of flipping or shrinking. */
+export const ANCHORED_SUGGESTIONS_MAX_HEIGHT_PX = 240;
+
 const SUGGESTIONS_EDGE_GAP = 16;
 
 function clampSuggestionsHorizontal(
@@ -41,16 +43,13 @@ export function shouldPortalQuickSearchSuggestions(
   return isMobile && isSearchFocused;
 }
 
+/** Anchored overlays always open downward (never flip above the trigger). */
 export function getQuickSearchSuggestionsPlacement(
-  spaceBelow: number,
-  spaceAbove: number,
-  forceBelow = false,
+  _spaceBelow?: number,
+  _spaceAbove?: number,
+  _forceBelow?: boolean,
 ): QuickSearchSuggestionsPlacement {
-  if (forceBelow) return 'below';
-  if (spaceBelow >= MIN_SUGGESTIONS_HEIGHT && spaceBelow >= spaceAbove) {
-    return 'below';
-  }
-  return 'above';
+  return 'below';
 }
 
 /** Fixed-position box for a portaled suggestions list anchored to the search input. */
@@ -58,40 +57,24 @@ export function getAnchoredSuggestionsOverlayStyle(
   anchorRect: AnchorRect,
   viewport: SuggestionsViewport,
   gap = 8,
-  forceBelow = false,
+  _forceBelow = false,
 ): {
   position: 'fixed';
   left: number;
   width: number;
   maxWidth: string;
-  top?: number;
-  bottom?: number;
+  top: number;
   maxHeight: number;
   placement: QuickSearchSuggestionsPlacement;
 } {
-  const viewportBottom = viewport.offsetTop + viewport.visibleHeight;
-  const spaceBelow = viewportBottom - anchorRect.bottom - gap;
-  const spaceAbove = anchorRect.top - viewport.offsetTop - gap;
-  const placement = getQuickSearchSuggestionsPlacement(spaceBelow, spaceAbove, forceBelow);
   const horizontal = clampSuggestionsHorizontal(anchorRect, viewport);
 
-  if (placement === 'below') {
-    return {
-      position: 'fixed',
-      ...horizontal,
-      top: anchorRect.bottom + gap,
-      maxHeight: Math.max(MIN_SUGGESTIONS_HEIGHT, spaceBelow),
-      placement,
-    };
-  }
-
-  const maxHeight = Math.max(MIN_SUGGESTIONS_HEIGHT, spaceAbove);
   return {
     position: 'fixed',
     ...horizontal,
-    bottom: viewportBottom - anchorRect.top + gap,
-    maxHeight,
-    placement,
+    top: anchorRect.bottom + gap,
+    maxHeight: ANCHORED_SUGGESTIONS_MAX_HEIGHT_PX,
+    placement: 'below',
   };
 }
 
