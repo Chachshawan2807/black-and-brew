@@ -111,7 +111,9 @@ describe('secretary mobile task overlays', () => {
       path.resolve(ROOT, 'app/[locale]/inventory/_components/PurchaseOrdersModal.tsx'),
       'utf-8',
     );
-    expect(modal).toContain('overflow-auto bb-smooth-scroll bb-smooth-scroll-chain-y');
+    expect(modal).toContain(
+      'overflow-auto bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy bb-scroll-y-themed',
+    );
     expect(modal).toContain('fixed inset-0 overflow-hidden overscroll-none');
     expect(modal).toContain('flex min-h-full min-w-0 items-center justify-center');
     expect(modal).toContain('getModalBackdropKeyboardAwareStyle');

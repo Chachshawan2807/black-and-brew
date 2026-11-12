@@ -93,7 +93,8 @@ describe('bb-smooth-scroll mobile overflow utility', () => {
     },
     {
       file: 'app/[locale]/inventory/_components/PurchaseOrdersModal.tsx',
-      pattern: /flex-1[\s\S]*overflow-auto[\s\S]*bb-smooth-scroll bb-smooth-scroll-chain-y/,
+      pattern:
+        /flex-1 min-h-0[\s\S]*overflow-auto[\s\S]*bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy bb-scroll-y-themed/,
     },
     {
       file: 'app/[locale]/inventory/branch-withdraw/branch-withdraw-layout.ts',
