@@ -6,6 +6,7 @@ import { isInstalledPwa } from '@/lib/pwa-app-badge';
 import {
   isAppMainVisuallyEmpty,
   PWA_EMPTY_MAIN_RECOVERY_DELAY_MS,
+  subscribePwaForegroundResume,
 } from '@/lib/pwa-empty-main-recovery';
 import { isIosWebKit } from '@/lib/pwa-standalone';
 import { safeRouterRefresh } from '@/lib/warm-route-navigation';
@@ -42,18 +43,11 @@ export function PwaEmptyMainRecovery() {
 
     scheduleCheck();
 
-    const onResume = (event?: PageTransitionEvent) => {
-      if (event?.persisted) scheduleCheck();
-      else if (document.visibilityState === 'visible') scheduleCheck();
-    };
-
-    window.addEventListener('pageshow', onResume);
-    document.addEventListener('visibilitychange', onResume);
+    const unsubscribeResume = subscribePwaForegroundResume(scheduleCheck);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      window.removeEventListener('pageshow', onResume);
-      document.removeEventListener('visibilitychange', onResume);
+      unsubscribeResume();
     };
   }, [pathname, router]);
 
