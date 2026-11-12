@@ -3,12 +3,21 @@ export type BeanOrderCarrier = {
   label: string;
 };
 
+export const CUSTOMER_PICKUP_CARRIER_CODE = 'customer-pickup';
+
+const LEGACY_CUSTOMER_PICKUP_LABELS = new Set([
+  'ลูกค้ามารับเอง',
+  'ลูกค้ามารับด้วยตัวเอง',
+  CUSTOMER_PICKUP_CARRIER_CODE,
+]);
+
 /** Common Thai carriers for bean order shipments. */
 export const BEAN_ORDER_CARRIERS: BeanOrderCarrier[] = [
   { code: 'kerryexpress-th', label: 'Kerry' },
   { code: 'flashexpress', label: 'Flash' },
   { code: 'thailand-post', label: 'ไปรษณีย์ไทย' },
   { code: 'lalamove', label: 'Lalamove' },
+  { code: CUSTOMER_PICKUP_CARRIER_CODE, label: 'ลูกค้ามารับเอง' },
   { code: 'other', label: 'อื่นๆ' },
 ];
 
@@ -25,6 +34,9 @@ export function initialCarrierSelection(carrierCode: string | null | undefined):
 } {
   if (!carrierCode) {
     return { carrierCode: 'kerryexpress-th', customCarrierLabel: '' };
+  }
+  if (LEGACY_CUSTOMER_PICKUP_LABELS.has(carrierCode)) {
+    return { carrierCode: CUSTOMER_PICKUP_CARRIER_CODE, customCarrierLabel: '' };
   }
   if (isKnownCarrierCode(carrierCode)) {
     return { carrierCode, customCarrierLabel: '' };

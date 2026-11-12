@@ -12,13 +12,25 @@ describe('BEAN_ORDER_CARRIERS', () => {
     expect(BEAN_ORDER_CARRIERS.some((c) => c.code === 'lalamove' && c.label === 'Lalamove')).toBe(true);
     expect(getCarrierLabel('lalamove')).toBe('Lalamove');
   });
+
+  test('lists customer pickup directly above other', () => {
+    const pickupIdx = BEAN_ORDER_CARRIERS.findIndex((c) => c.code === 'customer-pickup');
+    const otherIdx = BEAN_ORDER_CARRIERS.findIndex((c) => c.code === 'other');
+    expect(pickupIdx).toBeGreaterThan(-1);
+    expect(otherIdx).toBe(pickupIdx + 1);
+    expect(getCarrierLabel('customer-pickup')).toBe('ลูกค้ามารับเอง');
+  });
 });
 
 describe('carrier selection helpers', () => {
-  test('maps stored custom carrier labels back to other + label', () => {
+  test('maps legacy customer pickup labels to the pickup carrier option', () => {
     expect(initialCarrierSelection('ลูกค้ามารับด้วยตัวเอง')).toEqual({
-      carrierCode: 'other',
-      customCarrierLabel: 'ลูกค้ามารับด้วยตัวเอง',
+      carrierCode: 'customer-pickup',
+      customCarrierLabel: '',
+    });
+    expect(initialCarrierSelection('ลูกค้ามารับเอง')).toEqual({
+      carrierCode: 'customer-pickup',
+      customCarrierLabel: '',
     });
   });
 
