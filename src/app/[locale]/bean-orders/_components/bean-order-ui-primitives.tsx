@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { CloseIcon } from '@/components/ui/close-icon';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
@@ -481,24 +481,5 @@ export function BeanOrderPageLoading({
     <div className={cn('flex min-h-[50svh] items-center justify-center', className)}>
       <BeanOrderInlineLoading label={label} />
     </div>
-  );
-}
-
-type BeanOrderStatusMessagesProps = {
-  message?: string | null;
-  error?: string | null;
-  className?: string;
-};
-
-export function BeanOrderStatusMessages({ message, error, className }: BeanOrderStatusMessagesProps) {
-  return (
-    <AnimatePresence mode="sync">
-      {message ? (
-        <BeanOrderStatusBanner key="message" message={message} variant="success" className={className} />
-      ) : null}
-      {error ? (
-        <BeanOrderStatusBanner key="error" message={error} variant="error" className={className} />
-      ) : null}
-    </AnimatePresence>
   );
 }

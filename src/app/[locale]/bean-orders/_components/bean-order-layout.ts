@@ -1,6 +1,5 @@
 /** Shared layout tokens for bean-orders pages */
 import {
-  BB_BTN_GHOST,
   BB_BTN_ICON,
   BB_BTN_MOTION,
   BB_BTN_OUTLINE,
@@ -85,9 +84,6 @@ export const BEAN_ORDER_BTN_MOTION = BB_BTN_MOTION;
 export const BEAN_ORDER_BTN_PRIMARY_MOTION =
   'bb-transition cursor-pointer shadow-sm hover:scale-[1.02] hover:bb-shadow-md active:scale-[0.96] active:brightness-95 disabled:opacity-50 disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:pointer-events-none';
 
-export const BEAN_ORDER_ACTION_BTN_BASE =
-  `inline-flex h-11 shrink-0 items-center justify-center ${BB_RADIUS_SOFT} px-5 text-sm ${BEAN_ORDER_BTN_MOTION}`;
-
 export const BEAN_ORDER_ACTION_BTN = BB_BTN_OUTLINE_PRIMARY;
 
 /** Light green pastel confirm payment CTA */
@@ -100,25 +96,12 @@ export const BEAN_ORDER_BTN_PASTEL_FULL = `${BEAN_ORDER_ACTION_BTN_CONFIRM} w-fu
 export const BEAN_ORDER_ACTION_BTN_INFO =
   `inline-flex h-11 shrink-0 items-center justify-center ${BB_RADIUS_SOFT} px-5 text-sm ${bbPastelClass('bg-[#cce5ff]')} ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
 
-/** Grey non-action pill reserved for future non-clickable status labels. */
-export const BEAN_ORDER_ACTION_BADGE_MUTED =
-  `inline-flex h-11 shrink-0 items-center justify-center ${BB_RADIUS_SOFT} border border-border bg-muted px-5 text-sm text-muted-foreground`;
-
-export const BEAN_ORDER_PAYMENT_SHIPPING_GRID =
-  'grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-8';
-
 /** Detail: equal halves on desktop; divider on payment column (center) */
 export const BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID =
   'grid h-full min-h-0 flex-1 gap-6 lg:grid-cols-2 lg:items-stretch lg:gap-0';
 
-export const BEAN_ORDER_PAYMENT_COLUMN =
-  'min-w-0 space-y-3 lg:pr-8';
-
 export const BEAN_ORDER_DETAIL_PAYMENT_COLUMN =
   'order-2 flex min-h-0 w-full min-w-0 flex-col space-y-3 border-t-2 border-border pt-6 lg:order-2 lg:border-t-0 lg:border-l-2 lg:border-border lg:pl-6 lg:pt-0';
-
-export const BEAN_ORDER_SHIPPING_COLUMN =
-  'min-w-0 space-y-3 border-t-2 border-border pt-6 lg:border-l-2 lg:border-t-0 lg:pl-8 lg:pt-0';
 
 export const BEAN_ORDER_DETAIL_SHIPPING_COLUMN =
   'order-1 flex min-h-0 w-full min-w-0 flex-col space-y-3 lg:order-1 lg:pr-6';
@@ -153,8 +136,6 @@ export const BEAN_ORDER_BTN_SM_OUTLINE = BB_BTN_OUTLINE_SM;
 export const BEAN_ORDER_BTN_SM_DANGER =
   `inline-flex h-9 min-h-[44px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap ${BB_RADIUS_SOFT} border border-red-500/80 bg-card px-3.5 text-xs text-red-600 disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION} hover:bg-red-50 dark:hover:bg-red-950/20`;
 
-export const BEAN_ORDER_BTN_GHOST = BB_BTN_GHOST;
-
 export const BEAN_ORDER_BTN_LIST =
   `w-full px-3 py-2 text-left text-sm ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/35 active:bg-muted/45`;
 
@@ -173,9 +154,6 @@ export const BEAN_ORDER_BTN_DIALOG_CONFIRM =
 
 export const BEAN_ORDER_BTN_DIALOG_DANGER =
   `inline-flex items-center justify-center ${BB_RADIUS_SOFT} border border-red-500/80 bg-card px-3 py-2 text-sm text-red-600 ${BEAN_ORDER_BTN_MOTION} hover:bg-red-50 dark:hover:bg-red-950/20`;
-
-export const BEAN_ORDER_BTN_TOGGLE =
-  `h-11 shrink-0 ${BB_RADIUS_SOFT} border border-border/80 bg-card px-4 text-sm ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/35`;
 
 export const BEAN_ORDER_BTN_DANGER_GHOST =
   `inline-flex h-11 items-center justify-center gap-1 self-center ${BB_RADIUS_SOFT} border border-transparent px-2 text-sm text-red-600 ${BEAN_ORDER_BTN_MOTION} hover:border-red-500/40 hover:bg-red-50 dark:hover:bg-red-950/20`;

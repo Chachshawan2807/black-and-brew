@@ -80,11 +80,6 @@ export function compareShiftByOrderThenName(a: DailyShiftEntry, b: DailyShiftEnt
   return a.name.localeCompare(b.name, 'th');
 }
 
-/** Working staff in display order: front store (by time) then other duties (by row). */
-export function flattenWorkingShiftEntries(formatted: FormattedDailyShifts): DailyShiftEntry[] {
-  return [...formatted.front_store, ...formatted.other_duty];
-}
-
 export function formatDailyShifts(
   profiles: ProfileRow[],
   shifts: ShiftRow[],

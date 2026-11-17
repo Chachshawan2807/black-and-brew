@@ -44,15 +44,6 @@ describe('Home desktop dashboard layout collapsed sidebar', () => {
     expect(panels).toMatch(/md:flex-\[9\]/);
   });
 
-  test('LiveStatusTracker fills dashboard panels with stretchable employee card grid', () => {
-    const tracker = readFile('app/[locale]/_components/LiveStatusTracker.tsx');
-    expect(tracker).toMatch(/layout\?:/);
-    expect(tracker).toMatch(/md:grid-cols-2/);
-    expect(tracker).toMatch(/auto-fill,minmax\(8\.75rem,1fr\)/);
-    expect(tracker).toMatch(/auto-rows-\[minmax\(5\.75rem,1fr\)\]/);
-    expect(tracker).toMatch(/dashboard/);
-  });
-
   test('HomePurchaseOrdersSection grows with internal scroll in dashboard mode', () => {
     const section = readFile('app/[locale]/_components/HomePurchaseOrdersSection.tsx');
     const primitives = readFile('app/[locale]/_components/home-panel-primitives.tsx');

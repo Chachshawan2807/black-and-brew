@@ -78,11 +78,6 @@ export function canDeleteOrder(fulfillmentStatus: FulfillmentStatus): boolean {
   return fulfillmentStatus === 'pending';
 }
 
-/** @deprecated Prefer canDeleteOrder same guard for hard delete. */
-export function canCancelOrder(fulfillmentStatus: FulfillmentStatus): boolean {
-  return canDeleteOrder(fulfillmentStatus);
-}
-
 export function canUploadSlip(cancelledAt?: string | null): boolean {
   return canEditOrder(cancelledAt);
 }

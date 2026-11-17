@@ -178,14 +178,3 @@ export function downloadPngBlob(blob: Blob, filename: string): void {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
-
-/** @deprecated Prefer downloadPngBlob base64 encoding is slower for large captures. */
-export function downloadDataUrl(dataUrl: string, filename: string): void {
-  const link = document.createElement('a');
-  link.download = filename;
-  link.href = dataUrl;
-  link.rel = 'noopener';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}

@@ -997,22 +997,6 @@ export function formatInventoryNotification(
 
 
 
-export function formatBatchedNotification(
-
-  latest: DataChangeLogRow,
-
-  count: number,
-
-  locale: string
-
-): InventoryNotification {
-
-  return formatInventoryNotification(latest, locale, count);
-
-}
-
-
-
 /** Builds one notification from a batched group (e.g. bulk quick-action entries). */
 export function formatBatchedNotificationFromRows(
   rows: DataChangeLogRow[],

@@ -74,7 +74,7 @@ black-and-brew/
 ├── src/
 │   ├── app/
 │   │   ├── [locale]/
-│   │   │   ├── _components/           # locale-wide (e.g. LiveStatusTracker)
+│   │   │   ├── _components/           # locale-wide (e.g. HomeOpsPanels)
 │   │   │   ├── <feature>/
 │   │   │   │   ├── page.tsx             # RSC shell
 │   │   │   │   ├── *Client.tsx          # client boundary

@@ -1,5 +1,3 @@
-import { isInstalledPwa } from '@/lib/pwa-app-badge';
-
 /** Chromium `beforeinstallprompt` not in all TS libs. */
 export type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -24,14 +22,4 @@ export function shouldShowPwaInstallOffer(input: {
 }): boolean {
   if (input.installed) return false;
   return input.hasDeferredPrompt || input.isIosDevice;
-}
-
-export function readPwaInstallVisibility(): {
-  installed: boolean;
-  isIosDevice: boolean;
-} {
-  return {
-    installed: isInstalledPwa(),
-    isIosDevice: isIosPwaInstallable(),
-  };
 }

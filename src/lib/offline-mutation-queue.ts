@@ -122,11 +122,6 @@ export async function removeOfflineMutation(id: string): Promise<void> {
   }
 }
 
-export async function peekOfflineMutation(): Promise<OfflineMutation | null> {
-  const queue = await listOfflineMutations();
-  return queue[0] ?? null;
-}
-
 export async function clearOfflineMutationQueue(): Promise<void> {
   if (typeof indexedDB === 'undefined') return;
   const db = await openDb();

@@ -38,10 +38,6 @@ export function filterFutureUnderstaffedDays(
   return findUnderstaffedDays(days).filter((day) => day.dateIso > fromDateIso);
 }
 
-export function sumWeeklyLeave(days: WeeklyDaySchedule[]): number {
-  return days.reduce((sum, day) => sum + day.leaveCount, 0);
-}
-
 export function collectWeeklyLeaveEntries(days: WeeklyDaySchedule[]): WeeklyLeaveEntry[] {
   const entries: WeeklyLeaveEntry[] = [];
   for (const day of days) {

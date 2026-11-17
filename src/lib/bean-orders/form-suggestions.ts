@@ -25,16 +25,6 @@ type AddressField = keyof Pick<
   'name' | 'phone' | 'postalCode' | 'addressLine'
 >;
 
-export function filterAddressProfilesByField(
-  profiles: ThaiPostalAddressValue[],
-  field: AddressField,
-  query: string,
-): ThaiPostalAddressValue[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return [];
-  return profiles.filter((profile) => profile[field].toLowerCase().includes(q));
-}
-
 export function filterStringSuggestions(values: string[], query: string): string[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];

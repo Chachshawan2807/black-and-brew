@@ -65,8 +65,3 @@ export function computeInOutTheoreticalStock(rows: InOutLedgerRow[]): number {
 
   return stock;
 }
-
-export function computeAccuracyPct(matchChecks: number, totalChecks: number): number | null {
-  if (totalChecks <= 0) return null;
-  return Math.round((matchChecks / totalChecks) * 1000) / 10;
-}

@@ -179,10 +179,6 @@ export function normalizeShiftTypes(raw: unknown): ShiftTypeEntry[] {
   return [...defaults, ...custom];
 }
 
-export function isDefaultShiftType(id: string): boolean {
-  return DEFAULT_BY_ID.has(id);
-}
-
 export function createNewShiftEntry(existing: ShiftTypeEntry[]): ShiftTypeEntry {
   const preset = PASTEL_COLOR_PRESETS[existing.length % PASTEL_COLOR_PRESETS.length];
   const baseName = 'กะใหม่';
