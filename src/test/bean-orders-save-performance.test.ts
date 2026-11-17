@@ -138,6 +138,11 @@ describe('bean order save performance', () => {
     expect(deferred).toContain('revalidateBeanOrders');
   });
 
+  test('saveBeanOrderShipmentPlan allows carrier updates on shipped orders', () => {
+    const body = functionBody('saveBeanOrderShipmentPlan', beanOrderActions);
+    expect(body).not.toContain('ออเดอร์จัดส่งแล้ว');
+  });
+
   test('shipBeanOrder does not revalidate on the critical path', () => {
     const critical = criticalPathBeforeAfter('shipBeanOrder', beanOrderActions);
     expect(critical).not.toContain('revalidateBeanOrders');
@@ -150,18 +155,20 @@ describe('bean order save performance', () => {
     expect(detailClient).not.toMatch(/trackingWarning/);
   });
 
-  test('createBeanOrder defers audit log, revalidation, and address persist off the critical path', () => {
-    const critical = criticalPathBeforeAfter('createBeanOrder', beanOrderActions);
+  test('createBeanOrder invalidates the list cache before returning and defers notify work', () => {
+    const body = functionBody('createBeanOrder', beanOrderActions);
+    const afterIdx = body.indexOf('after(async () => {');
+    expect(afterIdx).toBeGreaterThan(-1);
+    const critical = body.slice(0, afterIdx);
+    const deferred = body.slice(afterIdx);
+    expect(critical).toContain('revalidateBeanOrders');
     expect(critical).not.toContain('recordDataChange');
-    expect(critical).not.toContain('revalidateBeanOrders');
     expect(critical).not.toContain('saveBeanCustomerAddressIfNew');
     expect(critical).not.toContain('notifyBeanOrderCreated');
-    const deferred = functionBody('createBeanOrder', beanOrderActions);
-    expect(deferred).toContain('after(async () => {');
     expect(deferred).toContain('recordDataChange');
     expect(deferred).toContain('notifyBeanOrderCreated');
-    expect(deferred).toContain('revalidateBeanOrders');
     expect(deferred).toContain('saveBeanCustomerAddressIfNew');
+    expect(deferred).not.toContain('revalidateBeanOrders');
   });
 
   test('createBeanOrder parallelizes inventory, actor, and order number prep', () => {
@@ -176,9 +183,18 @@ describe('bean order save performance', () => {
     );
   });
 
+  test('detail shipment update does not call shipBeanOrder', () => {
+    const persistStart = detailClient.indexOf('async function persistShipmentFromForm');
+    const persistEnd = detailClient.indexOf('\n  async function autoSaveCarrierChannel', persistStart);
+    const persistFn = detailClient.slice(persistStart, persistEnd);
+    expect(persistFn).toContain('saveBeanOrderShipmentPlan');
+    expect(persistFn).not.toContain('shipBeanOrder');
+    expect(persistFn).not.toContain('fulfillmentStatus: markShipped');
+  });
+
   test('detail deliver clears busy before navigation after success', () => {
     const deliverFnStart = detailClient.indexOf('async function handleConfirmDelivered');
-    const deliverFnEnd = detailClient.indexOf('\n  async function handleDelete', deliverFnStart);
+    const deliverFnEnd = detailClient.indexOf('\n  function requestDeleteOrder', deliverFnStart);
     const deliverFn = detailClient.slice(deliverFnStart, deliverFnEnd);
     expect(deliverFn).toMatch(/setBusy\(false\)[\s\S]*goToBeanOrderList/);
     expect(deliverFn).toContain('stashBeanOrderDeliveredPatch');
@@ -189,10 +205,10 @@ describe('bean order save performance', () => {
       path.resolve(__dirname, '../app/[locale]/bean-orders/BeanOrderFormClient.tsx'),
       'utf-8',
     );
-    const handleSubmitStart = formClient.indexOf('async function handleSubmit');
-    const handleSubmitEnd = formClient.indexOf('\n  const inputClass', handleSubmitStart);
-    const handleSubmit = formClient.slice(handleSubmitStart, handleSubmitEnd);
-    expect(handleSubmit).toMatch(/setSaving\(false\)[\s\S]*navigateWithViewTransition/);
+    const handleConfirmSaveStart = formClient.indexOf('async function handleConfirmSave');
+    const handleConfirmSaveEnd = formClient.indexOf('\n  const inputClass', handleConfirmSaveStart);
+    const handleConfirmSave = formClient.slice(handleConfirmSaveStart, handleConfirmSaveEnd);
+    expect(handleConfirmSave).toMatch(/setSaving\(false\)[\s\S]*navigateWithViewTransition/);
   });
 
   test('notifyBeanOrderDelivered parallelizes record and subscription load', () => {

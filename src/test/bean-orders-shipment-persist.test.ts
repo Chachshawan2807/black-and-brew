@@ -138,4 +138,15 @@ describe('resolveBeanOrderTrackingNumberForSave', () => {
       }),
     ).toBe('');
   });
+
+  test('detail_update allows clearing tracking on shipped order', () => {
+    expect(
+      resolveBeanOrderTrackingNumberForSave({
+        trackingNumber: '',
+        previousTrackingNumber: 'KEX123',
+        fulfillmentStatus: 'shipped',
+        intent: 'detail_update',
+      }),
+    ).toBe('');
+  });
 });

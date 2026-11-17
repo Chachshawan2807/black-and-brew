@@ -22,6 +22,8 @@ type Props = {
   /** Local blob/object URL for a slip selected but not yet saved */
   previewUrl?: string | null;
   uploadedAt?: string | null;
+  /** When false, skip background slip URL fetch (e.g. no slip file on the order). */
+  hasUploadedSlip?: boolean;
   variant?: 'compact' | 'panel';
   /** Detail page: show slip near full size, centered on screen */
   largeModal?: boolean;
@@ -54,6 +56,7 @@ export function PaymentSlipViewer({
   slipUrl: initialSlipUrl,
   previewUrl,
   uploadedAt,
+  hasUploadedSlip = false,
   variant = 'compact',
   largeModal = false,
 }: Props) {
@@ -95,18 +98,17 @@ export function PaymentSlipViewer({
   }, [orderId]);
 
   useEffect(() => {
-    if (previewUrl || slipUrl || !uploadedAt || !orderId) return;
+    if (!hasUploadedSlip || previewUrl || slipUrl || !uploadedAt || !orderId) return;
     queueMicrotask(() => {
       void loadSlipUrl('preview');
     });
-  }, [orderId, uploadedAt, slipUrl, previewUrl, loadSlipUrl]);
+  }, [hasUploadedSlip, orderId, uploadedAt, slipUrl, previewUrl, loadSlipUrl]);
 
   async function handleExpand() {
     setExpanded(true);
     if (previewUrl || slipUrl) return;
-    if (orderId) {
-      await loadSlipUrl('modal');
-    }
+    if (!hasUploadedSlip || !orderId) return;
+    await loadSlipUrl('modal');
   }
 
   function handleClose() {

@@ -22,10 +22,18 @@ import { BeanOrderEmptyState, BeanOrderPageShell } from './_components/bean-orde
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { warmRouteNavigation } from '@/lib/warm-route-navigation';
 import { cn } from '@/lib/utils';
+import { mergeBeanOrderCreatedPatches } from '@/lib/bean-orders/created-list-snapshot';
 import {
   applyBeanOrderDeliveredPatch,
   consumeBeanOrderDeliveredPatch,
 } from '@/lib/bean-orders/delivered-notify-snapshot';
+
+function applyLocalOrderPatches(rows: BeanOrderListRow[]): BeanOrderListRow[] {
+  return applyBeanOrderDeliveredPatch(
+    mergeBeanOrderCreatedPatches(rows),
+    consumeBeanOrderDeliveredPatch(),
+  );
+}
 
 type Props = {
   initialOrders: BeanOrderListRow[];
@@ -46,7 +54,7 @@ export default function BeanOrdersClient({
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const [orders, setOrders] = useState(initialOrders);
+  const [orders, setOrders] = useState(() => applyLocalOrderPatches(initialOrders));
   const [prevOrdersSync, setPrevOrdersSync] = useState({ initialOrders, pathname });
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'unpaid' | 'paid'>(defaultPaymentFilter);
@@ -58,7 +66,7 @@ export default function BeanOrdersClient({
 
   if (initialOrders !== prevOrdersSync.initialOrders || pathname !== prevOrdersSync.pathname) {
     setPrevOrdersSync({ initialOrders, pathname });
-    setOrders(applyBeanOrderDeliveredPatch(initialOrders, consumeBeanOrderDeliveredPatch()));
+    setOrders(applyLocalOrderPatches(initialOrders));
   }
 
   if (pathname !== prevPathname) {

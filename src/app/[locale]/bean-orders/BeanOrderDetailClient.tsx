@@ -11,7 +11,6 @@ import {
   confirmBeanOrderPayment,
   revertBeanOrderPayment,
   saveBeanOrderShipmentPlan,
-  shipBeanOrder,
   uploadBeanOrderSlip,
   type BeanOrderDetail,
 } from '@/app/actions/bean-order-actions';
@@ -26,7 +25,6 @@ import {
 } from '@/lib/bean-orders/detail-shipment-save-ui';
 import {
   resolveBeanOrderTrackingNumberForSave,
-  shouldMarkBeanOrderShipped,
   validateBeanOrderShipmentCarrier,
 } from '@/lib/bean-orders/shipment-persist';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
@@ -42,15 +40,13 @@ import {
   canEditShipment,
   canRevertPayment,
   canUploadSlip,
+  hasBeanOrderUploadedSlip,
   isConfirmPaymentButtonEnabled,
   shouldShowDeliveredButton,
 } from '@/lib/bean-orders/order-status';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import { TextConfirmDialog } from '@/components/ui/text-confirm-dialog';
 import { navigateWithViewTransition } from '@/lib/view-transition';
-import {
-  stashBeanOrderDeliveredPatch,
-} from '@/lib/bean-orders/delivered-notify-snapshot';
 import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_BODY_GRID, BEAN_ORDER_DETAIL_FULFILLMENT_CARD, BEAN_ORDER_DETAIL_LINES_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_DETAIL_PAYMENT_ACTIONS, BEAN_ORDER_DETAIL_PAYMENT_BODY, BEAN_ORDER_DETAIL_PAYMENT_COLUMN, BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID, BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT, BEAN_ORDER_DETAIL_SHIPPING_COLUMN, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_INFO, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE } from './_components/bean-order-layout';
 import {
   BeanOrderBackLink,
@@ -62,6 +58,8 @@ import {
 } from './_components/bean-order-ui-primitives';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import { cn } from '@/lib/utils';
+import { APP_MODAL_ABOVE_FAB_Z_INDEX } from '@/lib/floating-action-layout';
+import { stashBeanOrderDeliveredPatch } from '@/lib/bean-orders/delivered-notify-snapshot';
 
 type Props = {
   order: BeanOrderDetail;
@@ -113,18 +111,21 @@ export default function BeanOrderDetailClient({
   const canRevert = canRevertPayment(order.paymentStatus, order.cancelledAt);
   const canEditShipping = canEditShipment(order.cancelledAt);
   const canDelete = canDeleteOrder(order.fulfillmentStatus);
+  const hasSlip = hasBeanOrderUploadedSlip({
+    slipUploadedAt: order.slipUploadedAt,
+    pendingSlipPreview,
+  });
+  const confirmEnabled = isConfirmPaymentButtonEnabled(hasSlip);
+
   const showDeliveredButton = shouldShowDeliveredButton(
     order.fulfillmentStatus,
     order.shipment?.trackingStatus,
-    trackingNumber,
+    order.shipment?.trackingNumber,
     order.cancelledAt,
   );
-  const hasSlip = Boolean(order.payment?.uploadedAt || pendingSlipPreview);
-  const confirmEnabled = isConfirmPaymentButtonEnabled(hasSlip);
-
   const showShipmentSaveButton = shouldShowBeanOrderDetailShipmentSaveButton({
-    fulfillmentStatus: order.fulfillmentStatus,
     trackingNumber,
+    savedTrackingNumber: order.shipment?.trackingNumber,
   });
 
   function goToBeanOrderList(flashMessage: string) {
@@ -135,7 +136,7 @@ export default function BeanOrderDetailClient({
   async function handleUploadSlip(file: File) {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
 
-    const replacingSlip = Boolean(order.payment?.uploadedAt);
+    const replacingSlip = hasSlip;
     const previewUrl = URL.createObjectURL(file);
     setPendingSlipPreview(previewUrl);
     setBusy(true);
@@ -159,7 +160,7 @@ export default function BeanOrderDetailClient({
 
   async function handleConfirmPayment() {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
-    if (!isConfirmPaymentButtonEnabled(Boolean(order.payment?.uploadedAt))) {
+    if (!isConfirmPaymentButtonEnabled(hasBeanOrderUploadedSlip({ slipUploadedAt: order.slipUploadedAt }))) {
       setError('อัปโหลดสลิปแล้ว ไม่สามารถยืนยันชำระจากปุ่มนี้ได้');
       return;
     }
@@ -213,24 +214,15 @@ export default function BeanOrderDetailClient({
       trackingNumber,
       previousTrackingNumber: order.shipment?.trackingNumber,
       fulfillmentStatus: order.fulfillmentStatus,
-    });
-    const markShipped = shouldMarkBeanOrderShipped({
-      trackingNumber,
-      fulfillmentStatus: order.fulfillmentStatus,
+      intent: 'detail_update',
     });
     setBusy(true);
     setError(null);
-    const result = markShipped
-      ? await shipBeanOrder(
-          order.id,
-          { carrierCode: resolvedCarrierCode, trackingNumber: resolvedTrackingNumber },
-          locale,
-        )
-      : await saveBeanOrderShipmentPlan(
-          order.id,
-          { carrierCode: resolvedCarrierCode },
-          locale,
-        );
+    const result = await saveBeanOrderShipmentPlan(
+      order.id,
+      { carrierCode: resolvedCarrierCode, trackingNumber: resolvedTrackingNumber },
+      locale,
+    );
     setBusy(false);
     if (!result.success) {
       setError(resolveActionError(result.error, 'บันทึกจัดส่งไม่สำเร็จ'));
@@ -238,11 +230,10 @@ export default function BeanOrderDetailClient({
     }
     setOrder((prev) => ({
       ...prev,
-      fulfillmentStatus: markShipped ? 'shipped' : prev.fulfillmentStatus,
       shipment: {
         deliveryType: 'parcel',
         carrierCode: resolvedCarrierCode,
-        trackingNumber: resolvedTrackingNumber || null,
+        trackingNumber: resolvedTrackingNumber.trim() ? resolvedTrackingNumber : null,
         trackingStatus: prev.shipment?.trackingStatus ?? null,
         shippedAt: prev.shipment?.shippedAt ?? new Date().toISOString(),
       },
@@ -250,6 +241,12 @@ export default function BeanOrderDetailClient({
   }
 
   async function autoSaveCarrierChannel(code: string, customLabel: string) {
+    if (isReadOnly) {
+      setError(READ_ONLY_DENY_MSG);
+      return;
+    }
+    if (busy) return;
+
     const carrierValidation = validateBeanOrderShipmentCarrier({
       carrierCode: code,
       customCarrierLabel: customLabel,
@@ -260,7 +257,28 @@ export default function BeanOrderDetailClient({
     const previousCarrierCode = order.shipment?.carrierCode ?? null;
     if (resolvedCarrierCode === previousCarrierCode) return;
 
-    await persistShipmentFromForm(code, customLabel);
+    setBusy(true);
+    setError(null);
+    const result = await saveBeanOrderShipmentPlan(
+      order.id,
+      { carrierCode: resolvedCarrierCode },
+      locale,
+    );
+    setBusy(false);
+    if (!result.success) {
+      setError(resolveActionError(result.error, 'บันทึกช่องทางจัดส่งไม่สำเร็จ'));
+      return;
+    }
+    setOrder((prev) => ({
+      ...prev,
+      shipment: {
+        deliveryType: 'parcel',
+        carrierCode: resolvedCarrierCode,
+        trackingNumber: prev.shipment?.trackingNumber ?? null,
+        trackingStatus: prev.shipment?.trackingStatus ?? null,
+        shippedAt: prev.shipment?.shippedAt ?? new Date().toISOString(),
+      },
+    }));
   }
 
   function handleCarrierCodeChange(next: string) {
@@ -538,6 +556,7 @@ export default function BeanOrderDetailClient({
                         slipUrl={order.payment?.slipUrl ?? null}
                         previewUrl={pendingSlipPreview}
                         uploadedAt={order.payment?.uploadedAt}
+                        hasUploadedSlip={Boolean(order.slipUploadedAt)}
                         variant="panel"
                         largeModal
                       />
@@ -656,9 +675,13 @@ export default function BeanOrderDetailClient({
       <TextConfirmDialog
         open={confirmDelivered}
         title="ยืนยันจัดส่งสำเร็จ"
-        description="ยืนยันว่าจัดส่งสำเร็จแล้ว?"
+        description="ยืนยันว่าลูกค้าได้รับสินค้าแล้ว?"
         confirmLabel="ยืนยัน"
         busy={busy}
+        viewportCentered
+        portaled
+        zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
+        confirmAccent="info-pastel-blue"
         onClose={() => !busy && setConfirmDelivered(false)}
         onConfirm={() => void handleConfirmDelivered()}
       />

@@ -2,8 +2,8 @@ import { describe, expect, test } from 'vitest';
 import { formatShipmentTrackingLabel } from '@/lib/bean-orders/tracking-status-labels';
 
 describe('formatShipmentTrackingLabel', () => {
-  test('shows delivered when staff confirmed delivery', () => {
-    expect(formatShipmentTrackingLabel('delivered')).toBe('จัดส่งสำเร็จ');
+  test('no longer shows delivered tracking status label', () => {
+    expect(formatShipmentTrackingLabel('delivered')).toBe(null);
   });
 
   test('shows shipped when parcel sent with tracking number', () => {
@@ -12,7 +12,16 @@ describe('formatShipmentTrackingLabel', () => {
         fulfillmentStatus: 'shipped',
         trackingNumber: 'KEX123',
       }),
-    ).toBe('ส่งแล้ว');
+    ).toBe('จัดส่งแล้ว');
+  });
+
+  test('pending with tracking counts as shipped for display', () => {
+    expect(
+      formatShipmentTrackingLabel(null, {
+        fulfillmentStatus: 'pending',
+        trackingNumber: 'KEX123',
+      }),
+    ).toBe('จัดส่งแล้ว');
   });
 
   test('shows same-day label without tracking number', () => {
@@ -21,6 +30,6 @@ describe('formatShipmentTrackingLabel', () => {
         fulfillmentStatus: 'shipped',
         trackingNumber: null,
       }),
-    ).toBe('ส่งแล้ว (ไม่มีเลขพัสดุ)');
+    ).toBe('จัดส่งแล้ว (ไม่มีเลขพัสดุ)');
   });
 });

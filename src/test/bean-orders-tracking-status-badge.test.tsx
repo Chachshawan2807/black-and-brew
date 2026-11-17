@@ -19,12 +19,16 @@ describe('OrderListStatusGroup', () => {
     expect(badge.className).toContain('bb-pastel-surface');
   });
 
-  test('shows delivery badge in light blue only when delivered', () => {
-    render(<OrderListStatusGroup trackingStatus="delivered" />);
-
-    const badge = screen.getByText('จัดส่งสำเร็จ');
+  test('shows จัดส่งแล้ว badge when workflow closed', () => {
+    render(
+      <OrderListStatusGroup
+        fulfillmentStatus="shipped"
+        trackingNumber={null}
+        trackingStatus={null}
+      />,
+    );
+    const badge = screen.getByText('จัดส่งแล้ว');
     expect(badge.className).toContain('bg-[#e3f2fd]');
-    expect(badge.className).toContain('bb-pastel-surface');
   });
 
   test('hides badges for in-progress shipment without delivery confirmation', () => {
@@ -37,7 +41,7 @@ describe('OrderListStatusGroup', () => {
     );
 
     expect(screen.queryByText('ชำระแล้ว')).toBeNull();
-    expect(screen.queryByText('จัดส่งสำเร็จ')).toBeNull();
+    expect(screen.queryByText('จัดส่งแล้ว')).toBeNull();
     expect(screen.queryByText('ส่งแล้ว (ไม่มีเลขพัสดุ)')).toBeNull();
   });
 });

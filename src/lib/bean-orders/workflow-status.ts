@@ -1,6 +1,6 @@
 import { formatShipmentTrackingLabel } from '@/lib/bean-orders/tracking-status-labels';
+import { isBeanOrderShipmentWorkflowClosed } from '@/lib/bean-orders/shipment-deliver-ui';
 import {
-  shouldShowOrderDeliveryBadge,
   shouldShowOrderPaymentBadge,
 } from '@/lib/bean-orders/order-status';
 import type { FulfillmentStatus, PaymentStatus } from '@/lib/bean-orders/types';
@@ -8,6 +8,7 @@ import type { FulfillmentStatus, PaymentStatus } from '@/lib/bean-orders/types';
 export type BeanOrderWorkflowStatusInput = {
   paymentStatus?: PaymentStatus | string | null;
   fulfillmentStatus?: FulfillmentStatus | string | null;
+  trackingNumber?: string | null;
   trackingStatus?: string | null;
   slipUploadedAt?: string | null;
   cancelledAt?: string | null;
@@ -22,7 +23,7 @@ export function isBeanOrderPaymentComplete(order: BeanOrderWorkflowStatusInput):
 }
 
 export function isBeanOrderDeliveryComplete(order: BeanOrderWorkflowStatusInput): boolean {
-  return shouldShowOrderDeliveryBadge(order.trackingStatus, order.cancelledAt);
+  return isBeanOrderShipmentWorkflowClosed(order);
 }
 
 /** Both payment and delivery match the completed badges in bean-order list UI. */

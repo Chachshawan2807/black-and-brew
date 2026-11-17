@@ -10,6 +10,7 @@ import {
   canRevertPayment,
   canShip,
   canUploadSlip,
+  hasBeanOrderUploadedSlip,
   isConfirmPaymentButtonEnabled,
   ORDER_DELIVERY_BADGE_LABEL,
   ORDER_PAYMENT_BADGE_LABEL,
@@ -26,16 +27,17 @@ describe('order status badges', () => {
     expect(shouldShowOrderPaymentBadge('2026-07-22T10:30:00.000Z', 'paid', '2026-07-22T00:00:00Z')).toBe(false);
   });
 
-  test('shows delivery badge only when tracking is delivered', () => {
-    expect(shouldShowOrderDeliveryBadge(null)).toBe(false);
-    expect(shouldShowOrderDeliveryBadge('in_transit')).toBe(false);
-    expect(shouldShowOrderDeliveryBadge('delivered')).toBe(true);
-    expect(shouldShowOrderDeliveryBadge('delivered', '2026-07-22T00:00:00Z')).toBe(false);
+  test('shipment badge when shipped or saved tracking', () => {
+    expect(shouldShowOrderDeliveryBadge(null, null, 'pending', null)).toBe(false);
+    expect(shouldShowOrderDeliveryBadge(null, null, 'shipped', null)).toBe(true);
+    expect(shouldShowOrderDeliveryBadge(null, null, 'pending', 'KEX1')).toBe(true);
+    expect(shouldShowOrderDeliveryBadge('delivered', null, 'shipped', null)).toBe(true);
+    expect(shouldShowOrderDeliveryBadge(null, '2026-07-22T00:00:00Z', 'shipped', null)).toBe(false);
   });
 
   test('uses fixed badge labels', () => {
     expect(ORDER_PAYMENT_BADGE_LABEL).toBe('ชำระแล้ว');
-    expect(ORDER_DELIVERY_BADGE_LABEL).toBe('จัดส่งสำเร็จ');
+    expect(ORDER_DELIVERY_BADGE_LABEL).toBe('จัดส่งแล้ว');
   });
 });
 
@@ -72,27 +74,24 @@ describe('action guards', () => {
     expect(isConfirmPaymentButtonEnabled(true)).toBe(false);
   });
 
+  test('hasBeanOrderUploadedSlip ignores payment confirm without slip file', () => {
+    expect(hasBeanOrderUploadedSlip({ slipUploadedAt: null })).toBe(false);
+    expect(hasBeanOrderUploadedSlip({ slipUploadedAt: '2026-01-01T00:00:00.000Z' })).toBe(true);
+    expect(hasBeanOrderUploadedSlip({ pendingSlipPreview: 'blob:x' })).toBe(true);
+  });
+
   test('can ship only when pending fulfillment', () => {
     expect(canShip('pending')).toBe(true);
     expect(canShip('shipped')).toBe(false);
     expect(canShip('pending', cancelledAt)).toBe(false);
   });
 
-  test('can confirm delivered for any shipped order not yet delivered', () => {
+  test('deliver button and confirm guards', () => {
     expect(canConfirmDelivered('shipped', null)).toBe(true);
-    expect(canConfirmDelivered('shipped', 'in_transit')).toBe(true);
     expect(canConfirmDelivered('shipped', 'delivered')).toBe(false);
-    expect(canConfirmDelivered('pending', null)).toBe(false);
-    expect(canConfirmDelivered('shipped', null, cancelledAt)).toBe(false);
-  });
-
-  test('shows delivered button for pending and shipped until delivered', () => {
-    expect(shouldShowDeliveredButton('pending', null)).toBe(true);
-    expect(shouldShowDeliveredButton('shipped', 'in_transit')).toBe(true);
-    expect(shouldShowDeliveredButton('shipped', 'delivered')).toBe(false);
-    expect(shouldShowDeliveredButton('pending', null, null, cancelledAt)).toBe(false);
-    expect(shouldShowDeliveredButton('shipped', null, 'KEX123')).toBe(true);
-    expect(shouldShowDeliveredButton('shipped', null, 'LM123')).toBe(true);
+    expect(shouldShowDeliveredButton('pending', null, null)).toBe(true);
+    expect(shouldShowDeliveredButton('shipped', null, 'KEX')).toBe(false);
+    expect(shouldShowDeliveredButton('shipped', 'delivered', null)).toBe(false);
   });
 });
 

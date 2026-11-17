@@ -14,6 +14,7 @@ import {
   canConfirmPayment,
   canRevertPayment,
   canUploadSlip,
+  hasBeanOrderUploadedSlip,
   isConfirmPaymentButtonEnabled,
 } from '@/lib/bean-orders/order-status';
 import type { PaymentStatus } from '@/lib/bean-orders/types';
@@ -28,6 +29,7 @@ type Props = {
   paymentStatus: PaymentStatus;
   pendingSlipFile: File | null;
   pendingSlipPreview: string | null;
+  slipUploadedAt?: string | null;
   onSelectSlipFile: (file: File | null) => void;
   confirmPaymentOnSave: boolean;
   onConfirmPaymentOnSaveChange: (value: boolean) => void;
@@ -44,6 +46,7 @@ export function BeanOrderPaymentFields({
   paymentStatus,
   pendingSlipFile,
   pendingSlipPreview,
+  slipUploadedAt = null,
   onSelectSlipFile,
   confirmPaymentOnSave,
   onConfirmPaymentOnSaveChange,
@@ -51,7 +54,11 @@ export function BeanOrderPaymentFields({
   disabled = false,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const hasSlip = Boolean(uploadedAt || pendingSlipFile);
+  const hasSlip = hasBeanOrderUploadedSlip({
+    slipUploadedAt,
+    pendingSlipFile,
+    pendingSlipPreview,
+  });
   const canPay = canUploadSlip();
   const canConfirm = canConfirmPayment(paymentStatus);
   const confirmEnabled = isConfirmPaymentButtonEnabled(hasSlip);
@@ -139,6 +146,7 @@ export function BeanOrderPaymentFields({
               slipUrl={slipUrl}
               previewUrl={pendingSlipPreview}
               uploadedAt={uploadedAt}
+              hasUploadedSlip={Boolean(slipUploadedAt)}
               variant="panel"
             />
           ) : (

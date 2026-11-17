@@ -40,13 +40,17 @@ export function shouldMarkBeanOrderShipped(input: {
   return Boolean(input.trackingNumber.trim()) || input.fulfillmentStatus === 'shipped';
 }
 
+export type BeanOrderTrackingSaveIntent = 'detail_update' | 'ship';
+
 /** Preserve existing tracking when a shipped order's field is left empty on save. */
 export function resolveBeanOrderTrackingNumberForSave(input: {
   trackingNumber: string;
   previousTrackingNumber?: string | null;
   fulfillmentStatus: 'pending' | 'shipped';
+  intent?: BeanOrderTrackingSaveIntent;
 }): string {
   const trimmed = input.trackingNumber.trim();
+  if (input.intent === 'detail_update') return trimmed;
   if (trimmed) return trimmed;
   if (input.fulfillmentStatus === 'shipped') {
     return input.previousTrackingNumber?.trim() ?? '';

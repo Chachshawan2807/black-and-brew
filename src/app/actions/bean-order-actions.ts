@@ -659,10 +659,17 @@ export async function fetchBeanOrderDetail(
     const order = orderResult.data;
     const customer = order.bean_customers as { name?: string } | null;
 
+    const paymentSlipPath = (paymentResult.data?.slip_url as string | null) ?? null;
     let slipUrl: string | null = null;
-    if (paymentResult.data?.slip_url) {
-      slipUrl = await signBeanOrderSlipPath(paymentResult.data.slip_url as string);
+    if (paymentSlipPath) {
+      slipUrl = await signBeanOrderSlipPath(paymentSlipPath);
     }
+
+    const paymentRow = paymentResult.data;
+    const paymentUploadedAt =
+      paymentSlipPath && paymentRow
+        ? (paymentRow.uploaded_at as string | null) ?? null
+        : null;
 
     return {
       success: true,
@@ -685,7 +692,7 @@ export async function fetchBeanOrderDetail(
         totalBaht: Number(order.total_baht) || 0,
         paymentStatus: order.payment_status as 'unpaid' | 'paid',
         fulfillmentStatus: order.fulfillment_status as 'pending' | 'shipped',
-        slipUploadedAt: (paymentResult.data?.uploaded_at as string | null) ?? null,
+        slipUploadedAt: paymentUploadedAt,
         deliveryType: (shipmentResult.data?.delivery_type as DeliveryType | undefined) ?? null,
         carrierCode: (shipmentResult.data?.carrier_code as string | null) ?? null,
         trackingNumber: (shipmentResult.data?.tracking_number as string | null) ?? null,
@@ -703,12 +710,12 @@ export async function fetchBeanOrderDetail(
           unitPricePerKg: Number(line.unit_price_per_kg) || 0,
           lineTotalBaht: Number(line.line_total_baht) || 0,
         })),
-        payment: paymentResult.data
+        payment: paymentRow
           ? {
               slipUrl,
-              uploadedAt: (paymentResult.data.uploaded_at as string | null) ?? null,
-              confirmedAt: (paymentResult.data.confirmed_at as string | null) ?? null,
-              confirmedBy: (paymentResult.data.confirmed_by as string | null) ?? null,
+              uploadedAt: paymentUploadedAt,
+              confirmedAt: (paymentRow.confirmed_at as string | null) ?? null,
+              confirmedBy: (paymentRow.confirmed_by as string | null) ?? null,
             }
           : null,
         shipment: shipmentResult.data
@@ -730,7 +737,7 @@ export async function fetchBeanOrderDetail(
 export async function createBeanOrder(
   input: z.infer<typeof createOrderSchema>,
   locale = 'th',
-): Promise<{ success: boolean; orderId?: string; error?: string }> {
+): Promise<{ success: boolean; orderId?: string; orderNo?: string; createdAt?: string; error?: string }> {
   const gate = await gateMutation();
   if (!gate.success) return gate;
 
@@ -785,7 +792,7 @@ export async function createBeanOrder(
       sort_order: index,
     }));
 
-    let order: { id: string; order_no: string } | null = null;
+    let order: { id: string; order_no: string; created_at: string } | null = null;
     let orderNo = initialOrderNo;
     const maxOrderNoAttempts = 5;
 
@@ -817,11 +824,11 @@ export async function createBeanOrder(
           notes: orderInput.notes ?? null,
           created_by: actor,
         })
-        .select('id, order_no')
+        .select('id, order_no, created_at')
         .single();
 
       if (!orderError && data) {
-        order = data as { id: string; order_no: string };
+        order = data as { id: string; order_no: string; created_at: string };
         break;
       }
 
@@ -852,6 +859,9 @@ export async function createBeanOrder(
 
     const orderId = order.id as string;
     const savedOrderNo = order.order_no as string;
+    const createdAt = order.created_at;
+
+    revalidateBeanOrders(locale, orderId);
 
     after(async () => {
       try {
@@ -907,14 +917,12 @@ export async function createBeanOrder(
             console.error('[createBeanOrder] Deferred address persist:', addressResult.error);
           }
         }
-
-        revalidateBeanOrders(locale, orderId);
       } catch (error) {
         console.error('[createBeanOrder] Deferred side-effect error:', error);
       }
     });
 
-    return { success: true, orderId };
+    return { success: true, orderId, orderNo: savedOrderNo, createdAt };
   } catch (error) {
     return failBeanOrderAction(error, 'สร้างออเดอร์ไม่สำเร็จ');
   }
@@ -1458,7 +1466,7 @@ export async function saveBeanOrderShipmentPlan(
     const supabase = getSupabaseAdmin();
     const { data: order, error: fetchError } = await supabase
       .from('bean_orders')
-      .select('id, order_no, fulfillment_status, cancelled_at')
+      .select('id, order_no, payment_status, fulfillment_status, cancelled_at, status_history')
       .eq('id', orderId)
       .maybeSingle();
 
@@ -1466,13 +1474,10 @@ export async function saveBeanOrderShipmentPlan(
     if (!canEditShipment(order.cancelled_at as string | null)) {
       return { success: false, error: 'แก้ไขการจัดส่งไม่ได้ในสถานะนี้' };
     }
-    if ((order.fulfillment_status as string) === 'shipped') {
-      return { success: false, error: 'ออเดอร์จัดส่งแล้ว ใช้บันทึกการจัดส่งแทน' };
-    }
 
     const { data: existingShipment, error: existingShipmentError } = await supabase
       .from('bean_order_shipments')
-      .select('carrier_code, tracking_number')
+      .select('carrier_code, tracking_number, tracking_status, tracking_raw, shipped_at')
       .eq('order_id', orderId)
       .maybeSingle();
 
@@ -1485,20 +1490,76 @@ export async function saveBeanOrderShipmentPlan(
       return failBeanOrderAction(existingShipmentError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
     }
 
-    const actor = await resolveActorLabelFromSession();
-    const { error: shipError } = await supabase.from('bean_order_shipments').upsert(
-      {
-        order_id: orderId,
-        delivery_type: 'parcel',
-        carrier_code: carrierCode,
-        tracking_number: (existingShipment?.tracking_number as string | null) ?? null,
-        tracking_status: null,
-        tracking_raw: null,
-        shipped_by: actor,
-      },
-      { onConflict: 'order_id' },
+    const resolvedCarrierCode = resolveCarrierCode(carrierCode) ?? carrierCode;
+    const trackingFromInput = parsed.data.trackingNumber;
+    const nextTracking =
+      trackingFromInput !== undefined
+        ? trackingFromInput.trim() || null
+        : ((existingShipment?.tracking_number as string | null) ?? null);
+
+    const resetTracking = shouldResetBeanOrderTrackingOnShip(
+      existingShipment
+        ? {
+            carrierCode: (existingShipment.carrier_code as string | null) ?? null,
+            trackingNumber: (existingShipment.tracking_number as string | null) ?? null,
+            trackingStatus: (existingShipment.tracking_status as string | null) ?? null,
+          }
+        : null,
+      { carrierCode: resolvedCarrierCode, trackingNumber: nextTracking },
+      false,
     );
 
+    const carrierChanged =
+      (existingShipment?.carrier_code as string | null | undefined) ?? null !== resolvedCarrierCode;
+    const trackingChanged =
+      ((existingShipment?.tracking_number as string | null) ?? null) !== nextTracking;
+    const shipmentDataChanged = carrierChanged || trackingChanged;
+
+    const actor = await resolveActorLabelFromSession();
+    const history =
+      shipmentDataChanged
+        ? appendStatusHistory((order.status_history as StatusHistoryEntry[]) ?? [], {
+            by: actor,
+            action: 'shipment_updated',
+            payment_status: order.payment_status as 'unpaid' | 'paid',
+            fulfillment_status: order.fulfillment_status as 'pending' | 'shipped',
+          })
+        : ((order.status_history as StatusHistoryEntry[]) ?? []);
+
+    const orderUpdates: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (shipmentDataChanged) {
+      orderUpdates.status_history = history;
+    }
+
+    const [{ error: orderError }, { error: shipError }] = await Promise.all([
+      Object.keys(orderUpdates).length > 1
+        ? supabase.from('bean_orders').update(orderUpdates).eq('id', orderId)
+        : Promise.resolve({ error: null }),
+      supabase.from('bean_order_shipments').upsert(
+        {
+          order_id: orderId,
+          delivery_type: 'parcel',
+          carrier_code: resolvedCarrierCode,
+          tracking_number: nextTracking,
+          tracking_status: resetTracking
+            ? null
+            : ((existingShipment?.tracking_status as string | null) ?? null),
+          tracking_raw: resetTracking
+            ? null
+            : ((existingShipment?.tracking_raw as Record<string, unknown> | null) ?? null),
+          shipped_by: actor,
+          shipped_at: (existingShipment?.shipped_at as string | null) ?? new Date().toISOString(),
+        },
+        { onConflict: 'order_id' },
+      ),
+    ]);
+
+    if (orderError) {
+      console.error('Supabase Error (saveBeanOrderShipmentPlan order):', orderError.message, orderError.details);
+      return failBeanOrderAction(orderError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');
+    }
     if (shipError) {
       console.error('Supabase Error (saveBeanOrderShipmentPlan):', shipError.message, shipError.details);
       return failBeanOrderAction(shipError, 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่');

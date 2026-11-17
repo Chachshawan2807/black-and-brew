@@ -1,14 +1,20 @@
-import { shouldMarkBeanOrderShipped } from '@/lib/bean-orders/shipment-persist';
+export function isBeanOrderDetailTrackingDirty(
+  trackingNumber: string,
+  savedTrackingNumber?: string | null,
+): boolean {
+  return trackingNumber.trim() !== (savedTrackingNumber ?? '').trim();
+}
 
+/** อัปเดตการจัดส่ง: เฉพาะเมื่อเลขพัสดุในฟอร์มต่างจากที่บันทึกไว้ */
 export function shouldShowBeanOrderDetailShipmentSaveButton(input: {
-  fulfillmentStatus: 'pending' | 'shipped';
   trackingNumber: string;
+  savedTrackingNumber?: string | null;
 }): boolean {
-  return shouldMarkBeanOrderShipped(input);
+  return isBeanOrderDetailTrackingDirty(input.trackingNumber, input.savedTrackingNumber);
 }
 
 export function getBeanOrderDetailShipmentSaveButtonLabel(
-  fulfillmentStatus: 'pending' | 'shipped',
+  _fulfillmentStatus: 'pending' | 'shipped',
 ): string {
-  return fulfillmentStatus === 'shipped' ? 'อัปเดตการจัดส่ง' : 'บันทึกการจัดส่ง';
+  return 'อัปเดตการจัดส่ง';
 }

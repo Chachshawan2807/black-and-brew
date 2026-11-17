@@ -31,6 +31,7 @@ describe('BeanOrderPaymentFields confirm button', () => {
         {...baseProps}
         orderId="order-1"
         uploadedAt="2026-07-31T10:00:00.000Z"
+        slipUploadedAt="2026-07-31T10:00:00.000Z"
         slipUrl="https://example.com/slip.jpg"
       />,
     );

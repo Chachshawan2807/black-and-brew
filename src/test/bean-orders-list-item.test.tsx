@@ -123,7 +123,7 @@ describe('BeanOrderListItem', () => {
 
     expect(screen.getAllByText('จ.ระยอง').length).toBeGreaterThan(0);
     expect(screen.queryByText(/จ\.ระยอง \/ จัดส่งสำเร็จ/)).toBeNull();
-    expect(screen.getAllByText('จัดส่งสำเร็จ').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('จัดส่งแล้ว').length).toBeGreaterThan(0);
     expect(screen.queryByText('ส่งแล้ว (ไม่มีเลขพัสดุ)')).toBeNull();
   });
 });

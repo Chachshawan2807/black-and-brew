@@ -41,6 +41,11 @@ import {
   parseThaiPostalAddressLine,
   type ThaiPostalAddressValue,
 } from '@/lib/bean-orders/address';
+import {
+  buildCreatedBeanOrderListRow,
+  stashBeanOrderCreatedPatch,
+} from '@/lib/bean-orders/created-list-snapshot';
+import { invalidateBeanOrdersOverlayCache } from '@/lib/secretary/overlay-data-cache';
 import { navigateWithViewTransition } from '@/lib/view-transition';
 import { PageTitle } from '@/components/ui/page-title';
 import { mergeCustomerAddressProfiles } from '@/lib/bean-orders/customer-address-persist';
@@ -76,6 +81,7 @@ import {
   lookupThaiPostalAreas,
 } from '@/lib/bean-orders/thai-postal-lookup';
 import { isBeanOrderEditDataReady } from '@/lib/bean-orders/form-readiness';
+import { hasBeanOrderUploadedSlip } from '@/lib/bean-orders/order-status';
 import type { PaymentStatus, WeightUnit } from '@/lib/bean-orders/types';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import { resolveActionError } from '@/lib/user-facing-error';
@@ -678,7 +684,10 @@ function BeanOrderFormClientReady({
     }
 
     if (confirmPaymentOnSave) {
-      const hasSlip = Boolean(pendingSlipFile || initialOrder?.payment?.uploadedAt);
+      const hasSlip = hasBeanOrderUploadedSlip({
+        slipUploadedAt: initialOrder?.slipUploadedAt,
+        pendingSlipFile,
+      });
       if (hasSlip) {
         return { error: 'อัปโหลดสลิปแล้ว ไม่สามารถยืนยันชำระจากปุ่มนี้ได้' };
       }
@@ -838,7 +847,71 @@ function BeanOrderFormClientReady({
           : undefined;
     const targetOrderId =
       typeof rawTargetOrderId === 'string' ? rawTargetOrderId : undefined;
+    const createdMeta =
+      !isEdit && 'orderId' in result && result.orderId
+        ? {
+            id: result.orderId,
+            orderNo: result.orderNo || result.orderId,
+            createdAt: result.createdAt || new Date().toISOString(),
+          }
+        : null;
+
+    const goToCreatedList = (
+      status: {
+        paymentStatus: 'unpaid' | 'paid';
+        slipUploadedAt: string | null;
+        fulfillmentStatus: 'pending' | 'shipped';
+        carrierCode: string | null;
+        trackingNumber: string | null;
+      },
+      flashMessage?: string,
+    ) => {
+      if (createdMeta) {
+        const namesById = new Map(inventoryItems.map((item) => [item.id, item.name]));
+        stashBeanOrderCreatedPatch(
+          buildCreatedBeanOrderListRow({
+            id: createdMeta.id,
+            orderNo: createdMeta.orderNo,
+            createdAt: createdMeta.createdAt,
+            customerName: selectedCustomer?.name ?? (customerQuery.trim() || null),
+            recipientName: resolveBeanOrderRecipientName(recipient.name, customerQuery),
+            recipientPhone: recipient.phone || null,
+            recipientAddress: formatThaiPostalAddressLine({
+              addressLine: recipient.addressLine,
+              subdistrict: recipient.subdistrict,
+              district: recipient.district,
+              province: recipient.province,
+              postalCode: recipient.postalCode,
+            }),
+            recipientProvince: recipient.province || null,
+            recipientPostalCode: recipient.postalCode || null,
+            discountBaht: Number(discountBaht) || 0,
+            shippingBaht: Number(shippingBaht) || 0,
+            notes: notes || null,
+            lines: parsedLines.map((line) => ({
+              itemName: namesById.get(line.inventoryItemId) ?? 'สินค้า',
+              weightValue: line.weightValue,
+              weightUnit: line.weightUnit,
+              unitPricePerKg: line.unitPricePerKg,
+            })),
+            paymentStatus: status.paymentStatus,
+            slipUploadedAt: status.slipUploadedAt,
+            fulfillmentStatus: status.fulfillmentStatus,
+            carrierCode: status.carrierCode,
+            trackingNumber: status.trackingNumber,
+          }),
+        );
+        invalidateBeanOrdersOverlayCache();
+      }
+      if (flashMessage) {
+        sessionStorage.setItem('bb-bean-order-flash', flashMessage);
+      }
+      navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
+    };
+
     let shipmentFlashMessage: string | undefined;
+    let createdPaymentStatus: 'unpaid' | 'paid' = 'unpaid';
+    let createdSlipUploadedAt: string | null = null;
     if (targetOrderId) {
       if (shouldPersistPayment()) {
         const paymentResult = await persistPayment(targetOrderId);
@@ -847,8 +920,22 @@ function BeanOrderFormClientReady({
           setError(
             `${resolveActionError(paymentResult.error, 'บันทึกการชำระไม่สำเร็จ')} ออเดอร์ถูกบันทึกแล้ว`,
           );
-          navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
+          if (createdMeta) {
+            goToCreatedList({
+              paymentStatus: 'unpaid',
+              slipUploadedAt: null,
+              fulfillmentStatus: 'pending',
+              carrierCode: null,
+              trackingNumber: null,
+            });
+          } else {
+            navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
+          }
           return;
+        }
+        if (createdMeta) {
+          if (confirmPaymentOnSave && !revertPaymentOnSave) createdPaymentStatus = 'paid';
+          if (pendingSlipFile) createdSlipUploadedAt = createdMeta.createdAt;
         }
       }
 
@@ -863,7 +950,17 @@ function BeanOrderFormClientReady({
           setError(
             `${resolveActionError(shipmentResult.error, 'บันทึกการจัดส่งไม่สำเร็จ')} ออเดอร์ถูกบันทึกแล้ว`,
           );
-          navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
+          if (createdMeta) {
+            goToCreatedList({
+              paymentStatus: createdPaymentStatus,
+              slipUploadedAt: createdSlipUploadedAt,
+              fulfillmentStatus: 'pending',
+              carrierCode: null,
+              trackingNumber: null,
+            });
+          } else {
+            navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
+          }
           return;
         }
         shipmentFlashMessage = formatBeanOrderCarrierChangeMessage(
@@ -883,9 +980,27 @@ function BeanOrderFormClientReady({
       }
       return;
     }
-    if ('orderId' in result && result.orderId) {
-      sessionStorage.setItem('bb-bean-order-flash', 'สร้างออเดอร์สำเร็จ');
-      navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
+    if (createdMeta) {
+      const markShipped = shouldMarkBeanOrderShipped({
+        trackingNumber,
+        fulfillmentStatus: 'pending',
+      });
+      const savedTrackingNumber = resolvedShipmentCarrierCode
+        ? resolveBeanOrderTrackingNumberForSave({
+            trackingNumber,
+            fulfillmentStatus: 'pending',
+          })
+        : '';
+      goToCreatedList(
+        {
+          paymentStatus: createdPaymentStatus,
+          slipUploadedAt: createdSlipUploadedAt,
+          fulfillmentStatus: markShipped && resolvedShipmentCarrierCode ? 'shipped' : 'pending',
+          carrierCode: resolvedShipmentCarrierCode ?? null,
+          trackingNumber: savedTrackingNumber || null,
+        },
+        'สร้างออเดอร์สำเร็จ',
+      );
     }
   }
 
@@ -1190,6 +1305,7 @@ function BeanOrderFormClientReady({
               orderId={orderId}
               slipUrl={initialOrder?.payment?.slipUrl ?? null}
               uploadedAt={initialOrder?.payment?.uploadedAt ?? null}
+              slipUploadedAt={initialOrder?.slipUploadedAt ?? null}
               confirmedAt={initialOrder?.payment?.confirmedAt ?? null}
               confirmedBy={initialOrder?.payment?.confirmedBy ?? null}
               paymentStatus={paymentStatus}

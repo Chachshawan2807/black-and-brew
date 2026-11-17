@@ -31,7 +31,14 @@ describe('shouldIncludeIncompleteBeanOrder', () => {
         fulfillmentStatus: 'shipped',
         trackingStatus: 'in_transit',
       }),
-    ).toBe(true);
+    ).toBe(false);
+    expect(
+      shouldIncludeIncompleteBeanOrder({
+        paymentStatus: 'paid',
+        fulfillmentStatus: 'pending',
+        trackingNumber: 'KEX123',
+      }),
+    ).toBe(false);
   });
 
   test('excludes orders with settled payment and successful delivery', () => {
@@ -109,7 +116,7 @@ describe('formatBeanOrderIncompleteStatusSummary', () => {
     ).toBe('จัดส่ง: รอจัดส่ง');
   });
 
-  test('shows only unpaid line when delivered but payment still outstanding', () => {
+  test('shows only unpaid line when shipped but payment still outstanding', () => {
     expect(
       formatBeanOrderIncompleteStatusSummary({
         paymentStatus: 'unpaid',

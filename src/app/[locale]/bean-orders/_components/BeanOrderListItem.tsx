@@ -126,6 +126,8 @@ export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder
           <OrderListStatusGroup
             slipUploadedAt={order.slipUploadedAt}
             paymentStatus={order.paymentStatus}
+            fulfillmentStatus={order.fulfillmentStatus}
+            trackingNumber={order.trackingNumber}
             trackingStatus={order.trackingStatus}
             cancelledAt={order.cancelledAt}
           />
@@ -185,6 +187,8 @@ export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder
         <OrderListStatusGroup
           slipUploadedAt={order.slipUploadedAt}
           paymentStatus={order.paymentStatus}
+          fulfillmentStatus={order.fulfillmentStatus}
+          trackingNumber={order.trackingNumber}
           trackingStatus={order.trackingStatus}
           cancelledAt={order.cancelledAt}
         />

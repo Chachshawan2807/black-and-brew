@@ -3,6 +3,8 @@
 import { cn } from '@/lib/utils';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { LoadingIcon } from '@/components/ui/loading-icon';
+import { ModalPortal } from '@/components/ui/modal-portal';
+import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 
 type TextConfirmDialogProps = {
   open: boolean;
@@ -15,6 +17,12 @@ type TextConfirmDialogProps = {
   onConfirm: () => void;
   onClose: () => void;
   zIndex?: number;
+  /** Keep dialog centered in the visible viewport (scroll + mobile keyboard). */
+  viewportCentered?: boolean;
+  /** Render through document.body so position is not clipped by page layout. */
+  portaled?: boolean;
+  /** Filled pastel-blue confirm (bean-order deliver, etc.). */
+  confirmAccent?: 'default' | 'info-pastel-blue';
 };
 
 export function TextConfirmDialog({
@@ -28,13 +36,33 @@ export function TextConfirmDialog({
   onConfirm,
   onClose,
   zIndex,
+  viewportCentered = false,
+  portaled = false,
+  confirmAccent = 'default',
 }: TextConfirmDialogProps) {
-  return (
+  const confirmClassName = destructive
+    ? 'bg-destructive text-destructive-foreground hover:opacity-90'
+    : confirmAccent === 'info-pastel-blue'
+      ? cn(
+          'border-0 shadow-sm hover:opacity-90',
+          bbPastelClass('bg-[#cce5ff]'),
+          'text-black',
+        )
+      : 'border-0 bg-primary text-primary-foreground hover:opacity-90';
+
+  const scaffold = (
     <FadeModalScaffold
       open={open}
       onClose={busy ? undefined : onClose}
       zIndex={zIndex}
       aria-label={title}
+      centerScrollable={viewportCentered}
+      keyboardAware={viewportCentered}
+      layoutClassName={
+        viewportCentered
+          ? 'min-h-full min-w-full items-center justify-center p-4'
+          : undefined
+      }
       panelClassName="w-full max-w-sm rounded-3xl border border-border bg-card p-5 shadow-lg"
     >
       <h3 className="text-base font-normal text-foreground">{title}</h3>
@@ -46,7 +74,7 @@ export function TextConfirmDialog({
           type="button"
           onClick={onClose}
           disabled={busy}
-          className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 text-sm text-foreground hover:bg-muted/35 disabled:opacity-50"
+          className="inline-flex min-h-11 items-center justify-center rounded-2xl border-0 bg-muted/30 px-4 text-sm text-foreground hover:bg-muted/45 disabled:opacity-50"
         >
           {cancelLabel}
         </button>
@@ -57,9 +85,7 @@ export function TextConfirmDialog({
           aria-busy={busy}
           className={cn(
             'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl px-4 text-sm disabled:opacity-50',
-            destructive
-              ? 'bg-destructive text-destructive-foreground hover:opacity-90'
-              : 'bg-primary text-primary-foreground hover:opacity-90',
+            confirmClassName,
           )}
         >
           {busy ? (
@@ -74,4 +100,10 @@ export function TextConfirmDialog({
       </div>
     </FadeModalScaffold>
   );
+
+  if (portaled) {
+    return <ModalPortal>{scaffold}</ModalPortal>;
+  }
+
+  return scaffold;
 }

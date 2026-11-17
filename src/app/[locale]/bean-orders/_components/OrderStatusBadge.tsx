@@ -4,15 +4,17 @@ import { cn } from '@/lib/utils';
 import { Banknote, ICON_STROKE, Truck } from '@/lib/icons';
 import { PASTEL_SURFACE, BEAN_ORDER_BADGE_COLORS } from '@/lib/shift-colors';
 import {
-  ORDER_DELIVERY_BADGE_LABEL,
+  ORDER_SHIPMENT_BADGE_LABEL,
   ORDER_PAYMENT_BADGE_LABEL,
-  shouldShowOrderDeliveryBadge,
+  shouldShowOrderShipmentBadge,
   shouldShowOrderPaymentBadge,
 } from '@/lib/bean-orders/order-status';
 
 type OrderListStatusGroupProps = {
   slipUploadedAt?: string | null;
   paymentStatus?: 'unpaid' | 'paid';
+  fulfillmentStatus?: 'pending' | 'shipped';
+  trackingNumber?: string | null;
   trackingStatus?: string | null;
   cancelledAt?: string | null;
   className?: string;
@@ -47,12 +49,19 @@ function StatusBadge({
 export function OrderListStatusGroup({
   slipUploadedAt,
   paymentStatus,
+  fulfillmentStatus,
+  trackingNumber,
   trackingStatus,
   cancelledAt,
   className,
 }: OrderListStatusGroupProps) {
   const showPayment = shouldShowOrderPaymentBadge(slipUploadedAt, paymentStatus, cancelledAt);
-  const showDelivery = shouldShowOrderDeliveryBadge(trackingStatus, cancelledAt);
+  const showDelivery = shouldShowOrderShipmentBadge({
+    fulfillmentStatus,
+    trackingNumber,
+    trackingStatus,
+    cancelledAt,
+  });
 
   if (!showPayment && !showDelivery) {
     return null;
@@ -69,7 +78,7 @@ export function OrderListStatusGroup({
       ) : null}
       {showDelivery ? (
         <StatusBadge
-          label={ORDER_DELIVERY_BADGE_LABEL}
+          label={ORDER_SHIPMENT_BADGE_LABEL}
           colorClass={DELIVERY_BADGE_COLOR}
           icon={<Truck className="h-3 w-3 shrink-0 opacity-80" strokeWidth={ICON_STROKE} aria-hidden />}
         />

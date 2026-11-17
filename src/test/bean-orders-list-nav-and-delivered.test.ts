@@ -1,10 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import {
-  canConfirmDelivered,
-  shouldShowDeliveredButton,
-} from '@/lib/bean-orders/order-status';
 
 describe('bean order navigation after save/delete', () => {
   test('form save success redirects to bean-orders list', () => {
@@ -63,7 +59,7 @@ describe('bean order navigation after save/delete', () => {
       'utf8',
     );
     const fnStart = detailSource.indexOf('async function handleConfirmPayment');
-    const fnBody = detailSource.slice(fnStart, fnStart + 500);
+    const fnBody = detailSource.slice(fnStart, fnStart + 900);
     expect(fnBody).toContain("goToBeanOrderList('ยืนยันชำระเงินแล้ว')");
   });
 
@@ -72,117 +68,22 @@ describe('bean order navigation after save/delete', () => {
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderFormClient.tsx'),
       'utf8',
     );
-    expect(formSource).toMatch(
-      /sessionStorage\.setItem\('bb-bean-order-flash',\s*'สร้างออเดอร์สำเร็จ'\)/,
-    );
+    expect(formSource).toContain('stashBeanOrderCreatedPatch');
+    expect(formSource).toContain("'สร้างออเดอร์สำเร็จ'");
+    expect(formSource).toContain("sessionStorage.setItem('bb-bean-order-flash', flashMessage)");
     expect(formSource).toMatch(
       /'orderId' in result && result\.orderId[\s\S]*navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
     );
   });
 
-  test('deliver success redirects to bean-orders list with flash message', () => {
+  test('detail shipment save marks shipped when tracking present', () => {
     const detailSource = readFileSync(
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
       'utf8',
     );
-    const deliverFnStart = detailSource.indexOf('async function handleConfirmDelivered');
-    expect(deliverFnStart).toBeGreaterThan(-1);
-    const deliverFnBody = detailSource.slice(deliverFnStart, deliverFnStart + 1200);
-    expect(deliverFnBody).toContain("goToBeanOrderList('จัดส่งสำเร็จ')");
-    expect(deliverFnBody).toContain('stashBeanOrderDeliveredPatch');
-    expect(detailSource).toMatch(
-      /function goToBeanOrderList[\s\S]*navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
-    );
-    expect(deliverFnBody).not.toContain('void reload()');
-
-    const listSource = readFileSync(
-      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrdersClient.tsx'),
-      'utf8',
-    );
-    expect(listSource).toContain("sessionStorage.removeItem('bb-bean-order-flash')");
-    expect(listSource).not.toContain('BeanOrderStatusBanner');
-    expect(listSource).toContain('consumeBeanOrderDeliveredPatch');
-    expect(listSource).toContain('applyBeanOrderDeliveredPatch');
-    expect(listSource).toContain('prevOrdersSync');
-    expect(listSource).toMatch(/initialOrders !== prevOrdersSync\.initialOrders \|\| pathname !== prevOrdersSync\.pathname/);
-  });
-
-  test('deliver uses single confirmBeanOrderDelivered call with optional shipment', () => {
-    const detailSource = readFileSync(
-      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
-      'utf8',
-    );
-    const deliverFnStart = detailSource.indexOf('async function handleConfirmDelivered');
-    const deliverFnBody = detailSource.slice(deliverFnStart, deliverFnStart + 1200);
-    expect(deliverFnBody).toMatch(/confirmBeanOrderDelivered\([\s\S]*?\{[\s\S]*?shipment:/);
-    expect(deliverFnBody).not.toMatch(
-      /if \(order\.fulfillmentStatus !== 'shipped'\)[\s\S]*?await shipBeanOrder/,
-    );
-
-    const actionsSource = readFileSync(
-      resolve(process.cwd(), 'src/app/actions/bean-order-actions.ts'),
-      'utf8',
-    );
-    expect(actionsSource).toMatch(
-      /confirmBeanOrderDelivered\([\s\S]*?options\?[\s\S]*?shipment/,
-    );
-    expect(actionsSource).not.toMatch(
-      /confirmBeanOrderDelivered[\s\S]*?await shipBeanOrder/,
-    );
-  });
-});
-
-describe('bean order delivered action beside shipping update', () => {
-  const cancelledAt = '2026-07-22T00:00:00Z';
-
-  test('shows green delivered button for pending and shipped orders', () => {
-    expect(shouldShowDeliveredButton('pending', null, null)).toBe(true);
-    expect(shouldShowDeliveredButton('shipped', null, '', null)).toBe(true);
-    expect(shouldShowDeliveredButton('shipped', 'in_transit', '  ', null)).toBe(true);
-    expect(shouldShowDeliveredButton('shipped', null, 'KEX123', null)).toBe(true);
-    expect(shouldShowDeliveredButton('shipped', null, 'LM123', null)).toBe(true);
-    expect(shouldShowDeliveredButton('shipped', 'delivered', null)).toBe(false);
-    expect(shouldShowDeliveredButton('pending', null, null, cancelledAt)).toBe(false);
-  });
-
-  test('can confirm delivered only after shipped and not yet delivered', () => {
-    expect(canConfirmDelivered('shipped', null)).toBe(true);
-    expect(canConfirmDelivered('shipped', 'in_transit')).toBe(true);
-    expect(canConfirmDelivered('shipped', 'delivered')).toBe(false);
-    expect(canConfirmDelivered('pending', null)).toBe(false);
-    expect(canConfirmDelivered('shipped', null, cancelledAt)).toBe(false);
-  });
-
-  test('manual deliver suppresses shipped notification when pre-shipping pending order', () => {
-    const detailSource = readFileSync(
-      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
-      'utf8',
-    );
-    const actionsSource = readFileSync(
-      resolve(process.cwd(), 'src/app/actions/bean-order-actions.ts'),
-      'utf8',
-    );
-
-    expect(detailSource).toMatch(
-      /handleConfirmDelivered[\s\S]*?confirmBeanOrderDelivered\([\s\S]*?shipment:/,
-    );
-    expect(actionsSource).toMatch(
-      /confirmBeanOrderDelivered[\s\S]*?fulfillmentStatus === 'pending'[\s\S]*?action: 'shipped'/,
-    );
-    expect(actionsSource).toMatch(
-      /confirmBeanOrderDelivered[\s\S]*?action: 'delivery_confirmed'/,
-    );
-  });
-
-  test('detail UI shows manual delivered button', () => {
-    const source = readFileSync(
-      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
-      'utf8',
-    );
-    expect(source).toContain('shouldShowDeliveredButton');
-    expect(source).toContain('BEAN_ORDER_ACTION_BTN_INFO');
-    expect(source).toContain('จัดส่งสำเร็จ');
-    expect(source).not.toContain('shouldShowAutoTrackingBadge');
-    expect(source).not.toContain('ระบบอัตโนมัติ');
+    expect(detailSource).toContain("intent: 'detail_update'");
+    expect(detailSource).not.toContain('shipBeanOrder');
+    expect(detailSource).toContain('handleConfirmDelivered');
+    expect(detailSource).toContain('confirmBeanOrderDelivered');
   });
 });

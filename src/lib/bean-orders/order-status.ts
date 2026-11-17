@@ -1,4 +1,8 @@
 import { isTrackingDeliveredStatus } from '@/lib/bean-orders/delivery-notification';
+import {
+  hasBeanOrderSavedTrackingNumber,
+  isBeanOrderShipmentWorkflowClosed,
+} from '@/lib/bean-orders/shipment-deliver-ui';
 import type {
   FulfillmentStatus,
   PaymentStatus,
@@ -6,7 +10,9 @@ import type {
 } from './types';
 
 export const ORDER_PAYMENT_BADGE_LABEL = 'ชำระแล้ว' as const;
-export const ORDER_DELIVERY_BADGE_LABEL = 'จัดส่งสำเร็จ' as const;
+export const ORDER_SHIPMENT_BADGE_LABEL = 'จัดส่งแล้ว' as const;
+/** @deprecated Use ORDER_SHIPMENT_BADGE_LABEL */
+export const ORDER_DELIVERY_BADGE_LABEL = ORDER_SHIPMENT_BADGE_LABEL;
 
 export function shouldShowOrderPaymentBadge(
   slipUploadedAt: string | null | undefined,
@@ -25,12 +31,33 @@ export function isBeanOrderPaymentSettled(
   return paymentStatus === 'paid' || Boolean(slipUploadedAt);
 }
 
+export function shouldShowOrderShipmentBadge(input: {
+  fulfillmentStatus?: FulfillmentStatus | string | null;
+  trackingNumber?: string | null;
+  trackingStatus?: string | null;
+  cancelledAt?: string | null;
+}): boolean {
+  return isBeanOrderShipmentWorkflowClosed({
+    fulfillmentStatus: input.fulfillmentStatus,
+    trackingNumber: input.trackingNumber,
+    trackingStatus: input.trackingStatus,
+    cancelledAt: input.cancelledAt,
+  });
+}
+
+/** @deprecated Pass fulfillment + trackingNumber via shouldShowOrderShipmentBadge */
 export function shouldShowOrderDeliveryBadge(
   trackingStatus: string | null | undefined,
   cancelledAt?: string | null,
+  fulfillmentStatus?: FulfillmentStatus | string | null,
+  trackingNumber?: string | null,
 ): boolean {
-  if (cancelledAt) return false;
-  return isTrackingDeliveredStatus(trackingStatus);
+  return shouldShowOrderShipmentBadge({
+    trackingStatus,
+    cancelledAt,
+    fulfillmentStatus,
+    trackingNumber,
+  });
 }
 
 export function isOrderCancelled(cancelledAt?: string | null): boolean {
@@ -72,6 +99,19 @@ export function isConfirmPaymentButtonEnabled(hasSlip: boolean): boolean {
   return !hasSlip;
 }
 
+/** True only when a slip file was uploaded (not payment confirm alone). */
+export function hasBeanOrderUploadedSlip(input: {
+  slipUploadedAt?: string | null;
+  pendingSlipPreview?: string | null;
+  pendingSlipFile?: File | null;
+}): boolean {
+  return Boolean(
+    input.pendingSlipPreview ||
+      input.pendingSlipFile ||
+      input.slipUploadedAt,
+  );
+}
+
 export function canRevertPayment(
   paymentStatus: PaymentStatus,
   cancelledAt?: string | null,
@@ -90,27 +130,30 @@ export function canShip(
   return canEditShipment(cancelledAt) && fulfillmentStatus === 'pending';
 }
 
-/** Manual จัดส่งสำเร็จ CTA staff confirms delivery (with or without tracking number). */
+/**
+ * จัดส่งสำเร็จ: ปิดงานเมื่อลูกค้าได้รับของ (รับเอง ฯลฯ).
+ * ซ่อนเมื่อมีเลขพัสดุบันทึกในระบบแล้ว (พัสดุจบงานโดยไม่ต้องกด) หรือยืนยันสำเร็จแล้ว.
+ */
 export function shouldShowDeliveredButton(
-  fulfillmentStatus: FulfillmentStatus,
+  _fulfillmentStatus: FulfillmentStatus,
   trackingStatus: string | null | undefined,
-  _trackingNumber?: string | null,
+  savedTrackingNumber?: string | null,
   cancelledAt?: string | null,
 ): boolean {
   if (!canEditOrder(cancelledAt)) return false;
   if (isTrackingDeliveredStatus(trackingStatus)) return false;
-  return fulfillmentStatus === 'pending' || fulfillmentStatus === 'shipped';
+  if (hasBeanOrderSavedTrackingNumber(savedTrackingNumber)) return false;
+  return true;
 }
 
-/** Shipped orders not yet delivered staff can mark จัดส่งสำเร็จ. */
 export function canConfirmDelivered(
   fulfillmentStatus: FulfillmentStatus,
   trackingStatus: string | null | undefined,
   cancelledAt?: string | null,
 ): boolean {
   if (!canEditOrder(cancelledAt)) return false;
-  if (fulfillmentStatus !== 'shipped') return false;
   if (isTrackingDeliveredStatus(trackingStatus)) return false;
+  if (fulfillmentStatus !== 'shipped' && fulfillmentStatus !== 'pending') return false;
   return true;
 }
 

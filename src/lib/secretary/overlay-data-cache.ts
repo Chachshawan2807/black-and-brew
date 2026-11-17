@@ -35,6 +35,11 @@ export function peekBeanOrdersForOverlay(): BeanOrderListRow[] | null {
   return peekBeanOrdersRows(beanOrdersEntry?.settled);
 }
 
+/** Drop the in-memory list so the next overlay open includes orders created this session. */
+export function invalidateBeanOrdersOverlayCache(): void {
+  beanOrdersEntry = null;
+}
+
 /** Start or reuse schedule bootstrap fetch for secretary overlay. */
 export function prefetchScheduleOverlayData(): Promise<{
   success: boolean;
