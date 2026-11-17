@@ -824,37 +824,33 @@ function BeanOrderFormClientReady({
       lines: parsedLines,
     };
 
-    const result = isEdit && orderId
-      ? await updateBeanOrder(orderId, payload, locale)
-      : await createBeanOrder(payload, locale);
+    let targetOrderId: string | undefined;
+    let createdMeta: { id: string; orderNo: string; createdAt: string } | null = null;
 
-    if (!result.success) {
-      setSaving(false);
-      setError(
-        resolveActionError(
-          result.error,
-          isEdit ? 'แก้ไขออเดอร์ไม่สำเร็จ' : 'สร้างออเดอร์ไม่สำเร็จ',
-        ),
-      );
-      return;
+    if (isEdit && orderId) {
+      const updated = await updateBeanOrder(orderId, payload, locale);
+      if (!updated.success) {
+        setSaving(false);
+        setError(resolveActionError(updated.error, 'แก้ไขออเดอร์ไม่สำเร็จ'));
+        return;
+      }
+      targetOrderId = orderId;
+    } else {
+      const result = await createBeanOrder(payload, locale);
+      if (!result.success) {
+        setSaving(false);
+        setError(resolveActionError(result.error, 'สร้างออเดอร์ไม่สำเร็จ'));
+        return;
+      }
+      if ('orderId' in result && result.orderId) {
+        targetOrderId = result.orderId;
+        createdMeta = {
+          id: result.orderId,
+          orderNo: result.orderNo || result.orderId,
+          createdAt: result.createdAt || new Date().toISOString(),
+        };
+      }
     }
-
-    const rawTargetOrderId =
-      isEdit && orderId
-        ? orderId
-        : 'orderId' in result
-          ? result.orderId
-          : undefined;
-    const targetOrderId =
-      typeof rawTargetOrderId === 'string' ? rawTargetOrderId : undefined;
-    const createdMeta =
-      !isEdit && 'orderId' in result && result.orderId
-        ? {
-            id: result.orderId,
-            orderNo: result.orderNo || result.orderId,
-            createdAt: result.createdAt || new Date().toISOString(),
-          }
-        : null;
 
     const goToCreatedList = (
       status: {
