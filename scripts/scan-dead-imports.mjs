@@ -25,11 +25,18 @@ const corpus = files.map((f) => ({
   file: f,
   text: fs.readFileSync(f, 'utf8'),
 }));
-const testCorpus = fs.existsSync(path.join(srcRoot, 'test'))
-  ? fs.readdirSync(path.join(srcRoot, 'test')).map((name) =>
-      fs.readFileSync(path.join(srcRoot, 'test', name), 'utf8'),
-    )
-  : [];
+const testDir = path.join(srcRoot, 'test');
+const testFiles = [];
+function walkTests(dir) {
+  if (!fs.existsSync(dir)) return;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkTests(p);
+    else if (exts.has(path.extname(entry.name))) testFiles.push(p);
+  }
+}
+walkTests(testDir);
+const testCorpus = testFiles.map((file) => fs.readFileSync(file, 'utf8'));
 
 function isImported(relNoExt) {
   const needles = [`'@/${relNoExt}'`, `"@/${relNoExt}"`];
