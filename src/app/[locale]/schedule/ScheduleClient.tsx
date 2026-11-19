@@ -2,7 +2,7 @@
 
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { createPortal, flushSync } from 'react-dom';
+import { flushSync } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { LAYOUT_DRAG_SPRING } from '@/lib/motion-presets';
@@ -64,6 +64,7 @@ import {
 } from '@/lib/schedule/shift-lookups';
 import { useScheduleUndo } from '@/hooks/useScheduleUndo';
 import ScheduleToolbar from './_components/ScheduleToolbar';
+import { ScheduleShiftPickerPortal } from './_components/ScheduleShiftPickerPortal';
 import {
   SCHEDULE_BTN_GHOST,
   SCHEDULE_BTN_PRIMARY,
@@ -173,35 +174,6 @@ const defaultHistoryColumns: ColumnDef[] = [
   { id: 'remark', label: 'หมายเหตุ', width: '120px' },
   { id: 'actions', label: 'จัดการ', width: '96px' }
 ];
-
-// ฟังก์ชันคำนวณตำแหน่ง Dropdown ไม่ให้ทะลุขอบจอ
-function getDropdownPosition(
-  anchorX: number,
-  anchorY: number,
-  menuWidth: number,
-  _menuHeight: number
-) {
-  const GAP = 12;
-
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  let left = anchorX;
-  let top = anchorY;
-
-  const spaceRight = vw - anchorX;
-
-  if (spaceRight < menuWidth + GAP) {
-    left = anchorX - menuWidth;
-  }
-
-  left = Math.max(GAP, Math.min(left, vw - menuWidth - GAP));
-
-  // Always open below the anchor; list scrolls when near the viewport edge.
-  top = Math.max(GAP, Math.min(anchorY + GAP, vh - GAP));
-
-  return { left, top };
-}
 
 function ColumnHeader({ col, onResize, onResizeEnd, isLast = false }: {
   col: ColumnDef;
@@ -567,9 +539,6 @@ export default function ScheduleClient({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // States สำหรับ Portal ตำแหน่ง Dropdown
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ left: 0, top: 0 });
-
   const handleCellFocus = useCallback((employeeId: string, date: string) => {
     setGridFocus({ employeeId, date });
   }, []);
@@ -577,37 +546,6 @@ export default function ScheduleClient({
   const handleGridPointerLeave = useCallback(() => {
     setGridFocus(null);
   }, []);
-
-  // อัปเดตตำแหน่งเมื่อ Scroll หรือ Resize
-  useEffect(() => {
-    if (!selectedCell) return;
-
-    const updatePosition = () => {
-      const menuHeight = dropdownRef.current?.offsetHeight || 300;
-      const menuWidth = dropdownRef.current?.offsetWidth || 192; // 192px = w-48
-
-      setDropdownPosition(
-        getDropdownPosition(
-          selectedCell.x,
-          selectedCell.y,
-          menuWidth,
-          menuHeight
-        )
-      );
-    };
-
-    // Calculate immediately
-    updatePosition();
-
-    window.addEventListener('resize', updatePosition, { passive: true });
-    window.addEventListener('scroll', updatePosition, { passive: true, capture: true });
-
-    return () => {
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
-    };
-  }, [selectedCell]);
-
 
   useEffect(() => {
     localStorage.removeItem(MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY);
@@ -2209,63 +2147,17 @@ export default function ScheduleClient({
         </div>
       </main>
 
-      {/* สลับไปใช้งาน Portal และเชื่อม State ตำแหน่งที่คำนวณไว้ */}
-      {selectedCell && typeof document !== 'undefined' && createPortal(
-        <div
-          className="fixed inset-0 z-[99999] overflow-hidden bg-black/10 backdrop-blur-[1px]"
-          onClick={() => setSelectedCell(null)}
-          aria-hidden={false}
-        >
-          <div
-            ref={dropdownRef}
-            role="dialog"
-            aria-label="เลือกกะ"
-            className="bb-schedule-shift-picker absolute w-[min(12rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-border bg-card shadow-xl animate-in fade-in slide-in-from-top-2"
-            style={{
-              top: `${dropdownPosition.top}px`,
-              left: `${dropdownPosition.left}px`
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="border-b border-border bg-muted/20 px-3 py-2.5">
-              <p className="text-xs font-normal text-muted-foreground">
-                เลือกกะ
-              </p>
-              <h2 className="truncate text-[13px] font-normal text-foreground">
-                {profileById.get(selectedCell.employeeId)?.full_name}
-              </h2>
-            </div>
-            <div className="grid max-h-60 gap-1 overflow-y-auto bb-smooth-scroll p-2">
-              {shiftTypes.map(type => (
-                <button
-                  key={type.value}
-                  onClick={() => handleSave(type.value)}
-                  disabled={isReadOnly}
-                  className={cn(
-                    'h-11 w-full cursor-pointer rounded-xl border px-3 text-left text-[13px] font-normal shadow-sm bb-transition hover:brightness-95 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 md:h-auto md:py-2',
-                    type.className,
-                  )}
-                  style={type.style}
-                >
-                  {type.label}
-                </button>
-              ))}
-            </div>
-            {selectedCell.shift && (
-              <div className="border-t border-border bg-card p-2">
-                <button
-                  onClick={handleClear}
-                  disabled={isReadOnly}
-                  className="h-11 w-full cursor-pointer rounded-2xl border border-red-500/80 bg-card text-[13px] font-normal text-red-600 bb-transition hover:bg-red-50 dark:hover:bg-red-950/20 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] md:h-auto md:py-2"
-                >
-                  ล้างกะ
-                </button>
-              </div>
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
+      {selectedCell ? (
+        <ScheduleShiftPickerPortal
+          anchor={selectedCell}
+          employeeName={profileById.get(selectedCell.employeeId)?.full_name}
+          shiftTypes={shiftTypes}
+          isReadOnly={isReadOnly}
+          onDismiss={() => setSelectedCell(null)}
+          onSelect={handleSave}
+          onClear={handleClear}
+        />
+      ) : null}
 
       <ExportProgressOverlay
         visible={isExportingImage}

@@ -107,6 +107,19 @@
 | Chrome panel | ✅ ปิด, อ่านทั้งหมด, ล้างประวัติ เท่านั้น |
 | Regression test | `src/test/notification-panel-view-only.test.ts` |
 
+### Schedule shift cell picker (IRON RULE)
+
+เมนูเลือกกะจากช่องตารางงานต้องแสดงตัวเลือกครบเมื่อพื้นที่พอ และเลื่อนภายในเมื่อชิดขอบจอ
+
+| Rule | Requirement |
+| --- | --- |
+| UI hub | `ScheduleShiftPickerPortal` + `use-schedule-shift-picker-placement` |
+| Layout classes | `shift-picker-layout.ts` เท่านั้น ห้าม duplicate ใน `ScheduleClient` |
+| Position | `getScheduleShiftPickerPosition` ต้องใช้ `menuHeight` คำนวณ `maxTop` |
+| ความสูงเมนู | `h-max` + `maxHeight` จาก `getScheduleShiftPickerMaxHeight(top)` |
+| เลื่อนรายการ | `min-h-0 flex-1 overflow-y-auto` เมื่อเนื้อหาเกินพื้นที่ |
+| Regression | `schedule-shift-picker-layout.test.ts`, `schedule-shift-picker-position.test.ts` |
+
 ### Spreadsheet UI Rules
 
 - Direct cell editing via native `<input>` in `<td>` elements

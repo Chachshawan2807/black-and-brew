@@ -48,10 +48,14 @@ describe('dropdown placement standard (below anchor, scroll, no flip)', () => {
   });
 
   test('schedule shift picker opens below anchor without vertical flip', () => {
-    const schedule = read('app/[locale]/schedule/ScheduleClient.tsx');
-    expect(schedule).toMatch(/anchorY \+ GAP/);
-    expect(schedule).not.toMatch(/anchorY - menuHeight/);
-    expect(schedule).toMatch(/max-h-60[\s\S]*shiftTypes\.map/);
+    const portal = read('app/[locale]/schedule/_components/ScheduleShiftPickerPortal.tsx');
+    const layout = read('lib/schedule/shift-picker-layout.ts');
+    const position = read('lib/schedule/shift-picker-position.ts');
+    expect(portal).toContain('useScheduleShiftPickerPlacement');
+    expect(layout).toContain('h-max');
+    expect(position).toMatch(/anchorY \+ ANCHOR_GAP_PX/);
+    expect(position).not.toMatch(/anchorY - menuHeight/);
+    expect(position).toContain('getScheduleShiftPickerMaxHeight');
   });
 
   test('date pickers open below trigger on desktop', () => {

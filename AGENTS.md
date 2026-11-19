@@ -280,6 +280,32 @@ py -3 .agents/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack shadcn
 - **Implementation Style:** ใช้สไตล์การเขียนแบบ Shared Component หรือ Tailwind Utility ที่ขยาย Hitbox ให้ครอบคลุมทั้งกรอบ Input เพื่อให้พนักงานใช้งานได้สะดวกบนทุกอุปกรณ์
 <!-- END:clickable-input-rules -->
 
+<!-- BEGIN:schedule-shift-picker-standard -->
+
+## SCHEDULE SHIFT CELL PICKER (IRON RULE)
+
+เมนูเลือกกะจากช่องตารางงานห้ามแก้ inline ใน `ScheduleClient` ใช้ hub ด้านล่างเท่านั้น
+
+| ชั้น | ไฟล์ |
+| ---- | ---- |
+| Portal UI | `src/app/[locale]/schedule/_components/ScheduleShiftPickerPortal.tsx` |
+| Placement hook | `src/hooks/use-schedule-shift-picker-placement.ts` |
+| Position math | `src/lib/schedule/shift-picker-position.ts` |
+| Layout classes | `src/lib/schedule/shift-picker-layout.ts` |
+
+### MUST
+
+- แสดงตัวเลือกครบด้วย `h-max` เมื่อพื้นที่พอ
+- `maxHeight` จาก `getScheduleShiftPickerMaxHeight(top)` เมื่อชิดขอบจอ
+- `getScheduleShiftPickerPosition` ต้องลบ `menuHeight` ใน `maxTop` ห้าม clamp แค่ `vh - GAP`
+- รายการใช้ `min-h-0 flex-1 overflow-y-auto` เป็น fallback scroll
+
+### ทดสอบก่อน merge
+
+`npm run test:schedule-shift-picker`
+
+<!-- END:schedule-shift-picker-standard -->
+
 <!-- BEGIN:notification-hub-standard -->
 
 ## NOTIFICATION HUB (IRON RULE)
