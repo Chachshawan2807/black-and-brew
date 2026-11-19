@@ -1,4 +1,4 @@
-import { isTrackingDeliveredStatus } from '@/lib/bean-orders/delivery-notification';
+import { isTrackingDeliveredStatus } from '@/lib/bean-orders/delivery-notification-format';
 import type { FulfillmentStatus } from '@/lib/bean-orders/types';
 
 export function hasBeanOrderSavedTrackingNumber(

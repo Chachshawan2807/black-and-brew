@@ -15,7 +15,7 @@ describe('bean orders sidebar menu', () => {
   });
 
   test('route chunk preload includes bean-orders', () => {
-    const source = readFileSync(resolve(process.cwd(), 'src/lib/route-chunk-preload.ts'), 'utf8');
+    const source = readFileSync(resolve(process.cwd(), 'src/lib/route-chunk-preload-routes.ts'), 'utf8');
     expect(source).toContain("'bean-orders'");
     expect(source).toContain('BeanOrdersClient');
   });

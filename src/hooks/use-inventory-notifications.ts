@@ -22,7 +22,7 @@ import {
 import {
   formatBeanOrderDeliveredNotification,
   isEligibleBeanOrderDeliveredNotification,
-} from '@/lib/bean-orders/delivery-notification';
+} from '@/lib/bean-orders/delivery-notification-format';
 import {
   formatBeanOrderPaymentNotification,
   isEligibleBeanOrderPaymentNotification,

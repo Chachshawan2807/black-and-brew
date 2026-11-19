@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
-import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import { sanitizeJsonValue } from '@/lib/data-change-log';
-import type { InventoryNotification } from '@/lib/notification-types';
 import { parseThaiPostalAddressLine } from '@/lib/bean-orders/address';
 import { formatThaiAdminAreaLabel } from '@/lib/bean-orders/thai-postal-lookup';
+import { isTrackingDeliveredStatus } from '@/lib/bean-orders/delivery-notification-format';
+
+export { isTrackingDeliveredStatus };
 
 export type BeanOrderDeliveredDestination = {
   subdistrict: string | null;
@@ -30,13 +31,10 @@ function getSupabaseAdmin() {
   });
 }
 
-export function isTrackingDeliveredStatus(status: string | null | undefined): boolean {
-  if (!status) return false;
-  const normalized = status.toLowerCase().replace(/[_\s-]+/g, '');
-  return normalized.includes('delivered');
-}
-
-/** Fire only on first transition into delivered. */
+export {
+  formatBeanOrderDeliveredNotification,
+  isEligibleBeanOrderDeliveredNotification,
+} from './delivery-notification-format';
 export function shouldNotifyBeanOrderDelivered(
   previousStatus: string | null | undefined,
   nextStatus: string | null | undefined,
@@ -79,17 +77,6 @@ export function formatBeanOrderDeliveredSummary(
     province: destination?.province,
   });
   return locality ? `${customer} ${locality}` : customer;
-}
-
-function destinationFromNotificationMetadata(
-  meta: Record<string, unknown>,
-): BeanOrderDeliveredDestination | null {
-  const subdistrict =
-    typeof meta.destinationSubdistrict === 'string' ? meta.destinationSubdistrict : null;
-  const district = typeof meta.destinationDistrict === 'string' ? meta.destinationDistrict : null;
-  const province = typeof meta.destinationProvince === 'string' ? meta.destinationProvince : null;
-  if (!subdistrict && !district && !province) return null;
-  return { subdistrict, district, province };
 }
 
 export function buildBeanOrderDeliveredCopy(
@@ -191,62 +178,4 @@ export async function recordBeanOrderDeliveredNotification(
       error: error instanceof Error ? error.message : 'record_failed',
     };
   }
-}
-
-export function isEligibleBeanOrderDeliveredNotification(row: DataChangeLogRow): boolean {
-  if (row.module !== 'bean_orders' || row.status !== 'success') return false;
-  if (row.entity_type !== 'bean_order_delivery') return false;
-  return row.metadata?.kind === 'bean_order_delivered';
-}
-
-export function formatBeanOrderDeliveredNotification(
-  row: DataChangeLogRow,
-  locale: string,
-): InventoryNotification {
-  const meta = row.metadata ?? {};
-  const isTh = locale === 'th';
-  const logId =
-    typeof meta.notificationLogId === 'string'
-      ? meta.notificationLogId
-      : beanOrderDeliveredNotificationLogId(row.entity_id ?? row.id);
-
-  const title =
-    typeof meta.title === 'string' ? meta.title : isTh ? 'จัดส่งสำเร็จ' : 'Delivered';
-  const customerName = typeof meta.customerName === 'string' ? meta.customerName : null;
-  const destination = destinationFromNotificationMetadata(meta);
-  const summary =
-    customerName || destination
-      ? formatBeanOrderDeliveredSummary(customerName, destination, locale)
-      : typeof meta.summary === 'string'
-        ? meta.summary
-        : '';
-  const fieldSummary =
-    typeof meta.fieldSummary === 'string' && !customerName && !destination
-      ? meta.fieldSummary
-      : summary;
-
-  return {
-    id: logId,
-    logId,
-    action: 'UPDATE',
-    entityId: row.entity_id,
-    entityLabel: row.entity_label,
-    actorLabel: row.actor_label,
-    occurredAt: row.occurred_at,
-    title,
-    summary,
-    fieldSummary,
-    priority: 'high',
-    read: false,
-    batchedCount: 1,
-    metadata: {
-      ...meta,
-      kind: 'bean_order_delivered',
-      module: 'bean_orders',
-      url:
-        typeof meta.url === 'string'
-          ? meta.url
-          : `/${locale}/bean-orders/${row.entity_id ?? ''}`,
-    },
-  };
 }

@@ -65,8 +65,6 @@ import { shouldNotifyBeanOrderDelivered } from '@/lib/bean-orders/delivery-notif
 import type { BeanOrderDeliveredNotifyInput } from '@/lib/bean-orders/delivery-notification';
 import { THAI_TIMEZONE } from '@/lib/timezone';
 import { toZonedTime } from 'date-fns-tz';
-import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
 
 const weightUnitSchema = z.enum(['g', 'kg']);
 const lineInputSchema = z.object({
@@ -2195,6 +2193,8 @@ async function parseCustomerWithAi(
       })}`
     : '';
 
+  const { generateText } = await import('ai');
+  const { google } = await import('@ai-sdk/google');
   const { text: aiText } = await generateText({
     model: google('gemini-2.5-flash'),
     system: AI_CUSTOMER_PARSE_SYSTEM,

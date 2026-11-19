@@ -27,12 +27,6 @@ import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { ensureFullNotificationPreferencesOnAuth } from '@/lib/notification-preferences';
 import { registerPushAfterAuthentication } from '@/lib/push-subscription-client';
 import {
-  getBiometricAutoLoginReadiness,
-  loginWithDevicePasskey,
-  registerDevicePasskey,
-  shouldOfferPasskeyEnrollment,
-} from '@/lib/passkey/client-flow';
-import {
   detectBiometricKind,
   getBiometricLabels,
   resolveBiometricKind,
@@ -181,6 +175,7 @@ export default function PinGateway({
     const device = collectClientDeviceInfo();
 
     void (async () => {
+      const { getBiometricAutoLoginReadiness } = await import('@/lib/passkey/client-flow');
       const [readiness, kind] = await Promise.all([
         getBiometricAutoLoginReadiness(device.sessionFingerprint),
         resolveBiometricKind(device.userAgent),
@@ -276,6 +271,7 @@ export default function PinGateway({
 
       try {
         const device = collectClientDeviceInfo();
+        const { loginWithDevicePasskey } = await import('@/lib/passkey/client-flow');
         const res = await loginWithDevicePasskey(device, {
           autoTrigger: trigger === 'auto',
         });
@@ -369,6 +365,7 @@ export default function PinGateway({
     setPasskeyError(null);
     try {
       const device = collectClientDeviceInfo();
+      const { registerDevicePasskey } = await import('@/lib/passkey/client-flow');
       const res = await registerDevicePasskey(device);
       if (!res.success) {
         setPasskeyError(localizePasskeyError(res.error, locale));
@@ -492,7 +489,7 @@ export default function PinGateway({
           fingerprint && localStorage.getItem(passkeySkipKey(fingerprint)) === '1';
         const offerEnrollment =
           !skippedEnrollment &&
-          (await shouldOfferPasskeyEnrollment(fingerprint));
+          await (await import('@/lib/passkey/client-flow')).shouldOfferPasskeyEnrollment(fingerprint);
 
         if (offerEnrollment) {
           setPendingReadOnly(Boolean(res.isReadOnly));
