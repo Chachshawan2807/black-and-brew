@@ -495,6 +495,10 @@ export default function ScheduleClient({
     useState<ManagementHistoryItem | null>(null);
   const [confirmDeleteEmployeeId, setConfirmDeleteEmployeeId] = useState<string | null>(null);
   const [showGoogleSheetSyncConfirm, setShowGoogleSheetSyncConfirm] = useState(false);
+  const [googleSheetSyncOutcome, setGoogleSheetSyncOutcome] = useState<{
+    kind: 'success' | 'error';
+    body: string;
+  } | null>(null);
   const holidaySyncNoticeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [loading, setLoading] = useState(false);
@@ -1835,19 +1839,26 @@ export default function ScheduleClient({
     try {
       const result = await syncScheduleToGoogleSheet(weekStart, viewedDateStr);
       if (!result.success) {
-        showPageNotice(
-          `ซิงค์ Google Sheet ไม่สำเร็จ: ${resolveActionError(result.error, 'กรุณาลองใหม่')}`,
-        );
+        setGoogleSheetSyncOutcome({
+          kind: 'error',
+          body: resolveActionError(result.error, 'กรุณาลองใหม่'),
+        });
         return;
       }
       const sheetTabs =
         'sheetTabs' in result && result.sheetTabs.length > 0
           ? result.sheetTabs.join(', ')
           : result.sheetTab;
-      showPageNotice(`ซิงค์ Google Sheet สำเร็จแล้วค่ะ\nสัปดาห์: ${weekLabel}\nชีท: ${sheetTabs}`);
+      setGoogleSheetSyncOutcome({
+        kind: 'success',
+        body: `สัปดาห์ ${weekLabel}\nชีท: ${sheetTabs}`,
+      });
     } catch (err) {
       console.error('Failed to sync Google Sheet:', err);
-      showPageNotice(toUserFacingError(err, 'เกิดข้อผิดพลาดในการซิงค์ Google Sheet กรุณาลองใหม่'));
+      setGoogleSheetSyncOutcome({
+        kind: 'error',
+        body: toUserFacingError(err, 'เกิดข้อผิดพลาดในการซิงค์ Google Sheet กรุณาลองใหม่'),
+      });
     } finally {
       setIsSyncingGoogleSheet(false);
     }
@@ -2780,13 +2791,37 @@ export default function ScheduleClient({
         title="ซิงค์ Google Sheet"
         description={
           googleSheetWeekLabel
-            ? `ซิงค์ Google Sheet สำหรับสัปดาห์ ${googleSheetWeekLabel} เท่านั้น\n(ซิงค์เมื่อกดปุ่มนี้เท่านั้น ไม่มีการซิงค์อัตโนมัติ)`
+            ? `ซิงค์ Google Sheet สำหรับสัปดาห์\n${googleSheetWeekLabel} เท่านั้น`
             : undefined
         }
-        confirmLabel="ซิงค์เลย"
+        confirmLabel="ซิงค์"
+        cancelAccent="destructive-filled"
+        confirmAccent="success-pastel-green"
+        viewportCentered
+        portaled
         busy={isSyncingGoogleSheet}
         onClose={() => !isSyncingGoogleSheet && setShowGoogleSheetSyncConfirm(false)}
         onConfirm={() => void executeSyncGoogleSheet()}
+        zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
+      />
+      <TextConfirmDialog
+        open={googleSheetSyncOutcome !== null}
+        title={
+          googleSheetSyncOutcome?.kind === 'success'
+            ? 'ซิงค์สำเร็จ'
+            : 'ซิงค์ไม่สำเร็จ'
+        }
+        description={googleSheetSyncOutcome?.body}
+        confirmLabel="รับทราบ"
+        hideCancel
+        confirmAccent={
+          googleSheetSyncOutcome?.kind === 'success' ? 'success-pastel-green' : 'default'
+        }
+        destructive={googleSheetSyncOutcome?.kind === 'error'}
+        viewportCentered
+        portaled
+        onClose={() => setGoogleSheetSyncOutcome(null)}
+        onConfirm={() => setGoogleSheetSyncOutcome(null)}
         zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
       />
 
