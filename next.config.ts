@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
+import { DEV_WEBPACK_WATCH_IGNORE } from './src/lib/dev-webpack-watch';
 import { buildSecurityHeaders } from './src/lib/security/headers';
 
 const require = createRequire(import.meta.url);
@@ -17,10 +18,14 @@ const nextConfig: NextConfig = {
   images: {
     qualities: [100, 75],
   },
-  // PPR + optimizePackageImports can stall Turbopack's first /[locale] dev compile (120s+ hang).
-  // Turbopack dev can also serve bare 404 for /th while production/webpack dev return 200; use `npm run dev` (webpack).
-  // Keep both for production bundle size and PPR; skip in dev for responsive local iteration.
+  // Turbopack is the dev bundler (`npm run dev`). Webpack dev compiles one page for minutes
+  // and blocks every other request. `npm run dev:webpack` remains if a Turbopack bug returns.
+  // PPR + optimizePackageImports stay production-only: together they can stall Turbopack.
   cacheComponents: isProduction,
+  onDemandEntries: {
+    maxInactiveAge: 15 * 60 * 1000,
+    pagesBufferLength: 8,
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '8mb',
@@ -44,6 +49,14 @@ const nextConfig: NextConfig = {
         }
       : {}),
   },
+  webpack: (webpackConfig, { dev }) => {
+    if (!dev) return webpackConfig;
+    webpackConfig.watchOptions = {
+      ...webpackConfig.watchOptions,
+      ignored: DEV_WEBPACK_WATCH_IGNORE,
+    };
+    return webpackConfig;
+  },
   async redirects() {
     return [
       {
@@ -52,6 +65,18 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
     ];
+  },
+  async rewrites() {
+    return {
+      // Backup when the proxy matcher skips dotted paths: serve the static file
+      // instead of compiling the locale not-found page.
+      beforeFiles: [
+        {
+          source: '/:locale/.well-known/:path*',
+          destination: '/.well-known/:path*',
+        },
+      ],
+    };
   },
   async headers() {
     return [

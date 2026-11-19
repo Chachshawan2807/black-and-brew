@@ -30,7 +30,13 @@ function routeKeyFromHref(href: string): string | null {
   return segment in ROUTE_PRELOADERS ? segment : null;
 }
 
+function shouldPreloadRouteChunks(): boolean {
+  // In `next dev`, each import() compiles on the one webpack thread and freezes every open page.
+  return process.env.NODE_ENV !== 'development';
+}
+
 export function preloadRouteChunk(href: string): void {
+  if (!shouldPreloadRouteChunks()) return;
   if (typeof window === 'undefined') return;
   const key = routeKeyFromHref(href);
   if (!key || preloaded.has(key)) return;
@@ -39,6 +45,7 @@ export function preloadRouteChunk(href: string): void {
 }
 
 export function preloadCommonRouteChunks(): void {
+  if (!shouldPreloadRouteChunks()) return;
   for (const key of COMMON_ROUTE_KEYS) {
     if (preloaded.has(key)) continue;
     preloaded.add(key);

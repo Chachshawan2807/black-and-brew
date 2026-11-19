@@ -72,16 +72,17 @@ describe('locale routing (Thai-first ERP)', () => {
     expect(code).toMatch(/passThroughApiRoutes\(request\)/);
   });
 
-  test('dev script uses webpack to avoid Turbopack /[locale] 404 in local dev', () => {
+  test('dev script uses Turbopack because webpack dev blocks every page for minutes', () => {
     const pkg = JSON.parse(
       fs.readFileSync(
         path.resolve(__dirname, '../../package.json'),
         'utf-8',
       ),
-    ) as { scripts: { dev: string; 'dev:turbo'?: string } };
+    ) as { scripts: { dev: string; 'dev:turbo'?: string; 'dev:webpack'?: string } };
     expect(pkg.scripts.dev).toContain('stop-next-dev.mjs');
-    expect(pkg.scripts.dev).toContain('--webpack');
-    expect(pkg.scripts['dev:turbo']).toBe('next dev');
+    expect(pkg.scripts.dev).not.toContain('--webpack');
+    expect(pkg.scripts['dev:turbo']).toContain('next dev');
+    expect(pkg.scripts['dev:webpack']).toContain('--webpack');
   });
 
   test('locale layout rejects unknown locale segments', () => {

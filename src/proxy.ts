@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rewriteLocalePrefixedPublicAsset } from '@/lib/locale-prefixed-public-asset';
 import { inspectRequestForDos } from '@/lib/rate-limit/dos-guard';
 import { isPublicRootAssetPath } from '@/lib/pwa-public-asset-paths';
+import { isWellKnownProbePath } from '@/lib/well-known-probe';
 import { routing } from './i18n/routing';
 
 const intlMiddleware = createMiddleware(routing);
@@ -36,6 +37,20 @@ function redirectEnglishPathToThai(request: NextRequest): NextResponse | null {
   return null;
 }
 
+/**
+ * Answer Chrome's well-known probe here. Falling through compiles `/_not-found`
+ * and stalls the dev server for every other request.
+ */
+function rejectWellKnownProbe(request: NextRequest): NextResponse | null {
+  if (!isWellKnownProbePath(request.nextUrl.pathname)) return null;
+  return new NextResponse(null, {
+    status: 404,
+    headers: {
+      'cache-control': 'public, max-age=86400',
+    },
+  });
+}
+
 /** Cron and webhooks must stay at `/api/*` (no `/th` prefix). */
 function passThroughApiRoutes(request: NextRequest): NextResponse | null {
   if (request.nextUrl.pathname.startsWith('/api/')) {
@@ -45,6 +60,9 @@ function passThroughApiRoutes(request: NextRequest): NextResponse | null {
 }
 
 export default async function proxy(request: NextRequest) {
+  const wellKnown = rejectWellKnownProbe(request);
+  if (wellKnown) return wellKnown;
+
   const denied = await inspectRequestForDos(request);
   if (denied) return denied;
 
@@ -68,5 +86,11 @@ export default async function proxy(request: NextRequest) {
 export const proxyConfig = {
   // Pages skip api/_next/_vercel/static files. API is matched separately so DOS
   // limits apply without locale-prefixing cron/webhook routes.
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)', '/api/:path*'],
+  matcher: [
+    '/((?!api|_next|_vercel|.*\\..*).*)',
+    '/api/:path*',
+    // Dotted paths are excluded above. Chrome still requests this file on every dev load.
+    '/.well-known/:path*',
+    '/:locale/.well-known/:path*',
+  ],
 };
