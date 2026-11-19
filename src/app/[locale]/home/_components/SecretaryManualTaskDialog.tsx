@@ -99,20 +99,18 @@ function SecretaryManualTaskDialogOpen({
   const titleInvalid = title.trim().length === 0;
 
   const footer = (
-    <>
+    <div className="flex gap-2">
       {mode === 'edit' && onDelete ? (
         <button
           type="button"
           onClick={() => setDeleteConfirmOpen(true)}
           disabled={isPending}
-          className={DELETE_TRIGGER_CLASS}
+          className={cn(DELETE_TRIGGER_CLASS, 'flex-1 w-auto')}
         >
           <Trash2 size={14} className="text-red-600 dark:text-red-400" aria-hidden />
-          ลบงาน
+          ลบ
         </button>
-      ) : null}
-
-      <div className="flex gap-2">
+      ) : (
         <button
           type="button"
           onClick={onClose}
@@ -121,20 +119,20 @@ function SecretaryManualTaskDialogOpen({
         >
           ยกเลิก
         </button>
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={!canSave}
-          className={BUTTON_PRIMARY_CLASS}
-        >
-          {isPending
-            ? 'กำลังบันทึก...'
-            : mode === 'create'
-              ? 'เพิ่มงาน'
-              : 'บันทึก'}
-        </button>
-      </div>
-    </>
+      )}
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={!canSave}
+        className={BUTTON_PRIMARY_CLASS}
+      >
+        {isPending
+          ? 'กำลังบันทึก...'
+          : mode === 'create'
+            ? 'เพิ่มงาน'
+            : 'บันทึก'}
+      </button>
+    </div>
   );
 
   return (

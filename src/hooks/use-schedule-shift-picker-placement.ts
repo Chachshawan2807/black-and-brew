@@ -52,11 +52,11 @@ export function useScheduleShiftPickerPlacement(
     updatePosition();
 
     const menuEl = menuRef.current;
-    const resizeObserver =
-      menuEl && typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(() => updatePosition())
-        : null;
-    resizeObserver?.observe(menuEl);
+    let resizeObserver: ResizeObserver | null = null;
+    if (menuEl && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => updatePosition());
+      resizeObserver.observe(menuEl);
+    }
 
     const vv = window.visualViewport;
     vv?.addEventListener('resize', updatePosition);
